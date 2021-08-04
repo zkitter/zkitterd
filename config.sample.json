@@ -1,0 +1,12 @@
+{
+  "web3HttpProvider": "https://mainnet.infura.io/v3/<project-id>",
+  "ensResolver": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+  "dbDialect": "sqlite",
+  "dbStorage": "",
+  "dbName": "",
+  "dbUsername":  "",
+  "dbPassword": "",
+  "dbHost":  "",
+  "dbPort":  "",
+  "port": 3000
+}

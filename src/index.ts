@@ -4,12 +4,14 @@ import ENSService from "./services/ens";
 import logger from "./util/logger";
 import DBService from "./services/db";
 import HttpService from "./services/http";
+import GunService from "./services/gun";
 
 (async function initApp() {
     try {
         const main = new MainService();
         main.add('db', new DBService());
         main.add('ens', new ENSService());
+        main.add('gun', new GunService());
         main.add('http', new HttpService());
         await main.start();
     } catch (e) {

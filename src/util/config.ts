@@ -12,6 +12,7 @@ let json: {
     dbHost?: string;
     dbPort?: string;
     port?: number;
+    gunPort?: number;
 } = {};
 
 try {
@@ -30,6 +31,7 @@ const dbPassword = json.dbPassword || process.env.DB_PASSWORD;
 const dbHost = json.dbHost || process.env.DB_HOST;
 const dbPort = json.dbPort || process.env.DB_PORT;
 const port = json.port || process.env.PORT;
+const gunPort = json.gunPort || process.env.GUN_PORT;
 
 if (!web3HttpProvider) {
     throw new Error('WEB3_HTTP_PROVIDER is not valid');
@@ -50,6 +52,7 @@ const config = {
     dbHost,
     dbPort,
     port: port ? Number(port) : 3000,
+    gunPort: gunPort ? Number(gunPort) : 8765,
 };
 
 export default config;

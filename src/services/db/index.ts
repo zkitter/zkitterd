@@ -1,14 +1,16 @@
 import {GenericService} from "../../util/svc";
 import {Dialect, Sequelize} from "sequelize";
-import app from "./models/app";
+import app from "../../models/app";
 import config from "../../util/config";
 import logger from "../../util/logger";
-import users from "./models/users";
+import users from "../../models/users";
+import records from "../../models/records";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
     app?: ReturnType<typeof app>;
     users?: ReturnType<typeof users>;
+    records?: ReturnType<typeof records>;
 
     constructor() {
         super();
@@ -32,6 +34,13 @@ export default class DBService extends GenericService {
         }
     }
 
+    async getRecords(): Promise<ReturnType<typeof records>> {
+        if (!this.records) {
+            return Promise.reject(new Error('records is not initialized'));
+        }
+        return this.records;
+    }
+
     async getUsers(): Promise<ReturnType<typeof users>> {
         if (!this.users) {
             return Promise.reject(new Error('users is not initialized'));
@@ -49,9 +58,11 @@ export default class DBService extends GenericService {
     async start() {
         this.app = await app(this.sequelize);
         this.users = await users(this.sequelize);
+        this.records = await records(this.sequelize);
 
         await this.app?.model.sync({ force: false });
         await this.users?.model.sync({ force: false });
+        await this.records?.model.sync({ force: false });
 
         const appData = await this.app?.read();
 

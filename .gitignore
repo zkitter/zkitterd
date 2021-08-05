@@ -4,3 +4,5 @@ build*
 config.json
 *.db
 *.log
+gun_data
+.DS_Store

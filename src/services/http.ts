@@ -79,6 +79,6 @@ export default class HttpService extends GenericService {
     async start() {
         const httpServer = http.createServer(this.app);
         httpServer.listen(config.port);
-        logger.info(`listening at ${config.port}...`);
+        logger.info(`api server listening at ${config.port}...`);
     }
 }

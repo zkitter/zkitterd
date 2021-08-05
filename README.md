@@ -19,4 +19,5 @@ You can set configuration for the server using environment variable or by creati
 | DB_HOST | The host of the relational database. |
 | DB_PORT | The port of the relational database.|
 | PORT | The port of the REST API server.|
+| GUN_PORT | The port of the GUN relay peer.|
 

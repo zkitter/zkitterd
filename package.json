@@ -4,12 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev-server": "nodemon ./build-server/server.js",
+    "dev-server": "nodemon ./build/server.js",
     "watch-server": "webpack --config webpack.server.config.js --inline --watch",
     "build-server": "webpack --config webpack.server.config.js",
     "dev": "NODE_ENV=development concurrently --kill-others-on-fail npm:watch-server npm:dev-server",
     "build": "npm run build-server",
-    "start": "NODE_ENV=production npm run build && node ./build-server/server.js"
+    "start": "NODE_ENV=production npm run build && node ./build/server.js"
   },
   "author": "",
   "license": "ISC",
@@ -19,6 +19,7 @@
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "gun": "^0.2020.1232",
     "isomorphic-fetch": "^3.0.0",
     "sequelize": "^6.6.2",
     "sqlite3": "^5.0.2",

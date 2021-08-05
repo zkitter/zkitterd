@@ -6,6 +6,7 @@ const logger = winston.createLogger({
     level: 'info',
     format: combine(
         timestamp(),
+        format.colorize(),
         format.json(),
     ),
     transports: [
@@ -21,6 +22,7 @@ const logger = winston.createLogger({
 
 if (process.env.NODE_ENV !== 'production') {
     logger.add(new winston.transports.Console({
+        level: 'debug',
         format: winston.format.simple(),
     }));
 }

@@ -1,4 +1,5 @@
-import {BIGINT, Sequelize, STRING} from "sequelize";
+import {BIGINT, ModelCtor, Sequelize, STRING} from "sequelize";
+import {Message, MessageType, PostJSON, PostMessageSubType} from "../util/message";
 
 type PostModel = {
     hash: string;
@@ -12,7 +13,7 @@ type PostModel = {
     reference: string;
 };
 
-const posts = (sequelize: Sequelize) => {
+const posts = (sequelize: Sequelize, meta: ModelCtor<any>) => {
     const model = sequelize.define('posts', {
         hash: {
             type: STRING,
@@ -29,7 +30,6 @@ const posts = (sequelize: Sequelize) => {
         },
         subtype: {
             type: STRING,
-            allowNull: false,
         },
         createdAt: {
             type: BIGINT,
@@ -61,32 +61,79 @@ const posts = (sequelize: Sequelize) => {
         ],
     });
 
-    const findOne = async (hash: string): Promise<PostModel|null> => {
-        let result = await model.findOne({
+    const findOne = async (hash: string): Promise<PostJSON|null> => {
+        let result: any = await model.findOne({
             where: {
                 hash,
             },
+            include: {
+                model: meta,
+                as: 'meta',
+            },
         });
 
-        return result?.toJSON() as PostModel || null;
+        if (!result) return null;
+
+        const json = result.toJSON() as PostModel;
+        const m = result.meta && result.meta.toJSON();
+
+        return {
+            type: json.type as MessageType,
+            subtype: json.subtype as PostMessageSubType,
+            messageId: `${json.creator}/${json.hash}`,
+            hash: json.hash,
+            createdAt: json.createdAt,
+            payload: {
+                topic: json.topic,
+                title: json.title,
+                content: json.content,
+                reference: json.reference,
+            },
+            meta: {
+                replyCount: m?.replyCount || 0,
+                likeCount: m?.likeCount || 0,
+                repostCount: m?.repostCount || 0,
+            },
+        };
     }
 
-    const findAll = async (offset = 0, limit = 20): Promise<PostModel[]> => {
+    const findAllPosts = async (offset = 0, limit = 20, order: 'DESC' | 'ASC' = 'DESC'): Promise<PostJSON[]> => {
         let result = await model.findAll({
+            where: {
+                reference: '',
+            },
             offset,
             limit,
+            order: [['createdAt', order]],
+            include: {
+                model: meta,
+                as: 'meta',
+            },
         });
 
-        return result.map(r => r.toJSON() as PostModel);
-    }
+        return result.map((r: any) => {
+            const json = r.toJSON() as PostModel;
+            const m = r.meta && r.meta.toJSON();
 
-    const readAll = async (offset = 0, limit = 20): Promise<PostModel[]> => {
-        let result = await model.findAll({
-            offset,
-            limit,
+            return {
+                type: json.type as MessageType,
+                subtype: json.subtype as PostMessageSubType,
+                messageId: `${json.creator}/${json.hash}`,
+                hash: json.hash,
+                createdAt: json.createdAt,
+                payload: {
+                    topic: json.topic,
+                    title: json.title,
+                    content: json.content,
+                    reference: json.reference,
+                },
+                meta: {
+                    replyCount: m?.replyCount || 0,
+                    likeCount: m?.likeCount || 0,
+                    repostCount: m?.repostCount || 0,
+                },
+            };
         });
-
-        return result.map(r => r.toJSON() as PostModel);
     }
 
     const createPost = async (record: PostModel) => {
@@ -96,8 +143,7 @@ const posts = (sequelize: Sequelize) => {
     return {
         model,
         findOne,
-        findAll,
-        readAll,
+        findAllPosts,
         createPost,
     };
 }

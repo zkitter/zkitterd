@@ -17,6 +17,7 @@ export default class GunService extends GenericService {
 
         const users = await this.call('db', 'getUsers');
         const postDB = await this.call('db', 'getPosts');
+        const metaDB = await this.call('db', 'getMeta');
         const user = await users.findOneByPubkey(pubkey);
 
         if (!user) throw new Error(`cannot find user with pubkey ${pubkey}`);
@@ -80,6 +81,10 @@ export default class GunService extends GenericService {
                             content: payload.content,
                             reference: payload.reference,
                         });
+
+                        if (payload.reference) {
+                            await metaDB.addReply(payload.reference.split('/')[1]);
+                        }
 
                         logger.info(`insert post`, {
                             origin: 'gun',

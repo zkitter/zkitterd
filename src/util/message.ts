@@ -66,6 +66,11 @@ export type PostJSON = {
     createdAt: number;
     subtype: PostMessageSubType;
     payload: PostMessagePayload;
+    meta?: {
+        replyCount: number;
+        likeCount: number;
+        repostCount: number;
+    };
 };
 
 export type PostMessageOption = {
@@ -76,12 +81,23 @@ export type PostMessageOption = {
         content?: string;
         reference?: string;
     };
+    meta?: {
+        replyCount: number;
+        likeCount: number;
+        repostCount: number;
+    };
 } & MessageOption;
 
 export class Post extends Message {
     subtype: PostMessageSubType;
 
     payload: PostMessagePayload;
+
+    meta: {
+        replyCount: number;
+        likeCount: number;
+        repostCount: number;
+    };
 
     static fromHex(hex: string) {
         let d = hex;
@@ -93,7 +109,7 @@ export class Post extends Message {
         const [topic] = decodeString(d, 3, cb);
         const [title] = decodeString(d, 3, cb);
         const [content] = decodeString(d, 6, cb);
-        const [reference] = decodeHex(d, 64, cb);
+        const [reference] = decodeString(d, 3, cb);
 
         return new Post({
             type: type as MessageType.Post,
@@ -131,14 +147,19 @@ export class Post extends Message {
             content: opt.payload.content || '',
             reference: opt.payload.reference || '',
         };
+        this.meta = {
+            replyCount: opt.meta?.replyCount || 0,
+            likeCount: opt.meta?.likeCount || 0,
+            repostCount: opt.meta?.repostCount || 0,
+        };
     }
 
-    async hash() {
+    hash() {
         return crypto.createHash('sha256').update(this.toHex()).digest('hex');
     }
 
-    async toJSON(): Promise<PostJSON> {
-        const hash = await this.hash();
+    toJSON(): PostJSON {
+        const hash = this.hash();
         return {
             messageId: `${this.creator}/${hash}`,
             hash: hash,
@@ -157,7 +178,7 @@ export class Post extends Message {
         const topic = encodeString(this.payload.topic, 3);
         const title = encodeString(this.payload.title, 3);
         const content = encodeString(this.payload.content, 6);
-        const reference = this.payload.reference;
+        const reference = encodeString(this.payload.reference, 3);
         return type + subtype + creator + createdAt + topic + title + content + reference;
     }
 }

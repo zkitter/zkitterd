@@ -9,7 +9,6 @@ import Timeout = NodeJS.Timeout;
 const {
     default: ENS,
     getEnsAddress,
-    getResolverContract,
 } = require('@ensdomains/ensjs');
 
 export default class ENSService extends GenericService {
@@ -54,6 +53,7 @@ export default class ENSService extends GenericService {
             await app.updateLastENSBlock(block.number);
             logger.info('scanned ens TextChanged events', {
                 fromBlock: data?.lastENSBlockScanned,
+                toBlock: block.number,
             });
 
             for (let event of events) {
@@ -65,8 +65,22 @@ export default class ENSService extends GenericService {
                     tx.input.slice(10),
                 );
                 const pubkey = params[2];
+                const x = pubkey.split('.')[0];
+                const y = pubkey.split('.')[1];
+
+                if (x.length !== 43 || y.length !== 43) {
+                    logger.error('invalid pubkey', {
+                        fromBlock: data?.lastENSBlockScanned,
+                        toBlock: block.number,
+                    });
+                    continue;
+                }
+
                 const users = await this.call('db', 'getUsers');
                 await users.updateOrCreateUser({ name, pubkey });
+
+                await this.call('gun', 'watch', pubkey);
+
                 logger.info(`added pubkey for ${name}`, {
                     transactionHash: tx.hash,
                     blockNumber: tx.blockNumber,

@@ -23,12 +23,27 @@ const users = (sequelize: Sequelize) => {
                 notEmpty: true,
             },
         },
-    }, {});
+    }, {
+        indexes: [
+            { fields: ['name'] },
+            { fields: ['pubkey'] },
+        ]
+    });
 
-    const findOne = async (name: string): Promise<UserModel|null> => {
+    const findOneByName = async (name: string): Promise<UserModel|null> => {
         let result = await model.findOne({
             where: {
                 name,
+            }
+        });
+
+        return result?.toJSON() as UserModel || null;
+    }
+
+    const findOneByPubkey = async (pubkey: string): Promise<UserModel|null> => {
+        let result = await model.findOne({
+            where: {
+                pubkey,
             }
         });
 
@@ -60,7 +75,8 @@ const users = (sequelize: Sequelize) => {
 
     return {
         model,
-        findOne,
+        findOneByName,
+        findOneByPubkey,
         readAll,
         updateOrCreateUser,
     };

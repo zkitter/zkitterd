@@ -5,12 +5,14 @@ import config from "../../util/config";
 import logger from "../../util/logger";
 import users from "../../models/users";
 import records from "../../models/records";
+import posts from "../../models/posts";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
     app?: ReturnType<typeof app>;
     users?: ReturnType<typeof users>;
     records?: ReturnType<typeof records>;
+    posts?: ReturnType<typeof posts>;
 
     constructor() {
         super();
@@ -48,6 +50,13 @@ export default class DBService extends GenericService {
         return this.users;
     }
 
+    async getPosts(): Promise<ReturnType<typeof posts>> {
+        if (!this.posts) {
+            return Promise.reject(new Error('posts is not initialized'));
+        }
+        return this.posts;
+    }
+
     async getApp(): Promise<ReturnType<typeof app>> {
         if (!this.app) {
             return Promise.reject(new Error('app is not initialized'));
@@ -59,10 +68,12 @@ export default class DBService extends GenericService {
         this.app = await app(this.sequelize);
         this.users = await users(this.sequelize);
         this.records = await records(this.sequelize);
+        this.posts = await posts(this.sequelize);
 
-        await this.app?.model.sync({ force: false });
-        await this.users?.model.sync({ force: false });
-        await this.records?.model.sync({ force: false });
+        await this.app?.model.sync({ force: true });
+        await this.users?.model.sync({ force: true });
+        await this.records?.model.sync({ force: true });
+        await this.posts?.model.sync({ force: false });
 
         const appData = await this.app?.read();
 

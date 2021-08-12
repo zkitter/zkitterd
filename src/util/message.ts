@@ -50,6 +50,8 @@ export class Message {
 
 export enum PostMessageSubType {
     Default = '',
+    Repost = 'REPOST',
+    Reply = 'REPLY',
 }
 
 export type PostMessagePayload = {
@@ -57,6 +59,7 @@ export type PostMessagePayload = {
     title: string;
     content: string;
     reference: string;
+    attachment: string;
 };
 
 export type PostJSON = {
@@ -66,11 +69,7 @@ export type PostJSON = {
     createdAt: number;
     subtype: PostMessageSubType;
     payload: PostMessagePayload;
-    meta?: {
-        replyCount: number;
-        likeCount: number;
-        repostCount: number;
-    };
+    meta?: any;
 };
 
 export type PostMessageOption = {
@@ -80,11 +79,7 @@ export type PostMessageOption = {
         title?: string;
         content?: string;
         reference?: string;
-    };
-    meta?: {
-        replyCount: number;
-        likeCount: number;
-        repostCount: number;
+        attachment?: string;
     };
 } & MessageOption;
 
@@ -92,12 +87,6 @@ export class Post extends Message {
     subtype: PostMessageSubType;
 
     payload: PostMessagePayload;
-
-    meta: {
-        replyCount: number;
-        likeCount: number;
-        repostCount: number;
-    };
 
     static fromHex(hex: string) {
         let d = hex;
@@ -110,6 +99,7 @@ export class Post extends Message {
         const [title] = decodeString(d, 3, cb);
         const [content] = decodeString(d, 6, cb);
         const [reference] = decodeString(d, 3, cb);
+        const [attachment] = decodeString(d, 3, cb);
 
         return new Post({
             type: type as MessageType.Post,
@@ -121,6 +111,7 @@ export class Post extends Message {
                 title,
                 content,
                 reference,
+                attachment,
             }
         });
 
@@ -133,6 +124,10 @@ export class Post extends Message {
         switch (subtype) {
             case '':
                 return PostMessageSubType.Default;
+            case 'REPLY':
+                return PostMessageSubType.Reply;
+            case 'REPOST':
+                return PostMessageSubType.Repost;
             default:
                 return PostMessageSubType.Default;
         }
@@ -140,17 +135,14 @@ export class Post extends Message {
 
     constructor(opt: PostMessageOption) {
         super(opt);
-        this.subtype = PostMessageSubType.Default;
+        this.type = MessageType.Post;
+        this.subtype = Post.getSubtype(opt.subtype);
         this.payload = {
             topic: opt.payload.topic || '',
             title: opt.payload.title || '',
             content: opt.payload.content || '',
             reference: opt.payload.reference || '',
-        };
-        this.meta = {
-            replyCount: opt.meta?.replyCount || 0,
-            likeCount: opt.meta?.likeCount || 0,
-            repostCount: opt.meta?.repostCount || 0,
+            attachment: opt.payload.attachment || '',
         };
     }
 
@@ -179,13 +171,110 @@ export class Post extends Message {
         const title = encodeString(this.payload.title, 3);
         const content = encodeString(this.payload.content, 6);
         const reference = encodeString(this.payload.reference, 3);
-        return type + subtype + creator + createdAt + topic + title + content + reference;
+        const attachment = encodeString(this.payload.attachment, 3);
+        return type + subtype + creator + createdAt + topic + title + content + reference + attachment;
     }
 }
 
-enum ModerationMessageSubType {
+export enum ModerationMessageSubType {
     Like = 'LIKE',
-    Ban = 'BAN',
+    Block = 'BLOCK',
+    Default = '',
+}
+
+export type ModerationMessagePayload = {
+    reference: string;
+};
+
+export type ModerationJSON = {
+    type: MessageType;
+    messageId: string;
+    hash: string;
+    createdAt: number;
+    subtype: ModerationMessageSubType;
+    payload: ModerationMessagePayload;
+};
+
+export type ModerationMessageOption = {
+    subtype: ModerationMessageSubType;
+    payload: {
+        reference?: string;
+    };
+} & MessageOption;
+
+export class Moderation extends Message {
+    subtype: ModerationMessageSubType;
+
+    payload: ModerationMessagePayload;
+
+    static fromHex(hex: string) {
+        let d = hex;
+
+        const [type] = decodeString(d, 2, cb);
+        const [subtype] = decodeString(d, 2, cb);
+        const [creator] = decodeString(d, 3, cb);
+        const [createdAt] = decodeNumber(d, 12, cb);
+        const [reference] = decodeString(d, 3, cb);
+
+        return new Moderation({
+            type: type as MessageType.Moderation,
+            subtype: subtype as ModerationMessageSubType,
+            creator,
+            createdAt: new Date(createdAt),
+            payload: {
+                reference,
+            }
+        });
+
+        function cb(n: number) {
+            d = d.slice(n);
+        }
+    }
+
+    static getSubtype(subtype: string): ModerationMessageSubType {
+        switch (subtype) {
+            case 'LIKE':
+                return ModerationMessageSubType.Like;
+            case 'BLOCK':
+                return ModerationMessageSubType.Block;
+            default:
+                return ModerationMessageSubType.Default;
+        }
+    }
+
+    constructor(opt: ModerationMessageOption) {
+        super(opt);
+        this.type = MessageType.Moderation;
+        this.subtype = Moderation.getSubtype(opt.subtype);
+        this.payload = {
+            reference: opt.payload.reference || '',
+        };
+    }
+
+    hash() {
+        return crypto.createHash('sha256').update(this.toHex()).digest('hex');
+    }
+
+    toJSON(): ModerationJSON {
+        const hash = this.hash();
+        return {
+            messageId: `${this.creator}/${hash}`,
+            hash: hash,
+            type: this.type,
+            subtype: this.subtype,
+            createdAt: this.createdAt.getTime(),
+            payload: this.payload,
+        };
+    }
+
+    toHex() {
+        const type = encodeString(this.type, 2);
+        const subtype = encodeString(this.subtype, 2);
+        const creator = encodeString(this.creator, 3);
+        const createdAt = encodeNumber(this.createdAt.getTime(), 12);
+        const reference = encodeString(this.payload.reference, 3);
+        return type + subtype + creator + createdAt + reference;
+    }
 }
 
 enum ConnectionMessageSubType {

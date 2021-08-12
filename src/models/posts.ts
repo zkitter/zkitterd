@@ -1,5 +1,5 @@
 import {BIGINT, ModelCtor, Sequelize, STRING} from "sequelize";
-import {Message, MessageType, PostJSON, PostMessageSubType} from "../util/message";
+import {MessageType, PostJSON, PostMessageSubType} from "../util/message";
 
 type PostModel = {
     hash: string;
@@ -11,9 +11,10 @@ type PostModel = {
     title: string;
     content: string;
     reference: string;
+    attachment: string;
 };
 
-const posts = (sequelize: Sequelize, meta: ModelCtor<any>) => {
+const posts = (sequelize: Sequelize, meta: ModelCtor<any>, moderations: ModelCtor<any>) => {
     const model = sequelize.define('posts', {
         hash: {
             type: STRING,
@@ -48,6 +49,9 @@ const posts = (sequelize: Sequelize, meta: ModelCtor<any>) => {
             allowNull: false,
         },
         reference: {
+            type: STRING,
+        },
+        attachment: {
             type: STRING,
         },
     }, {
@@ -88,6 +92,7 @@ const posts = (sequelize: Sequelize, meta: ModelCtor<any>) => {
                 title: json.title,
                 content: json.content,
                 reference: json.reference,
+                attachment: json.attachment,
             },
             meta: {
                 replyCount: m?.replyCount || 0,
@@ -100,7 +105,50 @@ const posts = (sequelize: Sequelize, meta: ModelCtor<any>) => {
     const findAllPosts = async (offset = 0, limit = 20, order: 'DESC' | 'ASC' = 'DESC'): Promise<PostJSON[]> => {
         let result = await model.findAll({
             where: {
-                reference: '',
+                subtype: [PostMessageSubType.Default, PostMessageSubType.Repost],
+            },
+            offset,
+            limit,
+            order: [['createdAt', order]],
+            include: [
+                {
+                    model: meta,
+                    as: 'meta',
+                },
+            ],
+        });
+
+        return result.map((r: any) => {
+            const json = r.toJSON() as PostModel;
+            const m = r.meta && r.meta.toJSON();
+
+            return {
+                type: json.type as MessageType,
+                subtype: json.subtype as PostMessageSubType,
+                messageId: `${json.creator}/${json.hash}`,
+                hash: json.hash,
+                createdAt: json.createdAt,
+                payload: {
+                    topic: json.topic,
+                    title: json.title,
+                    content: json.content,
+                    reference: json.reference,
+                    attachment: json.attachment,
+                },
+                meta: {
+                    replyCount: m?.replyCount || 0,
+                    likeCount: m?.likeCount || 0,
+                    repostCount: m?.repostCount || 0,
+                },
+            };
+        });
+    }
+
+    const findAllReplies = async (reference: string, offset = 0, limit = 20, order: 'DESC' | 'ASC' = 'ASC'): Promise<PostJSON[]> => {
+        let result = await model.findAll({
+            where: {
+                reference,
+                subtype: [PostMessageSubType.Reply],
             },
             offset,
             limit,
@@ -126,6 +174,7 @@ const posts = (sequelize: Sequelize, meta: ModelCtor<any>) => {
                     title: json.title,
                     content: json.content,
                     reference: json.reference,
+                    attachment: json.attachment,
                 },
                 meta: {
                     replyCount: m?.replyCount || 0,
@@ -144,6 +193,7 @@ const posts = (sequelize: Sequelize, meta: ModelCtor<any>) => {
         model,
         findOne,
         findAllPosts,
+        findAllReplies,
         createPost,
     };
 }

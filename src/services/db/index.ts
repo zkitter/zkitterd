@@ -7,6 +7,7 @@ import users from "../../models/users";
 import records from "../../models/records";
 import posts from "../../models/posts";
 import meta from "../../models/meta";
+import moderations from "../../models/moderations";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
@@ -14,6 +15,7 @@ export default class DBService extends GenericService {
     users?: ReturnType<typeof users>;
     records?: ReturnType<typeof records>;
     posts?: ReturnType<typeof posts>;
+    moderations?: ReturnType<typeof moderations>;
     meta?: ReturnType<typeof meta>;
 
     constructor() {
@@ -59,6 +61,13 @@ export default class DBService extends GenericService {
         return this.posts;
     }
 
+    async getModerations(): Promise<ReturnType<typeof moderations>> {
+        if (!this.moderations) {
+            return Promise.reject(new Error('moderations is not initialized'));
+        }
+        return this.moderations;
+    }
+
     async getMeta(): Promise<ReturnType<typeof meta>> {
         if (!this.meta) {
             return Promise.reject(new Error('meta is not initialized'));
@@ -79,22 +88,37 @@ export default class DBService extends GenericService {
         this.users = await users(this.sequelize);
         this.records = await records(this.sequelize);
         this.meta = await meta(this.sequelize);
-        this.posts = await posts(this.sequelize, this.meta?.model);
+        this.moderations = await moderations(this.sequelize);
+        this.posts = await posts(
+            this.sequelize,
+            this.meta?.model,
+            this.moderations?.model,
+        );
 
-        this.meta?.model.belongsTo(this.posts?.model, {
-            foreignKey: 'hash',
-        });
-
+        // this.meta?.model.belongsTo(this.posts?.model, {
+        //     foreignKey: 'hash',
+        // });
+        //
+        // this.moderations?.model.belongsTo(this.posts?.model, {
+        //     foreignKey: 'hash',
+        //     targetKey: 'reference',
+        // });
 
         this.posts?.model.hasOne(this.meta?.model, {
             foreignKey: 'hash',
             as: 'meta',
         });
 
+        // this.posts?.model.hasMany(this.moderations?.model, {
+        //     foreignKey: 'hash',
+        //     sourceKey: 'reference',
+        // });
+
         await this.app?.model.sync({ force: true });
         await this.users?.model.sync({ force: true });
         await this.records?.model.sync({ force: true });
         await this.meta?.model.sync({ force: true });
+        await this.moderations?.model.sync({ force: true });
         await this.posts?.model.sync({ force: true });
 
         const appData = await this.app?.read();

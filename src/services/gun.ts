@@ -4,7 +4,7 @@ import {IGunChainReference} from "gun/types/chain";
 import express from "express";
 import config from "../util/config";
 import logger from "../util/logger";
-import {Message, MessageType, Post} from "../util/message";
+import {Message, MessageType, Moderation, Post, PostMessageSubType} from "../util/message";
 
 const Graph = require("gun/src/graph");
 const State = require("gun/src/state");
@@ -39,68 +39,162 @@ export default class GunService extends GenericService {
                     payload = await this.gun.get(data.payload['#']);
                 }
 
-                if (type === MessageType.Post) {
-                    const subtype = Post.getSubtype(data.subtype);
-                    const post = new Post({
-                        type: type,
-                        subtype: subtype,
-                        creator: creator,
-                        createdAt: new Date(data.createdAt),
-                        payload: {
-                            topic: payload.topic,
-                            title: payload.title,
-                            content: payload.content,
-                            reference: payload.reference,
-                        },
-                    });
-                    const json = await post.toJSON();
-
-                    if (json.hash !== hash) {
-                        return;
-                    }
-
-                    const result = await postDB.findOne(hash);
-
-                    if (result) {
-                        logger.debug('post already exist', {
-                            origin: 'gun',
-                            messageId,
-                        });
-                        return;
-                    }
-
-                    try {
-                        await postDB.createPost({
-                            hash: hash,
+                switch (type) {
+                    case MessageType.Post:
+                        const post = new Post({
                             type: type,
-                            subtype: subtype,
+                            subtype: Post.getSubtype(data.subtype),
                             creator: creator,
-                            createdAt: data.createdAt,
-                            topic: payload.topic,
-                            title: payload.title,
-                            content: payload.content,
-                            reference: payload.reference,
+                            createdAt: new Date(data.createdAt),
+                            payload: {
+                                topic: payload.topic,
+                                title: payload.title,
+                                content: payload.content,
+                                reference: payload.reference,
+                                attachment: payload.attachment,
+                            },
                         });
-
-                        if (payload.reference) {
-                            await metaDB.addReply(payload.reference.split('/')[1]);
-                        }
-
-                        logger.info(`insert post`, {
-                            origin: 'gun',
-                            messageId,
+                        await this.insertPost(post);
+                        return;
+                    case MessageType.Moderation:
+                        const moderation = new Moderation({
+                            type: type,
+                            subtype: Moderation.getSubtype(data.subtype),
+                            creator: creator,
+                            createdAt: new Date(data.createdAt),
+                            payload: {
+                                reference: payload.reference,
+                            },
                         });
-                    } catch (e) {
-                        logger.error(`error inserting post`, {
-                            error: e.message,
-                            stack: e.stack,
-                            origin: 'gun',
-                            messageId,
-                        });
-                    }
-
+                        await this.insertModeration(moderation);
+                        return;
                 }
             });
+    }
+
+    async insertPost(post: Post) {
+        const json = await post.toJSON();
+        const {
+            type,
+            subtype,
+            createdAt,
+            payload,
+            messageId,
+        } = json;
+        const [creator, hash] = messageId.split('/');
+
+        const postDB = await this.call('db', 'getPosts');
+        const metaDB = await this.call('db', 'getMeta');
+
+        if (json.hash !== hash) {
+            return;
+        }
+
+        const result = await postDB.findOne(hash);
+
+        if (result) {
+            logger.debug('post already exist', {
+                origin: 'gun',
+                messageId,
+            });
+            return;
+        }
+
+        try {
+            await postDB.createPost({
+                hash: hash,
+                type: type,
+                subtype: subtype,
+                creator: creator,
+                createdAt: createdAt,
+                topic: payload.topic,
+                title: payload.title,
+                content: payload.content,
+                reference: payload.reference,
+                attachment: payload.attachment,
+            });
+
+            if (payload.reference) {
+                if (subtype === PostMessageSubType.Reply) {
+                    await metaDB.addReply(payload.reference.split('/')[1]);
+                }
+
+                if (subtype === PostMessageSubType.Repost) {
+                    await metaDB.addRepost(payload.reference.split('/')[1]);
+                }
+            }
+
+            logger.info(`insert post`, {
+                origin: 'gun',
+                messageId,
+            });
+        } catch (e) {
+            logger.error(`error inserting post`, {
+                error: e.message,
+                stack: e.stack,
+                origin: 'gun',
+                messageId,
+            });
+        }
+    }
+
+    async insertModeration(moderation: Moderation) {
+        const json = await moderation.toJSON();
+        const {
+            type,
+            subtype,
+            createdAt,
+            payload,
+            messageId,
+        } = json;
+        const [creator, hash] = messageId.split('/');
+
+        const moderationDB = await this.call('db', 'getModerations');
+        const postDB = await this.call('db', 'getPosts');
+        const metaDB = await this.call('db', 'getMeta');
+
+        if (json.hash !== hash) {
+            return;
+        }
+
+        const result = await moderationDB.findOne(hash);
+        const post = await postDB.findOne(payload.reference);
+
+        if (result) {
+            logger.debug('moderation already exist', {
+                origin: 'gun',
+                messageId,
+            });
+            return;
+        }
+
+        try {
+            await moderationDB.createModeration({
+                hash: hash,
+                type: type,
+                subtype: subtype,
+                creator: creator,
+                createdAt: createdAt,
+                reference: payload.reference,
+            });
+
+            if (payload.reference) {
+                await metaDB.addLike(payload.reference.split('/')[1]);
+            }
+
+            logger.info(`insert moderation`, {
+                origin: 'gun',
+                messageId,
+            });
+        } catch (e) {
+            logger.error(`error inserting moderation`, {
+                error: e.message,
+                stack: e.stack,
+                parent: e.parent,
+                origin: 'gun',
+                messageId,
+            });
+        }
     }
 
     async start() {
@@ -130,9 +224,9 @@ export default class GunService extends GenericService {
                 const [raw, key, name, messageId] = soul.split('/');
                 const pubKey = raw.slice(1);
 
-                if (key && key !== 'message') {
-                    throw new Error(`invalid data key ${key}`);
-                }
+                // if (key && key !== 'message') {
+                //     throw new Error(`invalid data key ${key}`);
+                // }
 
                 const recordDB = await ctx.call('db', 'getRecords');
                 const userDB = await ctx.call('db', 'getUsers');
@@ -163,6 +257,7 @@ export default class GunService extends GenericService {
             } catch (e) {
                 logger.error('error processing PUT', {
                     error: e.message,
+                    parent: e.parent,
                     stack: e.stack,
                     origin: 'gun',
                 });

@@ -1,5 +1,7 @@
-import {BIGINT, ModelCtor, Sequelize, STRING} from "sequelize";
+import {BIGINT, ModelCtor, ModelStatic, Sequelize, STRING, WhereOptions} from "sequelize";
 import {MessageType, PostJSON, PostMessageSubType} from "../util/message";
+import {Mutex} from "async-mutex";
+const mutex = new Mutex();
 
 type PostModel = {
     hash: string;
@@ -57,7 +59,6 @@ const posts = (sequelize: Sequelize, meta: ModelCtor<any>, moderations: ModelCto
     }, {
         indexes: [
             { fields: ['creator'] },
-            { fields: ['type'] },
             { fields: ['subtype'] },
             { fields: ['topic'] },
             { fields: ['reference'] },
@@ -102,11 +103,20 @@ const posts = (sequelize: Sequelize, meta: ModelCtor<any>, moderations: ModelCto
         };
     }
 
-    const findAllPosts = async (offset = 0, limit = 20, order: 'DESC' | 'ASC' = 'DESC'): Promise<PostJSON[]> => {
+    const findAllPosts = async (
+        creator?: string,
+        offset = 0,
+        limit = 20,
+        order: 'DESC' | 'ASC' = 'DESC',
+    ): Promise<PostJSON[]> => {
+        const where: WhereOptions<PostModel> = {
+            subtype: [PostMessageSubType.Default, PostMessageSubType.Repost],
+        };
+
+        if (creator) where.creator = creator;
+
         let result = await model.findAll({
-            where: {
-                subtype: [PostMessageSubType.Default, PostMessageSubType.Repost],
-            },
+            where: where,
             offset,
             limit,
             order: [['createdAt', order]],
@@ -186,7 +196,48 @@ const posts = (sequelize: Sequelize, meta: ModelCtor<any>, moderations: ModelCto
     }
 
     const createPost = async (record: PostModel) => {
-        return model.create(record);
+        return mutex.runExclusive(async () => {
+            const result = await model.findOne({
+                where: {
+                    hash: record.hash,
+                }
+            });
+
+            if (result) {
+                const json = await result.toJSON() as PostModel;
+                if (json.createdAt < 0) {
+                    return result.update(record);
+                }
+            }
+
+            return model.create(record);
+        });
+    }
+
+    const ensurePost = async (hash: string) => {
+        return mutex.runExclusive(async () => {
+            const result = await model.findOne({
+                where: {
+                    hash: hash,
+                }
+            });
+
+            if (!result) {
+                const emptyModel: PostModel = {
+                    hash: hash,
+                    type: MessageType.Post,
+                    subtype: PostMessageSubType.Default,
+                    creator: '',
+                    createdAt: -1,
+                    topic: '',
+                    title: '',
+                    content: '',
+                    reference: '',
+                    attachment: '',
+                }
+                return model.create(emptyModel);
+            }
+        });
     }
 
     return {
@@ -195,6 +246,7 @@ const posts = (sequelize: Sequelize, meta: ModelCtor<any>, moderations: ModelCto
         findAllPosts,
         findAllReplies,
         createPost,
+        ensurePost,
     };
 }
 

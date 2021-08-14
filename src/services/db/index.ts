@@ -8,6 +8,7 @@ import records from "../../models/records";
 import posts from "../../models/posts";
 import meta from "../../models/meta";
 import moderations from "../../models/moderations";
+import profiles from "../../models/profiles";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
@@ -15,6 +16,7 @@ export default class DBService extends GenericService {
     users?: ReturnType<typeof users>;
     records?: ReturnType<typeof records>;
     posts?: ReturnType<typeof posts>;
+    profiles?: ReturnType<typeof profiles>;
     moderations?: ReturnType<typeof moderations>;
     meta?: ReturnType<typeof meta>;
 
@@ -25,6 +27,7 @@ export default class DBService extends GenericService {
             this.sequelize = new Sequelize({
                 dialect: 'sqlite',
                 storage: config.dbStorage,
+                logging: false,
             });
         } else {
             this.sequelize = new Sequelize(
@@ -35,6 +38,7 @@ export default class DBService extends GenericService {
                     host: config.dbHost,
                     port: Number(config.dbPort),
                     dialect: config.dbDialect as Dialect,
+                    logging: false,
                 },
             );
         }
@@ -68,6 +72,14 @@ export default class DBService extends GenericService {
         return this.moderations;
     }
 
+    async getProfiles(): Promise<ReturnType<typeof profiles>> {
+        if (!this.profiles) {
+            return Promise.reject(new Error('profiles is not initialized'));
+        }
+
+        return this.profiles;
+    }
+
     async getMeta(): Promise<ReturnType<typeof meta>> {
         if (!this.meta) {
             return Promise.reject(new Error('meta is not initialized'));
@@ -94,6 +106,7 @@ export default class DBService extends GenericService {
             this.meta?.model,
             this.moderations?.model,
         );
+        this.profiles = await profiles(this.sequelize);
 
         // this.meta?.model.belongsTo(this.posts?.model, {
         //     foreignKey: 'hash',
@@ -119,6 +132,7 @@ export default class DBService extends GenericService {
         await this.records?.model.sync({ force: true });
         await this.meta?.model.sync({ force: true });
         await this.moderations?.model.sync({ force: true });
+        await this.profiles?.model.sync({ force: true });
         await this.posts?.model.sync({ force: true });
 
         const appData = await this.app?.read();

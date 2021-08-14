@@ -38,7 +38,6 @@ const moderations = (sequelize: Sequelize) => {
     }, {
         indexes: [
             { fields: ['creator'] },
-            { fields: ['type'] },
             { fields: ['subtype'] },
             { fields: ['reference'] },
             { fields: ['hash'], unique: true }

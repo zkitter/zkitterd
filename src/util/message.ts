@@ -3,6 +3,7 @@ import crypto from "crypto";
 export enum MessageType {
     Post = 'POST',
     Moderation = 'MODERATION',
+    Profile = 'PROFILE',
     Connection = 'CONNECTION',
     File = 'FILE',
 }
@@ -282,9 +283,123 @@ enum ConnectionMessageSubType {
     Block = 'BLOCK',
 }
 
-enum ProfileMessageSubType {
+export enum ProfileMessageSubType {
     Default = '',
+    Name = 'NAME',
+    Bio = 'BIO',
+    ProfileImage = 'PROFILE_IMAGE',
+    CoverImage = 'COVER_IMAGE',
+    Website = 'WEBSITE',
     Custom = 'CUSTOM',
+}
+
+export type ProfileMessagePayload = {
+    key: string;
+    value: string;
+};
+
+export type ProfileJSON = {
+    type: MessageType;
+    messageId: string;
+    hash: string;
+    createdAt: number;
+    subtype: ProfileMessageSubType;
+    payload: ProfileMessagePayload;
+};
+
+export type ProfileMessageOption = {
+    subtype: ProfileMessageSubType;
+    payload: {
+        key?: string;
+        value?: string;
+    };
+} & MessageOption;
+
+export class Profile extends Message {
+    subtype: ProfileMessageSubType;
+
+    payload: ProfileMessagePayload;
+
+    static fromHex(hex: string): Profile {
+        let d = hex;
+
+        const [type] = decodeString(d, 2, cb);
+        const [subtype] = decodeString(d, 2, cb);
+        const [creator] = decodeString(d, 3, cb);
+        const [createdAt] = decodeNumber(d, 12, cb);
+        const [key] = decodeString(d, 3, cb);
+        const [value] = decodeString(d, 3, cb);
+
+        return new Profile({
+            type: type as MessageType.Profile,
+            subtype: subtype as ProfileMessageSubType,
+            creator,
+            createdAt: new Date(createdAt),
+            payload: {
+                key,
+                value,
+            }
+        });
+
+        function cb(n: number) {
+            d = d.slice(n);
+        }
+    }
+
+    static getSubtype(subtype: string): ProfileMessageSubType {
+        switch (subtype) {
+            case 'NAME':
+                return ProfileMessageSubType.Name;
+            case 'PROFILE_IMAGE':
+                return ProfileMessageSubType.ProfileImage;
+            case 'COVER_IMAGE':
+                return ProfileMessageSubType.CoverImage;
+            case 'BIO':
+                return ProfileMessageSubType.Bio;
+            case 'WEBSITE':
+                return ProfileMessageSubType.Website;
+            case 'CUSTOM':
+                return ProfileMessageSubType.Custom;
+            default:
+                return ProfileMessageSubType.Default;
+        }
+    }
+
+    constructor(opt: ProfileMessageOption) {
+        super(opt);
+        this.type = MessageType.Profile;
+        this.subtype = Profile.getSubtype(opt.subtype);
+        this.payload = {
+            key: opt.payload.key || '',
+            value: opt.payload.value || '',
+        };
+    }
+
+    hash(): string {
+        return crypto.createHash('sha256').update(this.toHex()).digest('hex');
+    }
+
+    toJSON(): ProfileJSON {
+        const hash = this.hash();
+        return {
+            messageId: `${this.creator}/${hash}`,
+            hash: hash,
+            type: this.type,
+            subtype: this.subtype,
+            createdAt: this.createdAt.getTime(),
+            payload: this.payload,
+        };
+    }
+
+    toHex(): string {
+        const type = encodeString(this.type, 2);
+        const subtype = encodeString(this.subtype, 2);
+        const creator = encodeString(this.creator, 3);
+        const createdAt = encodeNumber(this.createdAt.getTime(), 12);
+        const key = encodeString(this.payload.key, 3);
+        const value = encodeString(this.payload.value, 3);
+        return type + subtype + creator + createdAt + key + value;
+    }
 }
 
 enum FileMessageSubType {

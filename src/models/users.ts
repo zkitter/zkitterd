@@ -1,8 +1,9 @@
-import {Sequelize, STRING} from "sequelize";
+import {BIGINT, Sequelize, STRING} from "sequelize";
 
 type UserModel = {
     name: string;
     pubkey: string;
+    joined: number;
 };
 
 const users = (sequelize: Sequelize) => {
@@ -22,6 +23,9 @@ const users = (sequelize: Sequelize) => {
             validate: {
                 notEmpty: true,
             },
+        },
+        joined: {
+            type: BIGINT,
         },
     }, {
         indexes: [

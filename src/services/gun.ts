@@ -4,7 +4,7 @@ import {IGunChainReference} from "gun/types/chain";
 import express from "express";
 import config from "../util/config";
 import logger from "../util/logger";
-import {Message, MessageType, Moderation, Post, PostMessageSubType} from "../util/message";
+import {Message, MessageType, Moderation, Post, PostMessageSubType, Profile} from "../util/message";
 
 const Graph = require("gun/src/graph");
 const State = require("gun/src/state");
@@ -68,6 +68,19 @@ export default class GunService extends GenericService {
                         });
                         await this.insertModeration(moderation);
                         return;
+                    case MessageType.Profile:
+                        const profile = new Profile({
+                            type: type,
+                            subtype: Profile.getSubtype(data.subtype),
+                            creator: creator,
+                            createdAt: new Date(data.createdAt),
+                            payload: {
+                                key: payload.key,
+                                value: payload.value,
+                            },
+                        });
+                        await this.insertProfile(profile);
+                        return;
                 }
             });
     }
@@ -115,6 +128,7 @@ export default class GunService extends GenericService {
             });
 
             if (payload.reference) {
+                await postDB.ensurePost(payload.reference.split('/')[1]);
                 if (subtype === PostMessageSubType.Reply) {
                     await metaDB.addReply(payload.reference.split('/')[1]);
                 }
@@ -132,6 +146,7 @@ export default class GunService extends GenericService {
             logger.error(`error inserting post`, {
                 error: e.message,
                 stack: e.stack,
+                parent: e.parent,
                 origin: 'gun',
                 messageId,
             });
@@ -158,7 +173,6 @@ export default class GunService extends GenericService {
         }
 
         const result = await moderationDB.findOne(hash);
-        const post = await postDB.findOne(payload.reference);
 
         if (result) {
             logger.debug('moderation already exist', {
@@ -169,6 +183,9 @@ export default class GunService extends GenericService {
         }
 
         try {
+            const referenceHash = payload.reference.split('/')[1];
+            await postDB.ensurePost(referenceHash);
+
             await moderationDB.createModeration({
                 hash: hash,
                 type: type,
@@ -179,7 +196,7 @@ export default class GunService extends GenericService {
             });
 
             if (payload.reference) {
-                await metaDB.addLike(payload.reference.split('/')[1]);
+                await metaDB.addLike(referenceHash);
             }
 
             logger.info(`insert moderation`, {
@@ -188,6 +205,59 @@ export default class GunService extends GenericService {
             });
         } catch (e) {
             logger.error(`error inserting moderation`, {
+                error: e.message,
+                stack: e.stack,
+                parent: e.parent,
+                origin: 'gun',
+                messageId,
+            });
+        }
+    }
+
+    async insertProfile(profile: Profile) {
+        const json = await profile.toJSON();
+        const {
+            type,
+            subtype,
+            createdAt,
+            payload,
+            messageId,
+        } = json;
+        const [creator, hash] = messageId.split('/');
+
+        const profileDB = await this.call('db', 'getProfiles');
+
+        if (json.hash !== hash) {
+            return;
+        }
+
+        const result = await profileDB.findOne(hash);
+
+        if (result) {
+            logger.debug('profile already exist', {
+                origin: 'gun',
+                messageId,
+            });
+            return;
+        }
+
+        try {
+            await profileDB.createProfile({
+                hash: hash,
+                type: type,
+                subtype: subtype,
+                creator: creator,
+                createdAt: createdAt,
+                key: payload.key,
+                value: payload.value,
+            });
+
+            logger.info(`insert profile`, {
+                origin: 'gun',
+                messageId,
+            });
+        } catch (e) {
+            logger.error(`error inserting profile`, {
                 error: e.message,
                 stack: e.stack,
                 parent: e.parent,
@@ -319,4 +389,5 @@ export default class GunService extends GenericService {
 
         logger.info(`gun server listening at ${config.gunPort}...`);
     }
+
 }

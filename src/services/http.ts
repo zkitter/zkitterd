@@ -87,8 +87,9 @@ export default class HttpService extends GenericService {
         this.app.get('/v1/posts', this.wrapHandler(async (req, res) => {
             const limit = req.query.limit && Number(req.query.limit);
             const offset = req.query.offset && Number(req.query.offset);
+            const creator = req.query.creator && Number(req.query.creator);
             const postDB = await this.call('db', 'getPosts');
-            const posts = await postDB.findAllPosts(offset, limit);
+            const posts = await postDB.findAllPosts(creator, offset, limit);
             res.send(makeResponse(posts));
         }));
     }

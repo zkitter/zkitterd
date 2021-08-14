@@ -1,5 +1,5 @@
 import {BIGINT, Sequelize, STRING} from "sequelize";
-import {Message, MessageType, PostJSON, PostMessageSubType} from "../util/message";
+import {Mutex} from "async-mutex";
 
 type MetaModel = {
     hash: string;
@@ -7,6 +7,8 @@ type MetaModel = {
     likeCount: number;
     repostCount: number;
 };
+
+const mutex = new Mutex();
 
 const meta = (sequelize: Sequelize) => {
     const model = sequelize.define('meta', {
@@ -45,65 +47,79 @@ const meta = (sequelize: Sequelize) => {
     }
 
     const addLike = async (hash: string) => {
-        const result = await model.findOne({
-            where: { hash },
-        });
-
-        if (result) {
-            const data = result.toJSON() as MetaModel;
-            return result.update({
-                ...data,
-                likeCount: data.likeCount + 1,
+        return mutex.runExclusive(async () => {
+            const result = await model.findOne({
+                where: { hash },
             });
-        }
 
-        return model.create({
-            hash,
-            likeCount: 1,
-            replyCount: 0,
-            repostCount: 0,
+            if (result) {
+                const data = result.toJSON() as MetaModel;
+                return result.update({
+                    ...data,
+                    likeCount: data.likeCount + 1,
+                });
+            }
+
+            const res = await model.create({
+                hash,
+                likeCount: 1,
+                replyCount: 0,
+                repostCount: 0,
+            });
+
+            return res;
         });
     }
 
     const addReply = async (hash: string) => {
-        const result = await model.findOne({
-            where: { hash },
-        });
+        return mutex.runExclusive(async () => {
 
-        if (result) {
-            const data = result.toJSON() as MetaModel;
-            return result.update({
-                ...data,
-                replyCount: data.replyCount + 1,
+            const result = await model.findOne({
+                where: { hash },
             });
-        }
 
-        return model.create({
-            hash,
-            likeCount: 0,
-            replyCount: 1,
-            repostCount: 0,
+            if (result) {
+                const data = result.toJSON() as MetaModel;
+                return result.update({
+                    ...data,
+                    replyCount: data.replyCount + 1,
+                });
+            }
+
+            const res = await model.create({
+                hash,
+                likeCount: 0,
+                replyCount: 1,
+                repostCount: 0,
+            });
+
+            return res;
         });
     }
 
     const addRepost = async (hash: string) => {
-        const result = await model.findOne({
-            where: { hash },
-        });
+        return mutex.runExclusive(async () => {
 
-        if (result) {
-            const data = result.toJSON() as MetaModel;
-            return result.update({
-                ...data,
-                repostCount: data.repostCount + 1,
+            const result = await model.findOne({
+                where: { hash },
             });
-        }
 
-        return model.create({
-            hash,
-            likeCount: 0,
-            replyCount: 0,
-            repostCount: 1,
+            if (result) {
+                const data = result.toJSON() as MetaModel;
+                return result.update({
+                    ...data,
+                    repostCount: data.repostCount + 1,
+                });
+            }
+
+            const res = await model.create({
+                hash,
+                likeCount: 0,
+                replyCount: 0,
+                repostCount: 1,
+            });
+
+            return res;
         });
     }
 

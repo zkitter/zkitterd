@@ -27,6 +27,8 @@ export class Message {
                 return MessageType.Connection;
             case 'FILE':
                 return MessageType.File;
+            case 'PROFILE':
+                return MessageType.Profile;
             case 'MODERATION':
                 return MessageType.Moderation;
             default:

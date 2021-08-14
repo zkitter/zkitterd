@@ -71,8 +71,25 @@ export default class HttpService extends GenericService {
         this.app.get('/v1/users/:name', this.wrapHandler(async (req, res) => {
             const name = req.params.name;
             const usersDB = await this.call('db', 'getUsers');
+            const profilesDB = await this.call('db', 'getProfiles');
             const user = await usersDB.findOneByName(name);
-            res.send(makeResponse(user));
+            const profile = await profilesDB.findProfile(name);
+
+            console.log(profile)
+            res.send(makeResponse({
+                ens: name,
+                name: profile.name || name,
+                pubkey: user.pubkey,
+                bio: profile.bio,
+                profileImage: profile.profileImage,
+                coverImage: profile.coverImage,
+                website: profile.website,
+                joinedAt: user.joined,
+                meta: {
+                    followerCount: 0,
+                    followingCount: 0,
+                },
+            }));
         }));
 
         this.app.get('/v1/replies', this.wrapHandler(async (req, res) => {

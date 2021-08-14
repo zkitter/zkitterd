@@ -59,9 +59,10 @@ const profiles = (sequelize: Sequelize) => {
     const findProfileMessage = async (name: string, subtype: ProfileMessageSubType): Promise<ProfileModel|null> => {
         let result: any = await model.findOne({
             where: {
-                name,
+                creator: name,
                 subtype,
             },
+            order: [['createdAt', 'DESC']],
         });
 
         if (!result) return null;
@@ -86,19 +87,30 @@ const profiles = (sequelize: Sequelize) => {
     }
 
     const findProfile = async (username: string): Promise<UserProfile|null> => {
-        const name = await findProfileMessage(username, ProfileMessageSubType.Name);
-        const bio = await findProfileMessage(username, ProfileMessageSubType.Bio);
-        const website = await findProfileMessage(username, ProfileMessageSubType.Website);
-        const coverImage = await findProfileMessage(username, ProfileMessageSubType.CoverImage);
-        const profileImage = await findProfileMessage(username, ProfileMessageSubType.ProfileImage);
+        let name, bio, website, coverImage, profileImage;
+        try {
+            name = await findProfileMessage(username, ProfileMessageSubType.Name);
+            bio = await findProfileMessage(username, ProfileMessageSubType.Bio);
+            website = await findProfileMessage(username, ProfileMessageSubType.Website);
+            coverImage = await findProfileMessage(username, ProfileMessageSubType.CoverImage);
+            profileImage = await findProfileMessage(username, ProfileMessageSubType.ProfileImage);
 
-        return {
-            name: name?.value || '',
-            bio: bio?.value || '',
-            website: website?.value || '',
-            coverImage: coverImage?.value || '',
-            profileImage: profileImage?.value || '',
-        };
+            return {
+                name: name?.value || '',
+                bio: bio?.value || '',
+                website: website?.value || '',
+                coverImage: coverImage?.value || '',
+                profileImage: profileImage?.value || '',
+            };
+        } catch (e) {
+            return {
+                name: name?.value || '',
+                bio: bio?.value || '',
+                website: website?.value || '',
+                coverImage: coverImage?.value || '',
+                profileImage: profileImage?.value || '',
+            };
+        }
     }
 
     const createProfile = async (record: ProfileModel) => {

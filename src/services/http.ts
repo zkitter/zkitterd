@@ -34,6 +34,7 @@ function makeResponse(payload: any, error?: boolean) {
 
 const tree = setupTree(20);
 const leaves: string[] = [];
+const rootHistory: {[key: string]: boolean} = {};
 
 export default class HttpService extends GenericService {
     app: Express;
@@ -92,7 +93,6 @@ export default class HttpService extends GenericService {
             const user = await usersDB.findOneByName(name);
             const profile = await profilesDB.findProfile(name);
 
-            console.log(profile)
             res.send(makeResponse({
                 ens: name,
                 name: profile.name || name,
@@ -129,12 +129,11 @@ export default class HttpService extends GenericService {
 
         this.app.post('/dev/semaphore/post', jsonParser, this.wrapHandler(async (req, res) => {
             const json = req.body.post;
-            const [creator, hash] = json.messageId.split('/');
             const proof = req.body.proof;
             const publicSignals = req.body.publicSignals;
             const parsedProof = unstringifyBigInts(JSON.parse(proof));
             const parsedPublicSignals = unstringifyBigInts(
-                JSON.parse(req.body.publicSignals)
+                JSON.parse(publicSignals)
             );
             const [
                 root,
@@ -144,37 +143,57 @@ export default class HttpService extends GenericService {
             ] = parsedPublicSignals as any;
             const post = new Post({
                 ...json,
-                creator: creator,
+                createdAt: new Date(json.createdAt),
             });
+            const hash = post.hash();
             const verifyingKey = unstringifyBigInts(verificationKey)
             const isProofValid = verifyProof(verifyingKey as any, parsedProof as any, parsedPublicSignals as any);
-            const expectedExternalNullifier = genExternalNullifier(hash);
             const expectedSignalHash = await genSignalHash(Buffer.from(hash, 'hex'));
             const isExternalNullifierValid = snarkjs.bigInt(genExternalNullifier(hash)) === externalNullifier;
             const isSignalHashValid = expectedSignalHash === signalHash;
-            console.log(root, leaves, nullifierHash, {
-                hash,
-                signalHash,
-                expectedSignalHash,
-                expectedExternalNullifier,
-                externalNullifier,
+            // @ts-ignore
+            const isInRootHistory = rootHistory[stringifyBigInts(root)];
+            console.log({
                 isProofValid,
                 isExternalNullifierValid,
                 isSignalHashValid,
+                isInRootHistory,
             })
-            res.send();
+
+            if (!isProofValid || !isExternalNullifierValid || !isSignalHashValid || !isInRootHistory) {
+                res.status(403).send(makeResponse('invalid semaphore proof', true));
+                return;
+            }
+
+            const postDB = await this.call('db', 'getPosts');
+            await postDB.createPost({
+                hash: hash,
+                type: json.type,
+                subtype: json.subtype,
+                creator: '',
+                createdAt: json.createdAt,
+                topic: json.payload.topic,
+                title: json.payload.title,
+                content: json.payload.content,
+                reference: json.payload.reference,
+                attachment: json.payload.attachment,
+            });
+            res.send(makeResponse('ok'));
         }));
 
         this.app.post('/dev/semaphore', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.body.identityCommitment;
             const index = leaves.indexOf(identityCommitment);
+            let path = null;
 
             if (index < 0) {
-                tree.update(leaves.length, identityCommitment);
+                await tree.update(leaves.length, identityCommitment);
+                path = await tree.path(leaves.length);
                 leaves.push(identityCommitment);
+                rootHistory[path.root] = true;
             }
 
-            res.send(index);
+            res.send(path);
         }));
 
         this.app.get('/dev/semaphore/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {

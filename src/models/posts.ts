@@ -135,7 +135,7 @@ const posts = (sequelize: Sequelize, meta: ModelCtor<any>, moderations: ModelCto
             return {
                 type: json.type as MessageType,
                 subtype: json.subtype as PostMessageSubType,
-                messageId: `${json.creator}/${json.hash}`,
+                messageId: json.creator ? `${json.creator}/${json.hash}` : json.hash,
                 hash: json.hash,
                 createdAt: json.createdAt,
                 payload: {
@@ -176,7 +176,7 @@ const posts = (sequelize: Sequelize, meta: ModelCtor<any>, moderations: ModelCto
             return {
                 type: json.type as MessageType,
                 subtype: json.subtype as PostMessageSubType,
-                messageId: `${json.creator}/${json.hash}`,
+                messageId: json.creator ? `${json.creator}/${json.hash}` : json.hash,
                 hash: json.hash,
                 createdAt: json.createdAt,
                 payload: {

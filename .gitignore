@@ -6,3 +6,6 @@ config.json
 *.log
 gun_data
 .DS_Store
+proving_key.bin
+circuit.json
+verification_key.json

@@ -5,6 +5,18 @@ import cors, {CorsOptions} from "cors";
 import http from 'http';
 import config from "../util/config";
 import logger from "../util/logger";
+import {
+    setupTree,
+    genExternalNullifier,
+    genSignalHash,
+    stringifyBigInts,
+    unstringifyBigInts,
+    verifyProof
+} from "libsemaphore";
+const snarkjs = require('snarkjs');
+import path from "path";
+import verificationKey from "../../static/verification_key.json";
+import {Post} from "../util/message";
 const jsonParser = bodyParser.json();
 
 const corsOptions: CorsOptions = {
@@ -20,6 +32,9 @@ function makeResponse(payload: any, error?: boolean) {
     };
 }
 
+const tree = setupTree(20);
+const leaves: string[] = [];
+
 export default class HttpService extends GenericService {
     app: Express;
 
@@ -27,6 +42,8 @@ export default class HttpService extends GenericService {
         super();
         this.app = express();
         this.app.use(cors(corsOptions));
+        this.app.use('/dev/circuit', express.static(path.join(process.cwd(), 'static', 'circuit.json')));
+        this.app.use('/dev/provingKey', express.static(path.join(process.cwd(), 'static', 'proving_key.bin')));
         this.addRoutes();
     }
 
@@ -108,6 +125,68 @@ export default class HttpService extends GenericService {
             const postDB = await this.call('db', 'getPosts');
             const posts = await postDB.findAllPosts(creator, offset, limit);
             res.send(makeResponse(posts));
+        }));
+
+        this.app.post('/dev/semaphore/post', jsonParser, this.wrapHandler(async (req, res) => {
+            const json = req.body.post;
+            const [creator, hash] = json.messageId.split('/');
+            const proof = req.body.proof;
+            const publicSignals = req.body.publicSignals;
+            const parsedProof = unstringifyBigInts(JSON.parse(proof));
+            const parsedPublicSignals = unstringifyBigInts(
+                JSON.parse(req.body.publicSignals)
+            );
+            const [
+                root,
+                nullifierHash,
+                signalHash,
+                externalNullifier
+            ] = parsedPublicSignals as any;
+            const post = new Post({
+                ...json,
+                creator: creator,
+            });
+            const verifyingKey = unstringifyBigInts(verificationKey)
+            const isProofValid = verifyProof(verifyingKey as any, parsedProof as any, parsedPublicSignals as any);
+            const expectedExternalNullifier = genExternalNullifier(hash);
+            const expectedSignalHash = await genSignalHash(Buffer.from(hash, 'hex'));
+            const isExternalNullifierValid = snarkjs.bigInt(genExternalNullifier(hash)) === externalNullifier;
+            const isSignalHashValid = expectedSignalHash === signalHash;
+            console.log(root, leaves, nullifierHash, {
+                hash,
+                signalHash,
+                expectedSignalHash,
+                expectedExternalNullifier,
+                externalNullifier,
+                isProofValid,
+                isExternalNullifierValid,
+                isSignalHashValid,
+            })
+            res.send();
+        }));
+
+        this.app.post('/dev/semaphore', jsonParser, this.wrapHandler(async (req, res) => {
+            const identityCommitment = req.body.identityCommitment;
+            const index = leaves.indexOf(identityCommitment);
+
+            if (index < 0) {
+                tree.update(leaves.length, identityCommitment);
+                leaves.push(identityCommitment);
+            }
+
+            res.send(index);
+        }));
+
+        this.app.get('/dev/semaphore/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
+            const identityCommitment = req.params.identityCommitment;
+            const index = leaves.indexOf(identityCommitment);
+            let path = null;
+
+            if (index > -1) {
+                path = await tree.path(index);
+            }
+
+            res.send(makeResponse(path));
         }));
     }
 

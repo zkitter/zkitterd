@@ -4,7 +4,16 @@ import {IGunChainReference} from "gun/types/chain";
 import express from "express";
 import config from "../util/config";
 import logger from "../util/logger";
-import {Message, MessageType, Moderation, Post, PostMessageSubType, Profile} from "../util/message";
+import {
+    Connection,
+    ConnectionMessageSubType,
+    Message,
+    MessageType,
+    Moderation,
+    Post,
+    PostMessageSubType,
+    Profile
+} from "../util/message";
 
 const Graph = require("gun/src/graph");
 const State = require("gun/src/state");
@@ -68,6 +77,18 @@ export default class GunService extends GenericService {
                         });
                         await this.insertModeration(moderation);
                         return;
+                    case MessageType.Connection:
+                        const connection = new Connection({
+                            type: type,
+                            subtype: Connection.getSubtype(data.subtype),
+                            creator: creator,
+                            createdAt: new Date(data.createdAt),
+                            payload: {
+                                name: payload.name,
+                            },
+                        });
+                        await this.insertConnection(connection);
+                        return;
                     case MessageType.Profile:
                         const profile = new Profile({
                             type: type,
@@ -115,6 +136,7 @@ export default class GunService extends GenericService {
 
         try {
             await postDB.createPost({
+                messageId: messageId,
                 hash: hash,
                 type: type,
                 subtype: subtype,
@@ -128,13 +150,14 @@ export default class GunService extends GenericService {
             });
 
             if (payload.reference) {
-                await postDB.ensurePost(payload.reference.split('/')[1]);
+                await postDB.ensurePost(payload.reference);
+
                 if (subtype === PostMessageSubType.Reply) {
-                    await metaDB.addReply(payload.reference.split('/')[1]);
+                    await metaDB.addReply(payload.reference);
                 }
 
                 if (subtype === PostMessageSubType.Repost) {
-                    await metaDB.addRepost(payload.reference.split('/')[1]);
+                    await metaDB.addRepost(payload.reference);
                 }
             }
 
@@ -183,20 +206,22 @@ export default class GunService extends GenericService {
         }
 
         try {
-            const referenceHash = payload.reference.split('/')[1];
-            await postDB.ensurePost(referenceHash);
-
+            const [refName, refHash] = payload.reference.split('/');
+            await postDB.ensurePost(payload.reference);
             await moderationDB.createModeration({
+                messageId,
                 hash: hash,
                 type: type,
                 subtype: subtype,
                 creator: creator,
                 createdAt: createdAt,
                 reference: payload.reference,
+                referenceCreator: refHash ? refName : '',
+                referenceHash: refHash || refName,
             });
 
             if (payload.reference) {
-                await metaDB.addLike(referenceHash);
+                await metaDB.addLike(payload.reference);
             }
 
             logger.info(`insert moderation`, {
@@ -205,6 +230,70 @@ export default class GunService extends GenericService {
             });
         } catch (e) {
             logger.error(`error inserting moderation`, {
+                error: e.message,
+                stack: e.stack,
+                parent: e.parent,
+                origin: 'gun',
+                messageId,
+            });
+        }
+    }
+
+    async insertConnection(connection: Connection) {
+        const json = await connection.toJSON();
+        const {
+            type,
+            subtype,
+            createdAt,
+            payload,
+            messageId,
+        } = json;
+        const [creator, hash] = messageId.split('/');
+
+        const connDB = await this.call('db', 'getConnections');
+        const userDB = await this.call('db', 'getUsers');
+        const userMetaDB = await this.call('db', 'getUserMeta');
+
+        if (json.hash !== hash) {
+            return;
+        }
+
+        const result = await connDB.findOne(hash);
+
+        if (result) {
+            logger.debug('connection already exist', {
+                origin: 'gun',
+                messageId,
+            });
+            return;
+        }
+
+        try {
+            await userDB.ensureUser(payload.name);
+            await connDB.createConnection({
+                messageId,
+                hash: hash,
+                type: type,
+                subtype: subtype,
+                creator: creator,
+                createdAt: createdAt,
+                name: payload.name,
+            });
+
+            if (subtype === ConnectionMessageSubType.Follow) {
+                await userMetaDB.addFollower(payload.name);
+                await userMetaDB.addFollowing(creator);
+            } else if (subtype === ConnectionMessageSubType.Block) {
+                await userMetaDB.addBlocked(payload.name);
+                await userMetaDB.addBlocking(creator);
+            }
+
+            logger.info(`insert connection`, {
+                origin: 'gun',
+                messageId,
+            });
+        } catch (e) {
+            logger.error(`error inserting connection`, {
                 error: e.message,
                 stack: e.stack,
                 parent: e.parent,
@@ -243,6 +332,7 @@ export default class GunService extends GenericService {
 
         try {
             await profileDB.createProfile({
+                messageId,
                 hash: hash,
                 type: type,
                 subtype: subtype,

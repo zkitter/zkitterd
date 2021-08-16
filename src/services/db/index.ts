@@ -9,6 +9,8 @@ import posts from "../../models/posts";
 import meta from "../../models/meta";
 import moderations from "../../models/moderations";
 import profiles from "../../models/profiles";
+import userMeta from "../../models/userMeta";
+import connections from "../../models/connections";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
@@ -18,7 +20,9 @@ export default class DBService extends GenericService {
     posts?: ReturnType<typeof posts>;
     profiles?: ReturnType<typeof profiles>;
     moderations?: ReturnType<typeof moderations>;
+    connections?: ReturnType<typeof connections>;
     meta?: ReturnType<typeof meta>;
+    userMeta?: ReturnType<typeof userMeta>;
 
     constructor() {
         super();
@@ -65,6 +69,13 @@ export default class DBService extends GenericService {
         return this.posts;
     }
 
+    async getConnections(): Promise<ReturnType<typeof connections>> {
+        if (!this.connections) {
+            return Promise.reject(new Error('connections is not initialized'));
+        }
+        return this.connections;
+    }
+
     async getModerations(): Promise<ReturnType<typeof moderations>> {
         if (!this.moderations) {
             return Promise.reject(new Error('moderations is not initialized'));
@@ -88,6 +99,14 @@ export default class DBService extends GenericService {
         return this.meta;
     }
 
+    async getUserMeta(): Promise<ReturnType<typeof userMeta>> {
+        if (!this.userMeta) {
+            return Promise.reject(new Error('userMeta is not initialized'));
+        }
+
+        return this.userMeta;
+    }
+
     async getApp(): Promise<ReturnType<typeof app>> {
         if (!this.app) {
             return Promise.reject(new Error('app is not initialized'));
@@ -97,41 +116,50 @@ export default class DBService extends GenericService {
 
     async start() {
         this.app = await app(this.sequelize);
-        this.users = await users(this.sequelize);
         this.records = await records(this.sequelize);
         this.meta = await meta(this.sequelize);
+        this.userMeta = await userMeta(this.sequelize);
         this.moderations = await moderations(this.sequelize);
+        this.connections = await connections(this.sequelize);
+        this.users = await users(this.sequelize, this.userMeta);
         this.posts = await posts(
             this.sequelize,
-            this.meta?.model,
-            this.moderations?.model,
+            this.meta,
+            this.moderations,
         );
         this.profiles = await profiles(this.sequelize);
 
         // this.meta?.model.belongsTo(this.posts?.model, {
         //     foreignKey: 'hash',
         // });
-        //
+
         // this.moderations?.model.belongsTo(this.posts?.model, {
-        //     foreignKey: 'hash',
-        //     targetKey: 'reference',
+        //     foreignKey: 'reference',
         // });
+
+        this.posts?.model.hasMany(this.moderations?.model, {
+            foreignKey: 'referenceHash',
+            sourceKey: 'hash',
+            as: 'moderations',
+        });
 
         this.posts?.model.hasOne(this.meta?.model, {
             foreignKey: 'hash',
             as: 'meta',
         });
 
-        // this.posts?.model.hasMany(this.moderations?.model, {
-        //     foreignKey: 'hash',
-        //     sourceKey: 'reference',
-        // });
+        this.users?.model.hasOne(this.userMeta?.model, {
+            foreignKey: 'name',
+            as: 'meta',
+        });
 
         await this.app?.model.sync({ force: true });
+        await this.userMeta?.model.sync({ force: true });
         await this.users?.model.sync({ force: true });
         await this.records?.model.sync({ force: true });
         await this.meta?.model.sync({ force: true });
         await this.moderations?.model.sync({ force: true });
+        await this.connections?.model.sync({ force: true });
         await this.profiles?.model.sync({ force: true });
         await this.posts?.model.sync({ force: true });
 

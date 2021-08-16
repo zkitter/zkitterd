@@ -1,20 +1,17 @@
 import {BIGINT, ModelCtor, Sequelize, STRING} from "sequelize";
-import {Message, MessageType, ModerationJSON, PostJSON, PostMessageSubType} from "../util/message";
 
-type ModerationModel = {
+type ConnectionModel = {
     messageId: string;
     hash: string;
     creator: string;
     type: string;
     subtype: string;
     createdAt: number;
-    reference: string;
-    referenceCreator: string;
-    referenceHash: string;
+    name: string;
 };
 
-const moderations = (sequelize: Sequelize) => {
-    const model = sequelize.define('moderations', {
+const connections = (sequelize: Sequelize) => {
+    const model = sequelize.define('connections', {
         messageId: {
             type: STRING,
             allowNull: false,
@@ -39,26 +36,20 @@ const moderations = (sequelize: Sequelize) => {
             type: BIGINT,
             allowNull: false,
         },
-        reference: {
-            type: STRING,
-        },
-        referenceCreator: {
-            type: STRING,
-        },
-        referenceHash: {
+        name: {
             type: STRING,
         },
     }, {
         indexes: [
             { fields: ['creator'] },
             { fields: ['subtype'] },
-            { fields: ['referenceCreator'] },
-            { fields: ['referenceHash'] },
-            { fields: ['hash'], unique: true }
+            { fields: ['name'] },
+            { fields: ['hash'], unique: true },
+            { fields: ['messageId'], unique: true },
         ],
     });
 
-    const findOne = async (hash: string): Promise<ModerationModel|null> => {
+    const findOne = async (hash: string): Promise<ConnectionModel|null> => {
         let result: any = await model.findOne({
             where: {
                 hash,
@@ -67,39 +58,39 @@ const moderations = (sequelize: Sequelize) => {
 
         if (!result) return null;
 
-        const json = result.toJSON() as ModerationModel;
+        const json = result.toJSON() as ConnectionModel;
 
         return json;
     }
 
-    const findAllByReference = async (
-        reference: string,
+    const findAllByTargetName = async (
+        name: string,
         offset = 0,
         limit = 20,
         order: 'DESC' | 'ASC' = 'DESC',
-    ): Promise<ModerationJSON[]> => {
+    ): Promise<ConnectionModel[]> => {
         let result = await model.findAll({
             where: {
-                reference,
+                name,
             },
             offset,
             limit,
             order: [['createdAt', order]],
         });
 
-        return result.map((r: any) => r.toJSON() as ModerationJSON);
+        return result.map((r: any) => r.toJSON() as ConnectionModel);
     }
 
-    const createModeration = async (record: ModerationModel) => {
+    const createConnection = async (record: ConnectionModel) => {
         return model.create(record);
     }
 
     return {
         model,
         findOne,
-        findAllByReference,
-        createModeration,
+        findAllByTargetName,
+        createConnection,
     };
 }
 
-export default moderations;
+export default connections;

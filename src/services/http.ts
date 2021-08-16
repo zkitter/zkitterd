@@ -60,6 +60,7 @@ export default class HttpService extends GenericService {
                     url: req.url,
                 });
             } catch (e) {
+                console.log(e)
                 logger.info('error handling request', {
                     message: e.message,
                     url: req.url,
@@ -96,15 +97,17 @@ export default class HttpService extends GenericService {
             res.send(makeResponse({
                 ens: name,
                 name: profile.name || name,
-                pubkey: user.pubkey,
+                pubkey: user?.pubkey || '',
                 bio: profile.bio,
                 profileImage: profile.profileImage,
                 coverImage: profile.coverImage,
                 website: profile.website,
-                joinedAt: user.joined,
+                joinedAt: user?.joined || 0,
                 meta: {
-                    followerCount: 0,
-                    followingCount: 0,
+                    followerCount: user?.meta?.followerCount || 0,
+                    followingCount: user?.meta?.followingCount || 0,
+                    blockedCount: user?.meta?.blockedCount || 0,
+                    blockingCount: user?.meta?.blockingCount || 0,
                 },
             }));
         }));
@@ -113,18 +116,28 @@ export default class HttpService extends GenericService {
             const limit = req.query.limit && Number(req.query.limit);
             const offset = req.query.offset && Number(req.query.offset);
             const parent = req.query.parent;
+            const context = req.header('x-contextual-name') || undefined;
             const postDB = await this.call('db', 'getPosts');
-            const posts = await postDB.findAllReplies(parent, offset, limit);
+            const posts = await postDB.findAllReplies(parent, context, offset, limit);
             res.send(makeResponse(posts));
         }));
 
         this.app.get('/v1/posts', this.wrapHandler(async (req, res) => {
             const limit = req.query.limit && Number(req.query.limit);
             const offset = req.query.offset && Number(req.query.offset);
-            const creator = req.query.creator && Number(req.query.creator);
+            const creator = req.query.creator;
+            const context = req.header('x-contextual-name') || undefined;
             const postDB = await this.call('db', 'getPosts');
-            const posts = await postDB.findAllPosts(creator, offset, limit);
+            const posts = await postDB.findAllPosts(creator, context, offset, limit);
             res.send(makeResponse(posts));
+        }));
+
+
+        this.app.get('/v1/post/:hash', this.wrapHandler(async (req, res) => {
+            const hash = req.params.hash;
+            const postDB = await this.call('db', 'getPosts');
+            const post = await postDB.findOne(hash);
+            res.send(makeResponse(post));
         }));
 
         this.app.post('/dev/semaphore/post', jsonParser, this.wrapHandler(async (req, res) => {

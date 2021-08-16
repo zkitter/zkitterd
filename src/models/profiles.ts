@@ -2,6 +2,7 @@ import {BIGINT, Sequelize, STRING} from "sequelize";
 import {ProfileMessageSubType} from "../util/message";
 
 type ProfileModel = {
+    messageId: string;
     hash: string;
     creator: string;
     type: string;
@@ -21,6 +22,10 @@ export type UserProfile = {
 
 const profiles = (sequelize: Sequelize) => {
     const model = sequelize.define('profiles', {
+        messageId: {
+            type: STRING,
+            allowNull: false,
+        },
         hash: {
             type: STRING,
             allowNull: false,

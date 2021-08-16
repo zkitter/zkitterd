@@ -156,7 +156,7 @@ export class Post extends Message {
     toJSON(): PostJSON {
         const hash = this.hash();
         return {
-            messageId: `${this.creator}/${hash}`,
+            messageId: this.creator ? `${this.creator}/${hash}` : hash,
             hash: hash,
             type: this.type,
             subtype: this.subtype,
@@ -280,9 +280,107 @@ export class Moderation extends Message {
     }
 }
 
-enum ConnectionMessageSubType {
+export enum ConnectionMessageSubType {
     Follow = 'FOLLOW',
     Block = 'BLOCK',
+    Default = '',
+}
+
+export type ConnectionMessagePayload = {
+    name: string;
+};
+
+export type ConnectionJSON = {
+    type: MessageType;
+    messageId: string;
+    hash: string;
+    createdAt: number;
+    subtype: ConnectionMessageSubType;
+    payload: ConnectionMessagePayload;
+};
+
+export type ConnectionMessageOption = {
+    subtype: ConnectionMessageSubType;
+    payload: {
+        name: string;
+    };
+} & MessageOption;
+
+export class Connection extends Message {
+    type: MessageType.Connection;
+
+    subtype: ConnectionMessageSubType;
+
+    payload: ConnectionMessagePayload;
+
+    static fromHex(hex: string): Connection {
+        let d = hex;
+
+        const [type] = decodeString(d, 2, cb);
+        const [subtype] = decodeString(d, 2, cb);
+        const [creator] = decodeString(d, 3, cb);
+        const [createdAt] = decodeNumber(d, 12, cb);
+        const [name] = decodeString(d, 3, cb);
+
+        return new Connection({
+            type: type as MessageType.Profile,
+            subtype: subtype as ConnectionMessageSubType,
+            creator,
+            createdAt: new Date(createdAt),
+            payload: {
+                name,
+            }
+        });
+
+        function cb(n: number) {
+            d = d.slice(n);
+        }
+    }
+
+    static getSubtype(subtype: string): ConnectionMessageSubType {
+        switch (subtype) {
+            case 'FOLLOW':
+                return ConnectionMessageSubType.Follow;
+            case 'BLOCK':
+                return ConnectionMessageSubType.Block;
+            default:
+                return ConnectionMessageSubType.Default;
+        }
+    }
+
+    constructor(opt: ConnectionMessageOption) {
+        super(opt);
+        this.type = MessageType.Connection;
+        this.subtype = Connection.getSubtype(opt.subtype);
+        this.payload = {
+            name: opt.payload.name,
+        };
+    }
+
+    hash(): string {
+        return crypto.createHash('sha256').update(this.toHex()).digest('hex');
+    }
+
+    toJSON(): ConnectionJSON {
+        const hash = this.hash();
+        return {
+            messageId: `${this.creator}/${hash}`,
+            hash: hash,
+            type: this.type,
+            subtype: this.subtype,
+            createdAt: this.createdAt.getTime(),
+            payload: this.payload,
+        };
+    }
+
+    toHex(): string {
+        const type = encodeString(this.type, 2);
+        const subtype = encodeString(this.subtype, 2);
+        const creator = encodeString(this.creator, 3);
+        const createdAt = encodeNumber(this.createdAt.getTime(), 12);
+        const name = encodeString(this.payload.name, 3);
+        return type + subtype + creator + createdAt + name;
+    }
 }
 
 export enum ProfileMessageSubType {

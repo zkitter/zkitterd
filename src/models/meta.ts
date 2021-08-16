@@ -2,7 +2,7 @@ import {BIGINT, Sequelize, STRING} from "sequelize";
 import {Mutex} from "async-mutex";
 
 type MetaModel = {
-    hash: string;
+    messageId: string;
     replyCount: number;
     likeCount: number;
     repostCount: number;
@@ -12,7 +12,7 @@ const mutex = new Mutex();
 
 const meta = (sequelize: Sequelize) => {
     const model = sequelize.define('meta', {
-        hash: {
+        messageId: {
             type: STRING,
             allowNull: false,
             primaryKey: true,
@@ -28,7 +28,7 @@ const meta = (sequelize: Sequelize) => {
         },
     }, {
         indexes: [
-            { fields: ['hash'], unique: true }
+            { fields: ['messageId'], unique: true },
         ],
     });
 
@@ -46,10 +46,12 @@ const meta = (sequelize: Sequelize) => {
         };
     }
 
-    const addLike = async (hash: string) => {
+    const addLike = async (messageId: string) => {
         return mutex.runExclusive(async () => {
             const result = await model.findOne({
-                where: { hash },
+                where: {
+                    messageId,
+                },
             });
 
             if (result) {
@@ -61,7 +63,7 @@ const meta = (sequelize: Sequelize) => {
             }
 
             const res = await model.create({
-                hash,
+                messageId,
                 likeCount: 1,
                 replyCount: 0,
                 repostCount: 0,
@@ -71,11 +73,10 @@ const meta = (sequelize: Sequelize) => {
         });
     }
 
-    const addReply = async (hash: string) => {
+    const addReply = async (messageId: string) => {
         return mutex.runExclusive(async () => {
-
             const result = await model.findOne({
-                where: { hash },
+                where: { messageId },
             });
 
             if (result) {
@@ -87,7 +88,7 @@ const meta = (sequelize: Sequelize) => {
             }
 
             const res = await model.create({
-                hash,
+                messageId,
                 likeCount: 0,
                 replyCount: 1,
                 repostCount: 0,
@@ -97,11 +98,12 @@ const meta = (sequelize: Sequelize) => {
         });
     }
 
-    const addRepost = async (hash: string) => {
+    const addRepost = async (messageId: string) => {
         return mutex.runExclusive(async () => {
-
             const result = await model.findOne({
-                where: { hash },
+                where: {
+                    messageId,
+                },
             });
 
             if (result) {
@@ -113,7 +115,7 @@ const meta = (sequelize: Sequelize) => {
             }
 
             const res = await model.create({
-                hash,
+                messageId,
                 likeCount: 0,
                 replyCount: 0,
                 repostCount: 1,

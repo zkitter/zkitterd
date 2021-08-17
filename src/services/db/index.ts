@@ -122,31 +122,8 @@ export default class DBService extends GenericService {
         this.moderations = await moderations(this.sequelize);
         this.connections = await connections(this.sequelize);
         this.users = await users(this.sequelize, this.userMeta);
-        this.posts = await posts(
-            this.sequelize,
-            this.meta,
-            this.moderations,
-        );
+        this.posts = await posts(this.sequelize);
         this.profiles = await profiles(this.sequelize);
-
-        // this.meta?.model.belongsTo(this.posts?.model, {
-        //     foreignKey: 'hash',
-        // });
-
-        // this.moderations?.model.belongsTo(this.posts?.model, {
-        //     foreignKey: 'reference',
-        // });
-
-        this.posts?.model.hasMany(this.moderations?.model, {
-            foreignKey: 'referenceHash',
-            sourceKey: 'hash',
-            as: 'moderations',
-        });
-
-        this.posts?.model.hasOne(this.meta?.model, {
-            foreignKey: 'hash',
-            as: 'meta',
-        });
 
         this.users?.model.hasOne(this.userMeta?.model, {
             foreignKey: 'name',

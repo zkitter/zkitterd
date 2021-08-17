@@ -82,34 +82,18 @@ export default class HttpService extends GenericService {
         this.app.get('/v1/users', this.wrapHandler(async (req, res) => {
             const limit = req.query.limit && Number(req.query.limit);
             const offset = req.query.offset && Number(req.query.offset);
+            const context = req.header('x-contextual-name') || undefined;
             const usersDB = await this.call('db', 'getUsers');
-            const users = await usersDB.readAll(offset, limit);
+            const users = await usersDB.readAll(context, offset, limit);
             res.send(makeResponse(users));
         }));
 
         this.app.get('/v1/users/:name', this.wrapHandler(async (req, res) => {
             const name = req.params.name;
+            const context = req.header('x-contextual-name') || undefined;
             const usersDB = await this.call('db', 'getUsers');
-            const profilesDB = await this.call('db', 'getProfiles');
-            const user = await usersDB.findOneByName(name);
-            const profile = await profilesDB.findProfile(name);
-
-            res.send(makeResponse({
-                ens: name,
-                name: profile.name || name,
-                pubkey: user?.pubkey || '',
-                bio: profile.bio,
-                profileImage: profile.profileImage,
-                coverImage: profile.coverImage,
-                website: profile.website,
-                joinedAt: user?.joined || 0,
-                meta: {
-                    followerCount: user?.meta?.followerCount || 0,
-                    followingCount: user?.meta?.followingCount || 0,
-                    blockedCount: user?.meta?.blockedCount || 0,
-                    blockingCount: user?.meta?.blockingCount || 0,
-                },
-            }));
+            const user = await usersDB.findOneByName(name, context);
+            res.send(makeResponse(user));
         }));
 
         this.app.get('/v1/replies', this.wrapHandler(async (req, res) => {
@@ -132,11 +116,21 @@ export default class HttpService extends GenericService {
             res.send(makeResponse(posts));
         }));
 
+        this.app.get('/v1/homefeed', this.wrapHandler(async (req, res) => {
+            const limit = req.query.limit && Number(req.query.limit);
+            const offset = req.query.offset && Number(req.query.offset);
+            const context = req.header('x-contextual-name') || undefined;
+            const postDB = await this.call('db', 'getPosts');
+            const posts = await postDB.getHomeFeed(context, offset, limit);
+            res.send(makeResponse(posts));
+        }));
+
 
         this.app.get('/v1/post/:hash', this.wrapHandler(async (req, res) => {
             const hash = req.params.hash;
+            const context = req.header('x-contextual-name') || undefined;
             const postDB = await this.call('db', 'getPosts');
-            const post = await postDB.findOne(hash);
+            const post = await postDB.findOne(hash, context);
             res.send(makeResponse(post));
         }));
 
@@ -180,6 +174,7 @@ export default class HttpService extends GenericService {
 
             const postDB = await this.call('db', 'getPosts');
             await postDB.createPost({
+                messageId: hash,
                 hash: hash,
                 type: json.type,
                 subtype: json.subtype,

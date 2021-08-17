@@ -81,7 +81,7 @@ export default class ENSService extends GenericService {
                 await users.updateOrCreateUser({
                     name,
                     pubkey,
-                    joined: Number(block.timestamp) * 1000,
+                    joinedAt: Number(block.timestamp) * 1000,
                 });
 
                 await this.call('gun', 'watch', pubkey);

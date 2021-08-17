@@ -20,11 +20,7 @@ type PostModel = {
     attachment: string;
 };
 
-const posts = (
-    sequelize: Sequelize,
-    meta: ReturnType<typeof metaSeq>,
-    moderations: ReturnType<typeof moderationsSeq>,
-) => {
+const posts = (sequelize: Sequelize) => {
     const model = sequelize.define('posts', {
         hash: {
             type: STRING,
@@ -79,43 +75,28 @@ const posts = (
         ],
     });
 
-    const findOne = async (hash: string): Promise<PostJSON|null> => {
-        let result: any = await model.findOne({
-            where: {
+    const findOne = async (hash: string, context?: string): Promise<PostJSON|null> => {
+        const result = await sequelize.query(`
+            ${selectJoinQuery}
+            WHERE p.hash == :hash AND p.createdAt != -1
+        `, {
+            replacements: {
+                context: context || '',
                 hash,
             },
-            include: {
-                model: meta.model,
-                as: 'meta',
-            },
+            type: QueryTypes.SELECT,
         });
 
-        if (!result) return null;
+        const values: PostJSON[] = [];
 
-        const json = result.toJSON() as PostModel;
+        for (let r of result) {
+            const post = inflateResultToPostJSON(r);
+            if (post.createdAt > 0) {
+                values.push(post);
+            }
+        }
 
-        if (json.createdAt < 0) return null;
-        const m = result.meta && result.meta.toJSON();
-
-        return {
-            type: json.type as MessageType,
-            subtype: json.subtype as PostMessageSubType,
-            messageId: `${json.creator}/${json.hash}`,
-            hash: json.hash,
-            createdAt: json.createdAt,
-            payload: {
-                topic: json.topic,
-                title: json.title,
-                content: json.content,
-                reference: json.reference,
-                attachment: json.attachment,
-            },
-            meta: {
-                replyCount: m?.replyCount || 0,
-                likeCount: m?.likeCount || 0,
-                repostCount: m?.repostCount || 0,
-            },
-        };
+        return values[0];
     }
 
     const findAllPosts = async (
@@ -126,35 +107,8 @@ const posts = (
         order: 'DESC' | 'ASC' = 'DESC',
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
-            SELECT
-                p.hash,
-                p.creator,
-                p.type,
-                p.subtype,
-                p.createdAt,
-                p.topic,
-                p.title,
-                p.content,
-                p.reference,
-                p.attachment,
-                m.messageId as liked,
-                rpm.messageId as rpLiked,
-                rp.messageId as reposted,
-                rprp.messageId as rpReposted,
-                mt.replyCount,
-                mt.repostCount,
-                mt.likeCount,
-                rpmt.replyCount as rpReplyCount,
-                rpmt.repostCount as rpRepostCount,
-                rpmt.likeCount as rpLikeCount
-            FROM posts p
-                LEFT JOIN moderations m ON m.messageId == (SELECT messageId FROM moderations WHERE reference == p.messageId AND creator == :context)
-                LEFT JOIN moderations rpm ON rpm.messageId == (select messageId from moderations where reference == p.reference AND creator == :context AND p.subtype == 'REPOST')
-                LEFT JOIN posts rp ON rp.messageId == (SELECT messageId from posts WHERE p.messageId == reference AND creator == :context AND subtype == 'REPOST')
-                LEFT JOIN posts rprp ON rprp.messageId == (SELECT messageId from posts WHERE reference == p.reference AND creator == :context AND subtype == 'REPOST' AND p.subtype == 'REPOST')
-                LEFT JOIN meta mt ON mt.messageId == p.messageId
-                LEFT JOIN meta rpmt ON p.subtype == 'REPOST' AND rpmt.messageId == p.reference
-            WHERE p.subtype != 'REPLY'${creator ? ' AND p.creator == :creator' : ''}
+            ${selectJoinQuery}
+            WHERE p.subtype != 'REPLY' AND p.createdAt != -1${creator ? ' AND p.creator == :creator' : ''}
             ORDER BY p.createdAt ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -168,39 +122,43 @@ const posts = (
         });
 
         const values: PostJSON[] = [];
+
         for (let r of result) {
-            const json = r as any;
-            const meta = {
-                replyCount: json?.replyCount || 0,
-                likeCount: json?.likeCount || 0,
-                repostCount: json?.repostCount || 0,
-                liked: json?.liked,
-                reposted: json?.reposted,
-            };
+            const post = inflateResultToPostJSON(r);
+            values.push(post);
+        }
 
-            if (json.subtype === PostMessageSubType.Repost) {
-                meta.replyCount = json?.rpReplyCount || 0;
-                meta.likeCount = json?.rpLikeCount || 0;
-                meta.repostCount = json?.rpRepostCount || 0;
-                meta.liked = json?.rpLiked || null;
-                meta.reposted = json?.rpReposted || null;
-            }
+        return values;
+    }
 
-            values.push({
-                type: json.type as MessageType,
-                subtype: json.subtype as PostMessageSubType,
-                messageId: json.creator ? `${json.creator}/${json.hash}` : json.hash,
-                hash: json.hash,
-                createdAt: json.createdAt,
-                payload: {
-                    topic: json.topic,
-                    title: json.title,
-                    content: json.content,
-                    reference: json.reference,
-                    attachment: json.attachment,
-                },
-                meta: meta,
-            });
+    const getHomeFeed = async (
+        context?: string,
+        offset = 0,
+        limit = 20,
+        order: 'DESC' | 'ASC' = 'DESC',
+    ): Promise<PostJSON[]> => {
+        const result = await sequelize.query(`
+            ${selectJoinQuery}
+            WHERE p.subtype != 'REPLY' AND p.createdAt != -1 AND (
+                p.creator IN (SELECT name FROM connections WHERE subtype == 'FOLLOW' AND creator == :context) OR
+                p.creator == :context
+            )
+            ORDER BY p.createdAt ${order}
+            LIMIT :limit OFFSET :offset
+        `, {
+            replacements: {
+                context: context || '',
+                limit,
+                offset,
+            },
+            type: QueryTypes.SELECT,
+        });
+
+        const values: PostJSON[] = [];
+
+        for (let r of result) {
+            const post = inflateResultToPostJSON(r);
+            values.push(post);
         }
 
         return values;
@@ -214,35 +172,8 @@ const posts = (
         order: 'DESC' | 'ASC' = 'ASC',
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
-            SELECT
-                p.hash,
-                p.creator,
-                p.type,
-                p.subtype,
-                p.createdAt,
-                p.topic,
-                p.title,
-                p.content,
-                p.reference,
-                p.attachment,
-                m.messageId as liked,
-                rpm.messageId as rpLiked,
-                rp.messageId as reposted,
-                rprp.messageId as rpReposted,
-                mt.replyCount,
-                mt.repostCount,
-                mt.likeCount,
-                rpmt.replyCount as rpReplyCount,
-                rpmt.repostCount as rpRepostCount,
-                rpmt.likeCount as rpLikeCount
-            FROM posts p
-                LEFT JOIN moderations m ON m.messageId == (SELECT messageId FROM moderations WHERE reference == p.messageId AND creator == :context)
-                LEFT JOIN moderations rpm ON rpm.messageId == (select messageId from moderations where reference == p.reference AND creator == :context AND p.subtype == 'REPOST')
-                LEFT JOIN posts rp ON rp.messageId == (SELECT messageId from posts WHERE p.messageId == reference AND creator == :context AND subtype == 'REPOST')
-                LEFT JOIN posts rprp ON rprp.messageId == (SELECT messageId from posts WHERE reference == p.reference AND creator == :context AND subtype == 'REPOST' AND p.subtype == 'REPOST')
-                LEFT JOIN meta mt ON mt.messageId == p.messageId
-                LEFT JOIN meta rpmt ON p.subtype == 'REPOST' AND rpmt.messageId == p.reference
-            WHERE p.subtype == 'REPLY' AND p.reference == :reference
+            ${selectJoinQuery}
+            WHERE p.subtype == 'REPLY' AND p.createdAt != -1 AND p.reference == :reference
             ORDER BY p.createdAt ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -257,38 +188,8 @@ const posts = (
 
         const values: PostJSON[] = [];
         for (let r of result) {
-            const json = r as any;
-            const meta = {
-                replyCount: json?.replyCount || 0,
-                likeCount: json?.likeCount || 0,
-                repostCount: json?.repostCount || 0,
-                liked: json?.liked,
-                reposted: json?.reposted,
-            };
-
-            if (json.subtype === PostMessageSubType.Repost) {
-                meta.replyCount = json?.rpReplyCount || 0;
-                meta.likeCount = json?.rpLikeCount || 0;
-                meta.repostCount = json?.rpRepostCount || 0;
-                meta.liked = json?.rpLiked || null;
-                meta.reposted = json?.rpReposted || null;
-            }
-
-            values.push({
-                type: json.type as MessageType,
-                subtype: json.subtype as PostMessageSubType,
-                messageId: json.creator ? `${json.creator}/${json.hash}` : json.hash,
-                hash: json.hash,
-                createdAt: json.createdAt,
-                payload: {
-                    topic: json.topic,
-                    title: json.title,
-                    content: json.content,
-                    reference: json.reference,
-                    attachment: json.attachment,
-                },
-                meta: meta,
-            });
+            const post = inflateResultToPostJSON(r);
+            values.push(post);
         }
 
         return values;
@@ -352,9 +253,77 @@ const posts = (
         findOne,
         findAllPosts,
         findAllReplies,
+        getHomeFeed,
         createPost,
         ensurePost,
     };
 }
 
 export default posts;
+
+function inflateResultToPostJSON(r: any): PostJSON {
+    const json = r as any;
+
+    const meta = {
+        replyCount: json?.replyCount || 0,
+        likeCount: json?.likeCount || 0,
+        repostCount: json?.repostCount || 0,
+        liked: json?.liked,
+        reposted: json?.reposted,
+    };
+
+    if (json.subtype === PostMessageSubType.Repost) {
+        meta.replyCount = json?.rpReplyCount || 0;
+        meta.likeCount = json?.rpLikeCount || 0;
+        meta.repostCount = json?.rpRepostCount || 0;
+        meta.liked = json?.rpLiked || null;
+        meta.reposted = json?.rpReposted || null;
+    }
+
+    return {
+        type: json.type as MessageType,
+        subtype: json.subtype as PostMessageSubType,
+        messageId: json.creator ? `${json.creator}/${json.hash}` : json.hash,
+        hash: json.hash,
+        createdAt: json.createdAt,
+        payload: {
+            topic: json.topic,
+            title: json.title,
+            content: json.content,
+            reference: json.reference,
+            attachment: json.attachment,
+        },
+        meta: meta,
+    };
+}
+
+const selectJoinQuery = `
+    SELECT
+        p.hash,
+        p.creator,
+        p.type,
+        p.subtype,
+        p.createdAt,
+        p.topic,
+        p.title,
+        p.content,
+        p.reference,
+        p.attachment,
+        m.messageId as liked,
+        rpm.messageId as rpLiked,
+        rp.messageId as reposted,
+        rprp.messageId as rpReposted,
+        mt.replyCount,
+        mt.repostCount,
+        mt.likeCount,
+        rpmt.replyCount as rpReplyCount,
+        rpmt.repostCount as rpRepostCount,
+        rpmt.likeCount as rpLikeCount
+    FROM posts p
+        LEFT JOIN moderations m ON m.messageId == (SELECT messageId FROM moderations WHERE reference == p.messageId AND creator == :context)
+        LEFT JOIN moderations rpm ON rpm.messageId == (select messageId from moderations where reference == p.reference AND creator == :context AND p.subtype == 'REPOST')
+        LEFT JOIN posts rp ON rp.messageId == (SELECT messageId from posts WHERE p.messageId == reference AND creator == :context AND subtype == 'REPOST')
+        LEFT JOIN posts rprp ON rprp.messageId == (SELECT messageId from posts WHERE reference == p.reference AND creator == :context AND subtype == 'REPOST' AND p.subtype == 'REPOST')
+        LEFT JOIN meta mt ON mt.messageId == p.messageId
+        LEFT JOIN meta rpmt ON p.subtype == 'REPOST' AND rpmt.messageId == p.reference
+`;

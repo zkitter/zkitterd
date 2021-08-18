@@ -54,7 +54,8 @@ const moderations = (sequelize: Sequelize) => {
             { fields: ['subtype'] },
             { fields: ['referenceCreator'] },
             { fields: ['referenceHash'] },
-            { fields: ['hash'], unique: true }
+            { fields: ['hash'], unique: true },
+            { fields: ['messageId'], unique: true },
         ],
     });
 

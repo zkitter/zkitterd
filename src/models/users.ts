@@ -54,7 +54,7 @@ const users = (sequelize: Sequelize, userMeta: ReturnType<typeof userMetaSeq>) =
     const findOneByName = async (name: string, context = ''): Promise<UserModel|null> => {
         const values = await sequelize.query(`
             ${userSelectQuery}
-            WHERE u.name == :name
+            WHERE u.name = :name
         `, {
             type: QueryTypes.SELECT,
             replacements: {
@@ -85,7 +85,7 @@ const users = (sequelize: Sequelize, userMeta: ReturnType<typeof userMetaSeq>) =
     const readAll = async (context = '', offset = 0, limit = 20): Promise<UserModel[]> => {
         const values = await sequelize.query(`
             ${userSelectQuery}
-            ORDER BY u.joinedAt ASC
+            ORDER BY u."joinedAt" ASC
             LIMIT :limit OFFSET :offset
         `, {
             type: QueryTypes.SELECT,
@@ -153,27 +153,27 @@ const userSelectQuery = `
     SELECT  
         u.name,
         u.pubkey,
-        u.joinedAt,
-        umt.followerCount,
-        umt.followingCount,
-        umt.blockedCount,
-        umt.blockingCount,
-        f.messageId as followed,
-        b.messageId as blocked,
+        u."joinedAt",
+        umt."followerCount",
+        umt."followingCount",
+        umt."blockedCount",
+        umt."blockingCount",
+        f."messageId" as followed,
+        b."messageId" as blocked,
         bio.value as bio,
         name.value as nickname,
-        profileImage.value as profileImage,
-        coverImage.value as coverImage,
+        "profileImage".value as "profileImage",
+        "coverImage".value as "coverImage",
         website.value as website
     FROM users u
-    LEFT JOIN userMeta umt ON umt.name == u.name
-    LEFT JOIN connections f ON f.subtype == 'FOLLOW' AND f.creator == :context AND f.name == u.name
-    LEFT JOIN connections b ON f.subtype == 'BLOCK' AND f.creator == :context AND f.name == u.name
-    LEFT JOIN profiles bio ON bio.messageId == (SELECT messageId FROM profiles WHERE creator == u.name AND subtype == 'BIO' ORDER BY createdAt DESC LIMIT 1)
-    LEFT JOIN profiles name ON name.messageId == (SELECT messageId FROM profiles WHERE creator == u.name AND subtype == 'NAME' ORDER BY createdAt DESC LIMIT 1)
-    LEFT JOIN profiles profileImage ON profileImage.messageId == (SELECT messageId FROM profiles WHERE creator == u.name AND subtype == 'PROFILE_IMAGE' ORDER BY createdAt DESC LIMIT 1)
-    LEFT JOIN profiles coverImage ON coverImage.messageId == (SELECT messageId FROM profiles WHERE creator == u.name AND subtype == 'COVER_IMAGE' ORDER BY createdAt DESC LIMIT 1)
-    LEFT JOIN profiles website ON website.messageId == (SELECT messageId FROM profiles WHERE creator == u.name AND subtype == 'WEBSITE' ORDER BY createdAt DESC LIMIT 1)
+    LEFT JOIN usermeta umt ON umt.name = u.name
+    LEFT JOIN connections f ON f.subtype = 'FOLLOW' AND f.creator = :context AND f.name = u.name
+    LEFT JOIN connections b ON f.subtype = 'BLOCK' AND f.creator = :context AND f.name = u.name
+    LEFT JOIN profiles bio ON bio."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'BIO' ORDER BY "createdAt" DESC LIMIT 1)
+    LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+    LEFT JOIN profiles "profileImage" ON "profileImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'PROFILE_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)
+    LEFT JOIN profiles "coverImage" ON "coverImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'COVER_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)
+    LEFT JOIN profiles website ON website."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'WEBSITE' ORDER BY "createdAt" DESC LIMIT 1)
 `;
 
 function inflateValuesToUserJSON(values: any[]): UserModel[] {

@@ -5,7 +5,6 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const envPlugin = new webpack.EnvironmentPlugin([
     'NODE_ENV',
-    'WEB3_HTTP_PROVIDER',
 ]);
 
 const rules = [

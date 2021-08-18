@@ -10,13 +10,13 @@ type RecordModel = {
 const records = (sequelize: Sequelize) => {
     const model = sequelize.define('records', {
         soul: {
-            type: STRING,
+            type: STRING(4095),
         },
         field: {
-            type: STRING,
+            type: STRING(4095),
         },
         value: {
-            type: STRING,
+            type: STRING(65535),
         },
         state: {
             type: BIGINT,

@@ -12,7 +12,7 @@ type UserMetaModel = {
 const mutex = new Mutex();
 
 const userMeta = (sequelize: Sequelize) => {
-    const model = sequelize.define('userMeta', {
+    const model = sequelize.define('usermeta', {
         name: {
             type: STRING,
             allowNull: false,
@@ -61,7 +61,7 @@ const userMeta = (sequelize: Sequelize) => {
                 const data = result.toJSON() as UserMetaModel;
                 return result.update({
                     ...data,
-                    followerCount: data.followerCount + 1,
+                    followerCount: Number(data.followerCount) + 1,
                 });
             }
 
@@ -88,7 +88,7 @@ const userMeta = (sequelize: Sequelize) => {
                 const data = result.toJSON() as UserMetaModel;
                 return result.update({
                     ...data,
-                    followingCount: data.followingCount + 1,
+                    followingCount: Number(data.followingCount) + 1,
                 });
             }
 
@@ -115,7 +115,7 @@ const userMeta = (sequelize: Sequelize) => {
                 const data = result.toJSON() as UserMetaModel;
                 return result.update({
                     ...data,
-                    blockedCount: data.blockedCount + 1,
+                    blockedCount: Number(data.blockedCount) + 1,
                 });
             }
 
@@ -142,7 +142,7 @@ const userMeta = (sequelize: Sequelize) => {
                 const data = result.toJSON() as UserMetaModel;
                 return result.update({
                     ...data,
-                    blockingCount: data.blockingCount + 1,
+                    blockingCount: Number(data.blockingCount) + 1,
                 });
             }
 

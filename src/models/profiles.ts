@@ -57,7 +57,8 @@ const profiles = (sequelize: Sequelize) => {
             { fields: ['creator'] },
             { fields: ['subtype'] },
             { fields: ['key'] },
-            { fields: ['hash'], unique: true }
+            { fields: ['hash'], unique: true },
+            { fields: ['messageId'], unique: true },
         ],
     });
 

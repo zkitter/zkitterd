@@ -125,11 +125,6 @@ export default class DBService extends GenericService {
         this.posts = await posts(this.sequelize);
         this.profiles = await profiles(this.sequelize);
 
-        this.users?.model.hasOne(this.userMeta?.model, {
-            foreignKey: 'name',
-            as: 'meta',
-        });
-
         await this.app?.model.sync({ force: true });
         await this.userMeta?.model.sync({ force: true });
         await this.users?.model.sync({ force: true });

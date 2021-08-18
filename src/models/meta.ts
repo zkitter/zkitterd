@@ -58,7 +58,7 @@ const meta = (sequelize: Sequelize) => {
                 const data = result.toJSON() as MetaModel;
                 return result.update({
                     ...data,
-                    likeCount: data.likeCount + 1,
+                    likeCount: Number(data.likeCount) + 1,
                 });
             }
 
@@ -83,7 +83,7 @@ const meta = (sequelize: Sequelize) => {
                 const data = result.toJSON() as MetaModel;
                 return result.update({
                     ...data,
-                    replyCount: data.replyCount + 1,
+                    replyCount: Number(data.replyCount) + 1,
                 });
             }
 
@@ -110,7 +110,7 @@ const meta = (sequelize: Sequelize) => {
                 const data = result.toJSON() as MetaModel;
                 return result.update({
                     ...data,
-                    repostCount: data.repostCount + 1,
+                    repostCount: Number(data.repostCount) + 1,
                 });
             }
 

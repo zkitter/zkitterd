@@ -14,9 +14,14 @@ import {
     PostMessageSubType,
     Profile
 } from "../util/message";
+import {Mutex} from "async-mutex";
 
 const Graph = require("gun/src/graph");
 const State = require("gun/src/state");
+
+const getMutex = new Mutex();
+const putMutex = new Mutex();
+const insertMutex = new Mutex();
 
 export default class GunService extends GenericService {
     gun?: IGunChainReference;
@@ -34,75 +39,77 @@ export default class GunService extends GenericService {
         this.gun.user(pubkey)
             .get('message')
             .map(async (data: any, messageId: string) => {
-                const type = Message.getType(data.type);
-                const [creator, hash] = messageId.split('/');
+                return insertMutex.runExclusive(async () => {
+                    const type = Message.getType(data.type);
+                    const [creator, hash] = messageId.split('/');
 
-                let payload;
+                    let payload;
 
-                if (!type) return;
+                    if (!type) return;
 
-                if (creator !== user.name) return;
+                    if (creator !== user.name) return;
 
-                if(data.payload) {
-                    // @ts-ignore
-                    payload = await this.gun.get(data.payload['#']);
-                }
+                    if(data.payload) {
+                        // @ts-ignore
+                        payload = await this.gun.get(data.payload['#']);
+                    }
 
-                switch (type) {
-                    case MessageType.Post:
-                        const post = new Post({
-                            type: type,
-                            subtype: Post.getSubtype(data.subtype),
-                            creator: creator,
-                            createdAt: new Date(data.createdAt),
-                            payload: {
-                                topic: payload.topic,
-                                title: payload.title,
-                                content: payload.content,
-                                reference: payload.reference,
-                                attachment: payload.attachment,
-                            },
-                        });
-                        await this.insertPost(post);
-                        return;
-                    case MessageType.Moderation:
-                        const moderation = new Moderation({
-                            type: type,
-                            subtype: Moderation.getSubtype(data.subtype),
-                            creator: creator,
-                            createdAt: new Date(data.createdAt),
-                            payload: {
-                                reference: payload.reference,
-                            },
-                        });
-                        await this.insertModeration(moderation);
-                        return;
-                    case MessageType.Connection:
-                        const connection = new Connection({
-                            type: type,
-                            subtype: Connection.getSubtype(data.subtype),
-                            creator: creator,
-                            createdAt: new Date(data.createdAt),
-                            payload: {
-                                name: payload.name,
-                            },
-                        });
-                        await this.insertConnection(connection);
-                        return;
-                    case MessageType.Profile:
-                        const profile = new Profile({
-                            type: type,
-                            subtype: Profile.getSubtype(data.subtype),
-                            creator: creator,
-                            createdAt: new Date(data.createdAt),
-                            payload: {
-                                key: payload.key,
-                                value: payload.value,
-                            },
-                        });
-                        await this.insertProfile(profile);
-                        return;
-                }
+                    switch (type) {
+                        case MessageType.Post:
+                            const post = new Post({
+                                type: type,
+                                subtype: Post.getSubtype(data.subtype),
+                                creator: creator,
+                                createdAt: new Date(data.createdAt),
+                                payload: {
+                                    topic: payload.topic,
+                                    title: payload.title,
+                                    content: payload.content,
+                                    reference: payload.reference,
+                                    attachment: payload.attachment,
+                                },
+                            });
+                            await this.insertPost(post);
+                            return;
+                        case MessageType.Moderation:
+                            const moderation = new Moderation({
+                                type: type,
+                                subtype: Moderation.getSubtype(data.subtype),
+                                creator: creator,
+                                createdAt: new Date(data.createdAt),
+                                payload: {
+                                    reference: payload.reference,
+                                },
+                            });
+                            await this.insertModeration(moderation);
+                            return;
+                        case MessageType.Connection:
+                            const connection = new Connection({
+                                type: type,
+                                subtype: Connection.getSubtype(data.subtype),
+                                creator: creator,
+                                createdAt: new Date(data.createdAt),
+                                payload: {
+                                    name: payload.name,
+                                },
+                            });
+                            await this.insertConnection(connection);
+                            return;
+                        case MessageType.Profile:
+                            const profile = new Profile({
+                                type: type,
+                                subtype: Profile.getSubtype(data.subtype),
+                                creator: creator,
+                                createdAt: new Date(data.createdAt),
+                                payload: {
+                                    key: payload.key,
+                                    value: payload.value,
+                                },
+                            });
+                            await this.insertProfile(profile);
+                            return;
+                    }
+                });
             });
     }
 
@@ -370,108 +377,112 @@ export default class GunService extends GenericService {
 
         // @ts-ignore
         gun.on('put', async function (msg: any) {
-            logger.info('received PUT', { origin: 'gun' });
-            // @ts-ignore
-            this.to.next(msg);
-
-            try {
-                const put = msg.put;
-                const soul = put['#'];
-                const field = put['.'];
-                const state = put['>'];
-                const value =  put[':'];
-
-                const [raw, key, name, messageId] = soul.split('/');
-                const pubKey = raw.slice(1);
-
-                // if (key && key !== 'message') {
-                //     throw new Error(`invalid data key ${key}`);
-                // }
-
-                const recordDB = await ctx.call('db', 'getRecords');
-                const userDB = await ctx.call('db', 'getUsers');
-
-                const user = await userDB.findOneByPubkey(pubKey);
-
-                if (!user) {
-                    throw new Error(`cannot find user with pubkey ${pubKey}`);
-                }
-
-                if (name && user.name !== name) {
-                    throw new Error(`${user.name} does not match ${name}`);
-                }
-
-                await recordDB.updateOrCreateRecord({
-                    soul,
-                    field,
-                    state,
-                    value,
-                });
-
-                // Send ack back
+            return putMutex.runExclusive(async () => {
+                logger.info('received PUT', { origin: 'gun' });
                 // @ts-ignore
-                gun.on('in', {
-                    '@' : msg['@'],
-                    ok  : 0,
-                });
-            } catch (e) {
-                logger.error('error processing PUT', {
-                    error: e.message,
-                    parent: e.parent,
-                    stack: e.stack,
-                    origin: 'gun',
-                });
-            }
+                this.to.next(msg);
+
+                try {
+                    const put = msg.put;
+                    const soul = put['#'];
+                    const field = put['.'];
+                    const state = put['>'];
+                    const value =  put[':'];
+
+                    const [raw, key, name, messageId] = soul.split('/');
+                    const pubKey = raw.slice(1);
+
+                    // if (key && key !== 'message') {
+                    //     throw new Error(`invalid data key ${key}`);
+                    // }
+
+                    const recordDB = await ctx.call('db', 'getRecords');
+                    const userDB = await ctx.call('db', 'getUsers');
+
+                    const user = await userDB.findOneByPubkey(pubKey);
+
+                    if (!user) {
+                        throw new Error(`cannot find user with pubkey ${pubKey}`);
+                    }
+
+                    if (name && user.name !== name) {
+                        throw new Error(`${user.name} does not match ${name}`);
+                    }
+
+                    await recordDB.updateOrCreateRecord({
+                        soul,
+                        field,
+                        state,
+                        value,
+                    });
+
+                    // Send ack back
+                    // @ts-ignore
+                    gun.on('in', {
+                        '@' : msg['@'],
+                        ok  : 0,
+                    });
+                } catch (e) {
+                    logger.error('error processing PUT', {
+                        error: e.message,
+                        parent: e.parent,
+                        stack: e.stack,
+                        origin: 'gun',
+                    });
+                }
+            });
         });
 
         // @ts-ignore
         gun.on('get', async function (msg: any) {
-            // @ts-ignore
-            this.to.next(msg);
-            // Extract soul from message
-            const soul = msg.get['#'];
-            const field = msg.get['.'];
-            logger.info('received GET', { origin: 'gun', soul, field });
+            return getMutex.runExclusive(async () => {
+                // @ts-ignore
+                this.to.next(msg);
+                // Extract soul from message
+                const soul = msg.get['#'];
+                const field = msg.get['.'];
+                logger.info('received GET', { origin: 'gun', soul, field });
 
-            try {
-                const recordDB = await ctx.call('db', 'getRecords');
-                let node;
+                try {
+                    const recordDB = await ctx.call('db', 'getRecords');
+                    let node;
 
-                if (field) {
-                    const record = await recordDB.findOne(soul, field);
+                    if (field) {
+                        const record = await recordDB.findOne(soul, field);
 
-                    if (!record) throw new Error(`no record found`);
+                        if (!record) throw new Error(`no record found`);
 
-                    const { state, value } = record;
-                    node = State.ify(node, record.field, state, value, soul);
-                    node = State.to(node, field);
-                    node = Graph.node(node);
-                } else {
-                    const records = await recordDB.findAll(soul);
-                    for (let record of records) {
                         const { state, value } = record;
                         node = State.ify(node, record.field, state, value, soul);
+                        node = State.to(node, field);
+                        node = Graph.node(node);
+                    } else {
+                        const records = await recordDB.findAll(soul);
+                        for (let record of records) {
+                            const { state, value } = record;
+                            node = State.ify(node, record.field, state, value, soul);
+                        }
                     }
+
+                    logger.info('handled GET', {
+                        soul,
+                        field,
+                        origin: 'gun',
+                    });
+                    // @ts-ignore
+                    gun.on('in', {
+                        '@' : msg['#'],
+                        put : Graph.node(node),
+                    });
+
+                } catch (e) {
+                    logger.error('error processing GET', {
+                        error: e.message,
+                        stack: e.stack,
+                        origin: 'gun',
+                    });
                 }
-
-                logger.info('handled GET', {
-                    soul,
-                    field,
-                    origin: 'gun',
-                });
-                // @ts-ignore
-                gun.on('in', {
-                    '@' : msg['#'],
-                    put : Graph.node(node),
-                });
-
-            } catch (e) {
-                logger.error('error processing GET', {
-                    error: e.message,
-                    stack: e.stack,
-                    origin: 'gun',
-                });
-            }
+            });
         });
 
         // @ts-ignore

@@ -51,18 +51,18 @@ const posts = (sequelize: Sequelize) => {
             allowNull: false,
         },
         title: {
-            type: STRING,
+            type: STRING(4095),
             allowNull: false,
         },
         content: {
-            type: STRING,
+            type: STRING(65535),
             allowNull: false,
         },
         reference: {
             type: STRING,
         },
         attachment: {
-            type: STRING,
+            type: STRING(4095),
         },
     }, {
         indexes: [
@@ -78,7 +78,7 @@ const posts = (sequelize: Sequelize) => {
     const findOne = async (hash: string, context?: string): Promise<PostJSON|null> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.hash == :hash AND p.createdAt != -1
+            WHERE p.hash = :hash AND p."createdAt" != -1
         `, {
             replacements: {
                 context: context || '',
@@ -108,8 +108,8 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.subtype != 'REPLY' AND p.createdAt != -1${creator ? ' AND p.creator == :creator' : ''}
-            ORDER BY p.createdAt ${order}
+            WHERE p.subtype != 'REPLY' AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}
+            ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
             replacements: {
@@ -139,11 +139,11 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.subtype != 'REPLY' AND p.createdAt != -1 AND (
-                p.creator IN (SELECT name FROM connections WHERE subtype == 'FOLLOW' AND creator == :context) OR
-                p.creator == :context
+            WHERE p.subtype != 'REPLY' AND p."createdAt" != -1 AND (
+                p.creator IN (SELECT name FROM connections WHERE subtype = 'FOLLOW' AND creator = :context) OR
+                p.creator = :context
             )
-            ORDER BY p.createdAt ${order}
+            ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
             replacements: {
@@ -173,8 +173,8 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.subtype == 'REPLY' AND p.createdAt != -1 AND p.reference == :reference
-            ORDER BY p.createdAt ${order}
+            WHERE p.subtype = 'REPLY' AND p."createdAt" != -1 AND p.reference = :reference
+            ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
             replacements: {
@@ -303,27 +303,27 @@ const selectJoinQuery = `
         p.creator,
         p.type,
         p.subtype,
-        p.createdAt,
+        p."createdAt",
         p.topic,
         p.title,
         p.content,
         p.reference,
         p.attachment,
-        m.messageId as liked,
-        rpm.messageId as rpLiked,
-        rp.messageId as reposted,
-        rprp.messageId as rpReposted,
-        mt.replyCount,
-        mt.repostCount,
-        mt.likeCount,
-        rpmt.replyCount as rpReplyCount,
-        rpmt.repostCount as rpRepostCount,
-        rpmt.likeCount as rpLikeCount
+        m."messageId" as liked,
+        rpm."messageId" as rpLiked,
+        rp."messageId" as reposted,
+        rprp."messageId" as rpReposted,
+        mt."replyCount",
+        mt."repostCount",
+        mt."likeCount",
+        rpmt."replyCount" as rpReplyCount,
+        rpmt."repostCount" as rpRepostCount,
+        rpmt."likeCount" as rpLikeCount
     FROM posts p
-        LEFT JOIN moderations m ON m.messageId == (SELECT messageId FROM moderations WHERE reference == p.messageId AND creator == :context)
-        LEFT JOIN moderations rpm ON rpm.messageId == (select messageId from moderations where reference == p.reference AND creator == :context AND p.subtype == 'REPOST')
-        LEFT JOIN posts rp ON rp.messageId == (SELECT messageId from posts WHERE p.messageId == reference AND creator == :context AND subtype == 'REPOST')
-        LEFT JOIN posts rprp ON rprp.messageId == (SELECT messageId from posts WHERE reference == p.reference AND creator == :context AND subtype == 'REPOST' AND p.subtype == 'REPOST')
-        LEFT JOIN meta mt ON mt.messageId == p.messageId
-        LEFT JOIN meta rpmt ON p.subtype == 'REPOST' AND rpmt.messageId == p.reference
+        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = p."messageId" AND creator = :context LIMIT 1)
+        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN meta mt ON mt."messageId" = p."messageId"
+        LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."messageId" = p.reference
 `;

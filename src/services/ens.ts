@@ -96,6 +96,8 @@ export default class ENSService extends GenericService {
             }
         } catch (e) {
             logger.error(e.message, {
+                parent: e.parent,
+                stack: e.stack,
                 fromBlock: data?.lastENSBlockScanned,
             });
         }

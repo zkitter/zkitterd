@@ -125,15 +125,15 @@ export default class DBService extends GenericService {
         this.posts = await posts(this.sequelize);
         this.profiles = await profiles(this.sequelize);
 
-        await this.app?.model.sync({ force: true });
-        await this.userMeta?.model.sync({ force: true });
-        await this.users?.model.sync({ force: true });
-        await this.records?.model.sync({ force: true });
-        await this.meta?.model.sync({ force: true });
-        await this.moderations?.model.sync({ force: true });
-        await this.connections?.model.sync({ force: true });
-        await this.profiles?.model.sync({ force: true });
-        await this.posts?.model.sync({ force: true });
+        await this.app?.model.sync({ force: false });
+        await this.userMeta?.model.sync({ force: false });
+        await this.users?.model.sync({ force: false });
+        await this.records?.model.sync({ force: false });
+        await this.meta?.model.sync({ force: false });
+        await this.moderations?.model.sync({ force: false });
+        await this.connections?.model.sync({ force: false });
+        await this.profiles?.model.sync({ force: false });
+        await this.posts?.model.sync({ force: false });
 
         const appData = await this.app?.read();
 

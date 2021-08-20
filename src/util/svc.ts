@@ -12,7 +12,7 @@ export class GenericService {
 
     async call(name: string, methodName: string, ...args: any[]) {
         const id = callerId++;
-        logger.info(`called ${name}.${methodName}`, {
+        logger.debug(`called ${name}.${methodName}`, {
             ...args,
             origin: this.name,
             id: id,
@@ -24,7 +24,7 @@ export class GenericService {
             if (typeof method === 'function') {
                 try {
                     const resp = await method.apply(service, args);
-                    logger.info(`handled ${name}.${methodName}`, {
+                    logger.debug(`handled ${name}.${methodName}`, {
                         origin: this.name,
                         id: id,
                     });

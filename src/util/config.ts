@@ -13,10 +13,13 @@ let json: {
     dbPort?: string;
     port?: number;
     gunPort?: number;
+    gunPeers?: string[];
 } = {};
 
 try {
-    const configBuffer = fs.readFileSync(path.join(process.cwd(), 'config.json'));
+    const configBuffer = process.env.NODE_ENV === 'development'
+        ? fs.readFileSync(path.join(process.cwd(), 'config.dev.json'))
+        : fs.readFileSync(path.join(process.cwd(), 'config.prod.json'));
     const parsed = JSON.parse(configBuffer.toString('utf-8'));
     json = parsed;
 } catch (e) {}
@@ -32,6 +35,7 @@ const dbHost = json.dbHost || process.env.DB_HOST;
 const dbPort = json.dbPort || process.env.DB_PORT;
 const port = json.port || process.env.PORT;
 const gunPort = json.gunPort || process.env.GUN_PORT;
+const gunPeers = json.gunPeers || process.env?.GUN_PEERS?.split(' ') || [];
 
 if (!web3HttpProvider) {
     throw new Error('WEB3_HTTP_PROVIDER is not valid');
@@ -53,6 +57,7 @@ const config = {
     dbPort,
     port: port ? Number(port) : 3000,
     gunPort: gunPort ? Number(gunPort) : 8765,
+    gunPeers,
 };
 
 export default config;

@@ -15,9 +15,11 @@ import {
     Profile
 } from "../util/message";
 import {Mutex} from "async-mutex";
+import {UserModel} from "../models/users";
 
 const Graph = require("gun/src/graph");
 const State = require("gun/src/state");
+const Val = require("gun/src/val");
 
 const getMutex = new Mutex();
 const putMutex = new Mutex();
@@ -26,94 +28,103 @@ const insertMutex = new Mutex();
 export default class GunService extends GenericService {
     gun?: IGunChainReference;
 
+    watchGlobal = async () => {
+        if (!this.gun) throw new Error('gun is not set up');
+
+        this.gun.get('message')
+            .map(async (data, messageId) => this.handleGunMessage(data, messageId));
+    }
+
     watch = async (pubkey: string) => {
         if (!this.gun) throw new Error('gun is not set up');
 
         const users = await this.call('db', 'getUsers');
-        const postDB = await this.call('db', 'getPosts');
-        const metaDB = await this.call('db', 'getMeta');
         const user = await users.findOneByPubkey(pubkey);
 
         if (!user) throw new Error(`cannot find user with pubkey ${pubkey}`);
 
         this.gun.user(pubkey)
             .get('message')
-            .map(async (data: any, messageId: string) => {
-                return insertMutex.runExclusive(async () => {
-                    const type = Message.getType(data.type);
-                    const [creator, hash] = messageId.split('/');
-
-                    let payload;
-
-                    if (!type) return;
-
-                    if (creator !== user.name) return;
-
-                    if(data.payload) {
-                        // @ts-ignore
-                        payload = await this.gun.get(data.payload['#']);
-                    }
-
-                    switch (type) {
-                        case MessageType.Post:
-                            const post = new Post({
-                                type: type,
-                                subtype: Post.getSubtype(data.subtype),
-                                creator: creator,
-                                createdAt: new Date(data.createdAt),
-                                payload: {
-                                    topic: payload.topic,
-                                    title: payload.title,
-                                    content: payload.content,
-                                    reference: payload.reference,
-                                    attachment: payload.attachment,
-                                },
-                            });
-                            await this.insertPost(post);
-                            return;
-                        case MessageType.Moderation:
-                            const moderation = new Moderation({
-                                type: type,
-                                subtype: Moderation.getSubtype(data.subtype),
-                                creator: creator,
-                                createdAt: new Date(data.createdAt),
-                                payload: {
-                                    reference: payload.reference,
-                                },
-                            });
-                            await this.insertModeration(moderation);
-                            return;
-                        case MessageType.Connection:
-                            const connection = new Connection({
-                                type: type,
-                                subtype: Connection.getSubtype(data.subtype),
-                                creator: creator,
-                                createdAt: new Date(data.createdAt),
-                                payload: {
-                                    name: payload.name,
-                                },
-                            });
-                            await this.insertConnection(connection);
-                            return;
-                        case MessageType.Profile:
-                            const profile = new Profile({
-                                type: type,
-                                subtype: Profile.getSubtype(data.subtype),
-                                creator: creator,
-                                createdAt: new Date(data.createdAt),
-                                payload: {
-                                    key: payload.key,
-                                    value: payload.value,
-                                },
-                            });
-                            await this.insertProfile(profile);
-                            return;
-                    }
-                });
-            });
+            .map(async (data, messageId) => this.handleGunMessage(data, messageId, user));
     }
 
-    async insertPost(post: Post) {
+    handleGunMessage = async (data: any, messageId: string, user?: UserModel) => {
+        return insertMutex.runExclusive(async () => {
+            const type = Message.getType(data.type);
+            const parsed = messageId.split('/');
+            const creator = parsed[1] ? parsed[0] : '';
+            const hash = parsed[1] || parsed[0];
+
+            let payload;
+
+            if (!type) return;
+
+            if (creator && (creator !== user?.name)) return;
+
+            if(data.payload) {
+                // @ts-ignore
+                payload = await this.gun.get(data.payload['#']);
+            }
+
+            switch (type) {
+                case MessageType.Post:
+                    const post = new Post({
+                        type: type,
+                        subtype: Post.getSubtype(data.subtype),
+                        creator: creator,
+                        createdAt: new Date(data.createdAt),
+                        payload: {
+                            topic: payload.topic,
+                            title: payload.title,
+                            content: payload.content,
+                            reference: payload.reference,
+                            attachment: payload.attachment,
+                        },
+                    });
+                    await this.insertPost(post, data.proof, data.publicSignals);
+                    return;
+                case MessageType.Moderation:
+                    const moderation = new Moderation({
+                        type: type,
+                        subtype: Moderation.getSubtype(data.subtype),
+                        creator: creator,
+                        createdAt: new Date(data.createdAt),
+                        payload: {
+                            reference: payload.reference,
+                        },
+                    });
+                    await this.insertModeration(moderation);
+                    return;
+                case MessageType.Connection:
+                    const connection = new Connection({
+                        type: type,
+                        subtype: Connection.getSubtype(data.subtype),
+                        creator: creator,
+                        createdAt: new Date(data.createdAt),
+                        payload: {
+                            name: payload.name,
+                        },
+                    });
+                    await this.insertConnection(connection);
+                    return;
+                case MessageType.Profile:
+                    const profile = new Profile({
+                        type: type,
+                        subtype: Profile.getSubtype(data.subtype),
+                        creator: creator,
+                        createdAt: new Date(data.createdAt),
+                        payload: {
+                            key: payload.key,
+                            value: payload.value,
+                        },
+                    });
+                    await this.insertProfile(profile);
+                    return;
+            }
+        });
+    }
+
+    async insertPost(post: Post, proof?: string, signals?: string) {
         const json = await post.toJSON();
         const {
             type,
@@ -121,11 +132,13 @@ export default class GunService extends GenericService {
             createdAt,
             payload,
             messageId,
+            hash,
         } = json;
-        const [creator, hash] = messageId.split('/');
 
+        const creator = post.creator;
         const postDB = await this.call('db', 'getPosts');
         const metaDB = await this.call('db', 'getMeta');
+        const semaphoreDB = await this.call('db', 'getSemaphore');
 
         if (json.hash !== hash) {
             return;
@@ -141,10 +154,21 @@ export default class GunService extends GenericService {
             return;
         }
 
+        if (!creator && (!proof || !signals)) {
+            return;
+        }
+
+        if (proof && signals) {
+            const validProof = await semaphoreDB.validateProof(json.hash, proof, signals);
+            if (!validProof) return;
+        }
+
         try {
             await postDB.createPost({
                 messageId: messageId,
                 hash: hash,
+                proof,
+                signals,
                 type: type,
                 subtype: subtype,
                 creator: creator,
@@ -368,11 +392,14 @@ export default class GunService extends GenericService {
         const app = express();
         const server = app.listen(config.gunPort);
         const ctx = this;
+        const gunPath = process.env.NODE_ENV === 'development'
+            ? './dev_gun_data'
+            : './gun_data';
 
         const gun = Gun({
-            file: './gun_data',
+            file: gunPath,
             web: server,
-            peers: [],
+            peers: config.gunPeers,
         });
 
         // @ts-ignore
@@ -390,30 +417,40 @@ export default class GunService extends GenericService {
                     const value =  put[':'];
 
                     const [raw, key, name, messageId] = soul.split('/');
-                    const pubKey = raw.slice(1);
-
-                    // if (key && key !== 'message') {
-                    //     throw new Error(`invalid data key ${key}`);
-                    // }
-
                     const recordDB = await ctx.call('db', 'getRecords');
                     const userDB = await ctx.call('db', 'getUsers');
 
-                    const user = await userDB.findOneByPubkey(pubKey);
+                    if (raw !== 'message') {
+                        const pubKey = raw.slice(1);
 
-                    if (!user) {
-                        throw new Error(`cannot find user with pubkey ${pubKey}`);
+                        // if (key && key !== 'message') {
+                        //     throw new Error(`invalid data key ${key}`);
+                        // }
+
+                        const user = await userDB.findOneByPubkey(pubKey);
+
+                        if (!user) {
+                            throw new Error(`cannot find user with pubkey ${pubKey}`);
+                        }
+
+                        if (name && user.name !== name) {
+                            throw new Error(`${user.name} does not match ${name}`);
+                        }
+
                     }
 
-                    if (name && user.name !== name) {
-                        throw new Error(`${user.name} does not match ${name}`);
+                    let relation;
+
+                    if (value && value['#']) {
+                        relation = value['#'];
                     }
 
                     await recordDB.updateOrCreateRecord({
                         soul,
                         field,
                         state,
-                        value,
+                        value: relation ? null : value,
+                        relation,
                     });
 
                     // Send ack back
@@ -452,15 +489,17 @@ export default class GunService extends GenericService {
 
                         if (!record) throw new Error(`no record found`);
 
-                        const { state, value } = record;
-                        node = State.ify(node, record.field, state, value, soul);
+                        const { state, value, relation } = record;
+                        const val = relation ? Val.rel.ify(relation) : value;
+                        node = State.ify(node, record.field, state, val, soul);
                         node = State.to(node, field);
                         node = Graph.node(node);
                     } else {
                         const records = await recordDB.findAll(soul);
                         for (let record of records) {
-                            const { state, value } = record;
-                            node = State.ify(node, record.field, state, value, soul);
+                            const { state, value, relation } = record;
+                            const val = relation ? Val.rel.ify(relation) : value;
+                            node = State.ify(node, record.field, state, val, soul);
                         }
                     }
 
@@ -487,6 +526,7 @@ export default class GunService extends GenericService {
 
         // @ts-ignore
         this.gun = gun;
+
         const userDB = await this.call('db', 'getUsers');
         const users = await userDB.readAll('', 0, 100);
 
@@ -494,6 +534,7 @@ export default class GunService extends GenericService {
             await this.watch(user.pubkey);
         }
 
+        await this.watchGlobal();
 
         logger.info(`gun server listening at ${config.gunPort}...`);
     }

@@ -1,12 +1,13 @@
 .idea
 node_modules
 build*
-config.json
 *.db
 *.log
-gun_data
+*gun_data
 .DS_Store
 proving_key.bin
 circuit.json
 .env
 config.dev.json
+config.prod.json
+config.json

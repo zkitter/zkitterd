@@ -11,6 +11,7 @@ import moderations from "../../models/moderations";
 import profiles from "../../models/profiles";
 import userMeta from "../../models/userMeta";
 import connections from "../../models/connections";
+import semaphore from "../../models/semaphore";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
@@ -23,6 +24,7 @@ export default class DBService extends GenericService {
     connections?: ReturnType<typeof connections>;
     meta?: ReturnType<typeof meta>;
     userMeta?: ReturnType<typeof userMeta>;
+    semaphore?: ReturnType<typeof semaphore>;
 
     constructor() {
         super();
@@ -114,6 +116,13 @@ export default class DBService extends GenericService {
         return this.app;
     }
 
+    async getSemaphore(): Promise<ReturnType<typeof semaphore>> {
+        if (!this.semaphore) {
+            return Promise.reject(new Error('semaphore is not initialized'));
+        }
+        return this.semaphore;
+    }
+
     async start() {
         this.app = await app(this.sequelize);
         this.records = await records(this.sequelize);
@@ -124,16 +133,18 @@ export default class DBService extends GenericService {
         this.users = await users(this.sequelize, this.userMeta);
         this.posts = await posts(this.sequelize);
         this.profiles = await profiles(this.sequelize);
+        this.semaphore = await semaphore(this.sequelize);
 
-        await this.app?.model.sync({ force: false });
-        await this.userMeta?.model.sync({ force: false });
-        await this.users?.model.sync({ force: false });
-        await this.records?.model.sync({ force: false });
-        await this.meta?.model.sync({ force: false });
-        await this.moderations?.model.sync({ force: false });
-        await this.connections?.model.sync({ force: false });
-        await this.profiles?.model.sync({ force: false });
-        await this.posts?.model.sync({ force: false });
+        await this.app?.model.sync({ force: !!process.env.FORCE });
+        await this.userMeta?.model.sync({ force: !!process.env.FORCE });
+        await this.users?.model.sync({ force: !!process.env.FORCE });
+        await this.records?.model.sync({ force: !!process.env.FORCE });
+        await this.meta?.model.sync({ force: !!process.env.FORCE });
+        await this.moderations?.model.sync({ force: !!process.env.FORCE });
+        await this.connections?.model.sync({ force: !!process.env.FORCE });
+        await this.profiles?.model.sync({ force: !!process.env.FORCE });
+        await this.posts?.model.sync({ force: !!process.env.FORCE });
+        await this.semaphore?.model.sync({ force: !!process.env.FORCE });
 
         const appData = await this.app?.read();
 

@@ -4,6 +4,7 @@ type RecordModel = {
     soul: string;
     field: string;
     value: string;
+    relation: string;
     state: number;
 };
 
@@ -16,6 +17,9 @@ const records = (sequelize: Sequelize) => {
             type: STRING(4095),
         },
         value: {
+            type: STRING(65535),
+        },
+        relation: {
             type: STRING(65535),
         },
         state: {

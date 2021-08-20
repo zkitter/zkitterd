@@ -17,6 +17,7 @@ const snarkjs = require('snarkjs');
 import path from "path";
 import verificationKey from "../../static/verification_key.json";
 import {Post} from "../util/message";
+import semaphore from "../models/semaphore";
 const jsonParser = bodyParser.json();
 
 const corsOptions: CorsOptions = {
@@ -134,85 +135,18 @@ export default class HttpService extends GenericService {
             res.send(makeResponse(post));
         }));
 
-        this.app.post('/dev/semaphore/post', jsonParser, this.wrapHandler(async (req, res) => {
-            const json = req.body.post;
-            const proof = req.body.proof;
-            const publicSignals = req.body.publicSignals;
-            const parsedProof = unstringifyBigInts(JSON.parse(proof));
-            const parsedPublicSignals = unstringifyBigInts(
-                JSON.parse(publicSignals)
-            );
-            const [
-                root,
-                nullifierHash,
-                signalHash,
-                externalNullifier
-            ] = parsedPublicSignals as any;
-            const post = new Post({
-                ...json,
-                createdAt: new Date(json.createdAt),
-            });
-            const hash = post.hash();
-            const verifyingKey = unstringifyBigInts(verificationKey)
-            const isProofValid = verifyProof(verifyingKey as any, parsedProof as any, parsedPublicSignals as any);
-            const expectedSignalHash = await genSignalHash(Buffer.from(hash, 'hex'));
-            const isExternalNullifierValid = snarkjs.bigInt(genExternalNullifier(hash)) === externalNullifier;
-            const isSignalHashValid = expectedSignalHash === signalHash;
-            // @ts-ignore
-            const isInRootHistory = rootHistory[stringifyBigInts(root)];
-            console.log({
-                isProofValid,
-                isExternalNullifierValid,
-                isSignalHashValid,
-                isInRootHistory,
-            })
-
-            if (!isProofValid || !isExternalNullifierValid || !isSignalHashValid || !isInRootHistory) {
-                res.status(403).send(makeResponse('invalid semaphore proof', true));
-                return;
-            }
-
-            const postDB = await this.call('db', 'getPosts');
-            await postDB.createPost({
-                messageId: hash,
-                hash: hash,
-                type: json.type,
-                subtype: json.subtype,
-                creator: '',
-                createdAt: json.createdAt,
-                topic: json.payload.topic,
-                title: json.payload.title,
-                content: json.payload.content,
-                reference: json.payload.reference,
-                attachment: json.payload.attachment,
-            });
-            res.send(makeResponse('ok'));
-        }));
-
         this.app.post('/dev/semaphore', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.body.identityCommitment;
-            const index = leaves.indexOf(identityCommitment);
-            let path = null;
 
-            if (index < 0) {
-                await tree.update(leaves.length, identityCommitment);
-                path = await tree.path(leaves.length);
-                leaves.push(identityCommitment);
-                rootHistory[path.root] = true;
-            }
-
+            const semaphoreDB = await this.call('db', 'getSemaphore');
+            const path = await semaphoreDB.addID(identityCommitment);
             res.send(path);
         }));
 
         this.app.get('/dev/semaphore/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;
-            const index = leaves.indexOf(identityCommitment);
-            let path = null;
-
-            if (index > -1) {
-                path = await tree.path(index);
-            }
-
+            const semaphoreDB = await this.call('db', 'getSemaphore');
+            const path = await semaphoreDB.getPathByID(identityCommitment);
             res.send(makeResponse(path));
         }));
     }

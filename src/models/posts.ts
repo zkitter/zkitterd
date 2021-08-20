@@ -1,14 +1,14 @@
-import {BIGINT, QueryTypes, Sequelize, STRING, WhereOptions} from "sequelize";
-import {MessageType, ModerationMessageSubType, PostJSON, PostMessageSubType} from "../util/message";
+import {BIGINT, QueryTypes, Sequelize, STRING} from "sequelize";
+import {MessageType, PostJSON, PostMessageSubType} from "../util/message";
 import {Mutex} from "async-mutex";
-import metaSeq from "./meta";
-import moderationsSeq from "./moderations";
 
 const mutex = new Mutex();
 
 type PostModel = {
     messageId: string;
     hash: string;
+    proof?: string;
+    signals?: string;
     creator: string;
     type: string;
     subtype: string;
@@ -34,6 +34,12 @@ const posts = (sequelize: Sequelize) => {
         creator: {
             type: STRING,
             allowNull: false,
+        },
+        proof: {
+            type: STRING,
+        },
+        signals: {
+            type: STRING,
         },
         type: {
             type: STRING,

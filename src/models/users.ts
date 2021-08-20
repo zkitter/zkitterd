@@ -2,7 +2,7 @@ import {BIGINT, QueryTypes, Sequelize, STRING} from "sequelize";
 import userMetaSeq from "./userMeta";
 import {Mutex} from "async-mutex";
 
-type UserModel = {
+export type UserModel = {
     ens: string;
     pubkey: string;
     joinedAt: number;

@@ -5,19 +5,8 @@ import cors, {CorsOptions} from "cors";
 import http from 'http';
 import config from "../util/config";
 import logger from "../util/logger";
-import {
-    setupTree,
-    genExternalNullifier,
-    genSignalHash,
-    stringifyBigInts,
-    unstringifyBigInts,
-    verifyProof
-} from "libsemaphore";
-const snarkjs = require('snarkjs');
 import path from "path";
-import verificationKey from "../../static/verification_key.json";
-import {Post} from "../util/message";
-import semaphore from "../models/semaphore";
+import {fetchSpace} from "../util/snapshot";
 const jsonParser = bodyParser.json();
 
 const corsOptions: CorsOptions = {
@@ -32,10 +21,6 @@ function makeResponse(payload: any, error?: boolean) {
         error,
     };
 }
-
-const tree = setupTree(20);
-const leaves: string[] = [];
-const rootHistory: {[key: string]: boolean} = {};
 
 export default class HttpService extends GenericService {
     app: Express;
@@ -86,7 +71,17 @@ export default class HttpService extends GenericService {
             const context = req.header('x-contextual-name') || undefined;
             const usersDB = await this.call('db', 'getUsers');
             const users = await usersDB.readAll(context, offset, limit);
-            res.send(makeResponse(users));
+            const payload = [];
+
+            for (const user of users) {
+                const space = await fetchSpace(user.ens);
+                payload.push({
+                    ...user,
+                    snapshotSpace: space,
+                });
+            }
+
+            res.send(makeResponse(payload));
         }));
 
         this.app.get('/v1/users/:name', this.wrapHandler(async (req, res) => {
@@ -94,7 +89,11 @@ export default class HttpService extends GenericService {
             const context = req.header('x-contextual-name') || undefined;
             const usersDB = await this.call('db', 'getUsers');
             const user = await usersDB.findOneByName(name, context);
-            res.send(makeResponse(user));
+            const space = await fetchSpace(name);
+            res.send(makeResponse({
+                ...user,
+                snapshotSpace: space,
+            }));
         }));
 
         this.app.get('/v1/replies', this.wrapHandler(async (req, res) => {

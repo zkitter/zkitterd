@@ -76,7 +76,7 @@ const semaphore = (sequelize: Sequelize) => {
                 limit: 1,
             });
             const lastLeaf = leaf?.toJSON() as SemaphoreModel;
-            const lastIndex = lastLeaf?.leaf_index || -1;
+            const lastIndex = Number(lastLeaf?.leaf_index || -1);
             await tree.update(lastIndex + 1, id_commitment);
             const path = await tree.path(lastIndex + 1);
             const root = path.root;

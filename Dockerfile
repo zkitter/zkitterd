@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY tsconfig.json ./
+COPY gun.db ./
 COPY src /app/src
 COPY static /app/static
 COPY webpack.server.config.js /app/webpack.server.config.js

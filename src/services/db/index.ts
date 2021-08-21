@@ -2,7 +2,6 @@ import {GenericService} from "../../util/svc";
 import {Dialect, Sequelize} from "sequelize";
 import app from "../../models/app";
 import config from "../../util/config";
-import logger from "../../util/logger";
 import users from "../../models/users";
 import records from "../../models/records";
 import posts from "../../models/posts";
@@ -15,6 +14,8 @@ import semaphore from "../../models/semaphore";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
+    sqlite: Sequelize;
+
     app?: ReturnType<typeof app>;
     users?: ReturnType<typeof users>;
     records?: ReturnType<typeof records>;
@@ -28,6 +29,12 @@ export default class DBService extends GenericService {
 
     constructor() {
         super();
+
+        this.sqlite = new Sequelize({
+            dialect: 'sqlite',
+            storage: './gun.db',
+            logging: false,
+        });
 
         if (!config.dbDialect || config.dbDialect === 'sqlite') {
             this.sequelize = new Sequelize({
@@ -125,12 +132,12 @@ export default class DBService extends GenericService {
 
     async start() {
         this.app = await app(this.sequelize);
-        this.records = await records(this.sequelize);
+        this.records = await records(this.sqlite);
         this.meta = await meta(this.sequelize);
         this.userMeta = await userMeta(this.sequelize);
         this.moderations = await moderations(this.sequelize);
         this.connections = await connections(this.sequelize);
-        this.users = await users(this.sequelize, this.userMeta);
+        this.users = await users(this.sequelize);
         this.posts = await posts(this.sequelize);
         this.profiles = await profiles(this.sequelize);
         this.semaphore = await semaphore(this.sequelize);

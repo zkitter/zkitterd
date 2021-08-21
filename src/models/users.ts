@@ -23,7 +23,7 @@ export type UserModel = {
 
 const mutex = new Mutex();
 
-const users = (sequelize: Sequelize, userMeta: ReturnType<typeof userMetaSeq>) => {
+const users = (sequelize: Sequelize) => {
     const model = sequelize.define('users', {
         name: {
             type: STRING,

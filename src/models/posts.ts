@@ -36,10 +36,10 @@ const posts = (sequelize: Sequelize) => {
             allowNull: false,
         },
         proof: {
-            type: STRING,
+            type: STRING(65535),
         },
         signals: {
-            type: STRING,
+            type: STRING(65535),
         },
         type: {
             type: STRING,

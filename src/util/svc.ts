@@ -12,11 +12,11 @@ export class GenericService {
 
     async call(name: string, methodName: string, ...args: any[]) {
         const id = callerId++;
-        logger.debug(`called ${name}.${methodName}`, {
-            ...args,
-            origin: this.name,
-            id: id,
-        });
+        // logger.debug(`called ${name}.${methodName}`, {
+        //     ...args,
+        //     origin: this.name,
+        //     id: id,
+        // });
 
         if (this.main) {
             const service: any = this.main.services[name];
@@ -24,13 +24,14 @@ export class GenericService {
             if (typeof method === 'function') {
                 try {
                     const resp = await method.apply(service, args);
-                    logger.debug(`handled ${name}.${methodName}`, {
-                        origin: this.name,
-                        id: id,
-                    });
+                    // logger.debug(`handled ${name}.${methodName}`, {
+                    //     origin: this.name,
+                    //     id: id,
+                    // });
                     return resp;
                 } catch (e) {
                     logger.error(e.message, {
+                        method: `${name}.${methodName}`,
                         origin: this.name,
                         id: id,
                     });

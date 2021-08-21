@@ -453,6 +453,12 @@ export default class GunService extends GenericService {
                         relation,
                     });
 
+                    logger.info('handled PUT', {
+                        soul,
+                        field,
+                        origin: 'gun',
+                    });
+
                     // Send ack back
                     // @ts-ignore
                     gun.on('in', {
@@ -493,7 +499,6 @@ export default class GunService extends GenericService {
                         const val = relation ? Val.rel.ify(relation) : value;
                         node = State.ify(node, record.field, state, val, soul);
                         node = State.to(node, field);
-                        node = Graph.node(node);
                     } else {
                         const records = await recordDB.findAll(soul);
                         for (let record of records) {
@@ -508,6 +513,7 @@ export default class GunService extends GenericService {
                         field,
                         origin: 'gun',
                     });
+
                     // @ts-ignore
                     gun.on('in', {
                         '@' : msg['#'],

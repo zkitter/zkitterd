@@ -116,6 +116,26 @@ export default class HttpService extends GenericService {
             res.send(makeResponse(posts));
         }));
 
+        this.app.get('/v1/:creator/replies', this.wrapHandler(async (req, res) => {
+            const limit = req.query.limit && Number(req.query.limit);
+            const offset = req.query.offset && Number(req.query.offset);
+            const creator = req.params.creator;
+            const context = req.header('x-contextual-name') || undefined;
+            const postDB = await this.call('db', 'getPosts');
+            const posts = await postDB.findAllRepliesFromCreator(creator, context, offset, limit);
+            res.send(makeResponse(posts));
+        }));
+
+        this.app.get('/v1/:creator/likes', this.wrapHandler(async (req, res) => {
+            const limit = req.query.limit && Number(req.query.limit);
+            const offset = req.query.offset && Number(req.query.offset);
+            const creator = req.params.creator;
+            const context = req.header('x-contextual-name') || undefined;
+            const postDB = await this.call('db', 'getPosts');
+            const posts = await postDB.findAllLikedPostsByCreator(creator, context, offset, limit);
+            res.send(makeResponse(posts));
+        }));
+
         this.app.get('/v1/homefeed', this.wrapHandler(async (req, res) => {
             const limit = req.query.limit && Number(req.query.limit);
             const offset = req.query.offset && Number(req.query.offset);

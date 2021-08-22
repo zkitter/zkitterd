@@ -137,6 +137,38 @@ const posts = (sequelize: Sequelize) => {
         return values;
     }
 
+    const findAllRepliesFromCreator = async (
+        creator?: string,
+        context?: string,
+        offset = 0,
+        limit = 20,
+        order: 'DESC' | 'ASC' = 'DESC',
+    ): Promise<PostJSON[]> => {
+        const result = await sequelize.query(`
+            ${selectJoinQuery}
+            WHERE p.subtype = 'REPLY' AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}
+            ORDER BY p."createdAt" ${order}
+            LIMIT :limit OFFSET :offset
+        `, {
+            replacements: {
+                context: context || '',
+                creator: creator || '',
+                limit,
+                offset,
+            },
+            type: QueryTypes.SELECT,
+        });
+
+        const values: PostJSON[] = [];
+
+        for (let r of result) {
+            const post = inflateResultToPostJSON(r);
+            values.push(post);
+        }
+
+        return values;
+    }
+
     const getHomeFeed = async (
         context?: string,
         offset = 0,
@@ -185,6 +217,37 @@ const posts = (sequelize: Sequelize) => {
         `, {
             replacements: {
                 reference,
+                context: context || '',
+                limit,
+                offset,
+            },
+            type: QueryTypes.SELECT,
+        });
+
+        const values: PostJSON[] = [];
+        for (let r of result) {
+            const post = inflateResultToPostJSON(r);
+            values.push(post);
+        }
+
+        return values;
+    }
+
+    const findAllLikedPostsByCreator = async (
+        creator: string,
+        context?: string,
+        offset = 0,
+        limit = 20,
+        order: 'DESC' | 'ASC' = 'ASC',
+    ): Promise<PostJSON[]> => {
+        const result = await sequelize.query(`
+            ${selectLikedPostsQuery}
+            WHERE p."createdAt" != -1${creator ? ' AND mod.creator = :creator' : ''}
+            ORDER BY p."createdAt" ${order}
+            LIMIT :limit OFFSET :offset
+        `, {
+            replacements: {
+                creator,
                 context: context || '',
                 limit,
                 offset,
@@ -258,6 +321,8 @@ const posts = (sequelize: Sequelize) => {
         model,
         findOne,
         findAllPosts,
+        findAllRepliesFromCreator,
+        findAllLikedPostsByCreator,
         findAllReplies,
         getHomeFeed,
         createPost,
@@ -328,6 +393,38 @@ const selectJoinQuery = `
     FROM posts p
         LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = p."messageId" AND creator = :context LIMIT 1)
         LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN meta mt ON mt."messageId" = p."messageId"
+        LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."messageId" = p.reference
+`;
+
+const selectLikedPostsQuery = `
+    SELECT
+        p.hash,
+        p.creator,
+        p.type,
+        p.subtype,
+        p."createdAt",
+        p.topic,
+        p.title,
+        p.content,
+        p.reference,
+        p.attachment,
+        m."messageId" as liked,
+        rpm."messageId" as rpLiked,
+        rp."messageId" as reposted,
+        rprp."messageId" as rpReposted,
+        mt."replyCount",
+        mt."repostCount",
+        mt."likeCount",
+        rpmt."replyCount" as rpReplyCount,
+        rpmt."repostCount" as rpRepostCount,
+        rpmt."likeCount" as rpLikeCount
+    FROM moderations mod
+        LEFT JOIN posts p ON p."messageId" = mod.reference
+        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = p."messageId" AND creator = :context LIMIT 1)
+        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."messageId" = p."messageId"

@@ -181,7 +181,12 @@ export default class GunService extends GenericService {
             });
 
             if (payload.reference) {
-                await postDB.ensurePost(payload.reference);
+                try {
+                    // @ts-ignore
+                    new URL(payload.reference);
+                } catch (e) {
+                    await postDB.ensurePost(payload.reference);
+                }
 
                 if (subtype === PostMessageSubType.Reply) {
                     await metaDB.addReply(payload.reference);
@@ -237,7 +242,6 @@ export default class GunService extends GenericService {
         }
 
         try {
-            const [refName, refHash] = payload.reference.split('/');
             await postDB.ensurePost(payload.reference);
             await moderationDB.createModeration({
                 messageId,
@@ -247,8 +251,6 @@ export default class GunService extends GenericService {
                 creator: creator,
                 createdAt: createdAt,
                 reference: payload.reference,
-                referenceCreator: refHash ? refName : '',
-                referenceHash: refHash || refName,
             });
 
             if (payload.reference) {

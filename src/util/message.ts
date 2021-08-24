@@ -550,3 +550,29 @@ function pad(str: string, len: number) {
 
     return values.join('');
 }
+
+const HEX_64_REGEX = /\b[A-Fa-f0-9]{64}$\b/;
+export function parseMessageId(id: string) {
+    const parsed = id.split('/');
+    let hash = '', creator = '';
+
+    if (parsed.length > 2) return { hash: '', creator: ''};
+
+    if (parsed.length === 2) {
+        creator = parsed[0];
+        hash = parsed[1];
+    }
+
+    if (parsed.length === 1) {
+        hash = parsed[0];
+    }
+
+    if (!hash) return { hash: '', creator: ''};
+
+    if (!HEX_64_REGEX.test(hash)) return { hash: '', creator: ''};
+
+    return {
+        creator,
+        hash,
+    };
+}

@@ -11,6 +11,7 @@ import profiles from "../../models/profiles";
 import userMeta from "../../models/userMeta";
 import connections from "../../models/connections";
 import semaphore from "../../models/semaphore";
+import proposalMeta from "../../models/proposalMeta";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
@@ -23,9 +24,10 @@ export default class DBService extends GenericService {
     profiles?: ReturnType<typeof profiles>;
     moderations?: ReturnType<typeof moderations>;
     connections?: ReturnType<typeof connections>;
+    semaphore?: ReturnType<typeof semaphore>;
     meta?: ReturnType<typeof meta>;
     userMeta?: ReturnType<typeof userMeta>;
-    semaphore?: ReturnType<typeof semaphore>;
+    proposalMeta?: ReturnType<typeof proposalMeta>;
 
     constructor() {
         super();
@@ -116,6 +118,14 @@ export default class DBService extends GenericService {
         return this.userMeta;
     }
 
+    async getProposalMeta(): Promise<ReturnType<typeof proposalMeta>> {
+        if (!this.proposalMeta) {
+            return Promise.reject(new Error('proposalMeta is not initialized'));
+        }
+
+        return this.proposalMeta;
+    }
+
     async getApp(): Promise<ReturnType<typeof app>> {
         if (!this.app) {
             return Promise.reject(new Error('app is not initialized'));
@@ -131,10 +141,11 @@ export default class DBService extends GenericService {
     }
 
     async start() {
-        this.app = await app(this.sequelize);
+        this.app = await app(this.sqlite);
         this.records = await records(this.sqlite);
         this.meta = await meta(this.sequelize);
         this.userMeta = await userMeta(this.sequelize);
+        this.proposalMeta = await proposalMeta(this.sequelize);
         this.moderations = await moderations(this.sequelize);
         this.connections = await connections(this.sequelize);
         this.users = await users(this.sequelize);
@@ -142,16 +153,21 @@ export default class DBService extends GenericService {
         this.profiles = await profiles(this.sequelize);
         this.semaphore = await semaphore(this.sequelize);
 
+
         await this.app?.model.sync({ force: !!process.env.FORCE });
-        await this.userMeta?.model.sync({ force: !!process.env.FORCE });
-        await this.users?.model.sync({ force: !!process.env.FORCE });
         await this.records?.model.sync({ force: !!process.env.FORCE });
-        await this.meta?.model.sync({ force: !!process.env.FORCE });
+
+        await this.semaphore?.model.sync({ force: !!process.env.FORCE });
+
+        await this.users?.model.sync({ force: !!process.env.FORCE });
         await this.moderations?.model.sync({ force: !!process.env.FORCE });
         await this.connections?.model.sync({ force: !!process.env.FORCE });
         await this.profiles?.model.sync({ force: !!process.env.FORCE });
         await this.posts?.model.sync({ force: !!process.env.FORCE });
-        await this.semaphore?.model.sync({ force: !!process.env.FORCE });
+
+        await this.userMeta?.model.sync({ force: !!process.env.FORCE });
+        await this.meta?.model.sync({ force: !!process.env.FORCE });
+        await this.proposalMeta?.model.sync({ force: !!process.env.FORCE });
 
         const appData = await this.app?.read();
 

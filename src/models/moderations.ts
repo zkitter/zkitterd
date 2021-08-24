@@ -9,8 +9,6 @@ type ModerationModel = {
     subtype: string;
     createdAt: number;
     reference: string;
-    referenceCreator: string;
-    referenceHash: string;
 };
 
 const moderations = (sequelize: Sequelize) => {
@@ -42,18 +40,10 @@ const moderations = (sequelize: Sequelize) => {
         reference: {
             type: STRING,
         },
-        referenceCreator: {
-            type: STRING,
-        },
-        referenceHash: {
-            type: STRING,
-        },
     }, {
         indexes: [
             { fields: ['creator'] },
             { fields: ['subtype'] },
-            { fields: ['referenceCreator'] },
-            { fields: ['referenceHash'] },
             { fields: ['hash'], unique: true },
             { fields: ['messageId'], unique: true },
         ],

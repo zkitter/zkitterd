@@ -6,7 +6,7 @@ import http from 'http';
 import config from "../util/config";
 import logger from "../util/logger";
 import path from "path";
-import {fetchSpace} from "../util/snapshot";
+import {fetchProposal, fetchProposals, fetchSpace, fetchVotes} from "../util/snapshot";
 const jsonParser = bodyParser.json();
 
 const corsOptions: CorsOptions = {
@@ -92,8 +92,76 @@ export default class HttpService extends GenericService {
             const space = await fetchSpace(name);
             res.send(makeResponse({
                 ...user,
+                ens: name,
                 snapshotSpace: space,
             }));
+        }));
+
+        this.app.get('/v1/snapshot-proposals', this.wrapHandler(async (req, res) => {
+            const limit = req.query.limit ? Number(req.query.limit) : undefined;
+            const offset = req.query.offset ? Number(req.query.offset) : undefined;
+            const creator = req.query.creator as string;
+            const context = req.header('x-contextual-name') || undefined;
+            const proposals = await fetchProposals(creator, offset, limit);
+            const db = await this.call('db', 'getProposalMeta');
+            const scores = await db.getProposalMetas(proposals.map(p => p.id));
+            const result: any = [];
+
+            proposals.forEach((proposal, i) => {
+                result.push({
+                    ...proposal,
+                    meta: {
+                        scores: scores[proposal.id],
+                    },
+                });
+            })
+
+            res.send(makeResponse(result));
+        }));
+
+        this.app.get('/v1/snapshot-proposal/:proposalId', this.wrapHandler(async (req, res) => {
+            const proposalId = req.params.proposalId as string;
+            const context = req.header('x-contextual-name') || undefined;
+            const db = await this.call('db', 'getProposalMeta');
+            const scores = await db.getProposalMeta(proposalId);
+            const {data} = await fetchProposal(proposalId);
+            res.send(makeResponse({
+                ...data.proposal,
+                meta: {
+                    scores: scores,
+                },
+            }));
+        }));
+
+        this.app.get('/v1/snapshot-votes/:proposalId', this.wrapHandler(async (req, res) => {
+            const proposalId = req.params.proposalId as string;
+            const db = await this.call('db', 'getProposalMeta');
+
+            const savedData = await db.getProposalMeta(proposalId);
+
+            if (savedData.length) {
+                res.send(makeResponse(savedData));
+                return;
+            }
+
+            const {data} = await fetchProposal(proposalId, true);
+            const votes = await fetchVotes(data.proposal, data.votes);
+
+            if (data.proposal.state === 'closed' && data.proposal.end < (Date.now() / 1000)) {
+                for (let i = 0; i < votes.length; i++) {
+                    const vote = votes[i];
+                    try {
+                        await db.createProposalMeta({
+                            proposal_id: proposalId,
+                            space_id: data.proposal.space.id,
+                            choice: i,
+                            score: vote,
+                        });
+                    } catch (e) {}
+                }
+            }
+
+            res.send(makeResponse(votes));
         }));
 
         this.app.get('/v1/replies', this.wrapHandler(async (req, res) => {

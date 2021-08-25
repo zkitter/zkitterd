@@ -157,7 +157,9 @@ export default class HttpService extends GenericService {
                             choice: i,
                             score: vote,
                         });
-                    } catch (e) {}
+                    } catch (e) {
+                        logger.error(e.message, e);
+                    }
                 }
             }
 

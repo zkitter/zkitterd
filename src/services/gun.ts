@@ -407,7 +407,6 @@ export default class GunService extends GenericService {
         // @ts-ignore
         gun.on('put', async function (msg: any) {
             return putMutex.runExclusive(async () => {
-                logger.info('received PUT', { origin: 'gun' });
                 // @ts-ignore
                 this.to.next(msg);
 
@@ -455,7 +454,7 @@ export default class GunService extends GenericService {
                         relation,
                     });
 
-                    logger.info('handled PUT', {
+                    logger.debug('handled PUT', {
                         soul,
                         field,
                         origin: 'gun',
@@ -486,7 +485,6 @@ export default class GunService extends GenericService {
                 // Extract soul from message
                 const soul = msg.get['#'];
                 const field = msg.get['.'];
-                logger.info('received GET', { origin: 'gun', soul, field });
 
                 try {
                     const recordDB = await ctx.call('db', 'getRecords');
@@ -510,7 +508,7 @@ export default class GunService extends GenericService {
                         }
                     }
 
-                    logger.info('handled GET', {
+                    logger.debug('handled GET', {
                         soul,
                         field,
                         origin: 'gun',

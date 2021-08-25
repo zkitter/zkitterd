@@ -1,4 +1,4 @@
-import {BIGINT, Sequelize, STRING} from "sequelize";
+import {BIGINT, FLOAT, Sequelize, STRING} from "sequelize";
 import {Mutex} from "async-mutex";
 
 type ProposalMetaModel = {
@@ -22,7 +22,7 @@ const proposalMeta = (sequelize: Sequelize) => {
             type: BIGINT,
         },
         score: {
-            type: BIGINT,
+            type: FLOAT,
         },
     }, {
         indexes: [

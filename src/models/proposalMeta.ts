@@ -40,6 +40,7 @@ const proposalMeta = (sequelize: Sequelize) => {
 
         if (!result) return [];
 
+
         return result?.map(r => (r.toJSON() as ProposalMetaModel).score) || [];
     }
 

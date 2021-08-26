@@ -332,7 +332,7 @@ const posts = (sequelize: Sequelize) => {
 
 export default posts;
 
-function inflateResultToPostJSON(r: any): PostJSON {
+export function inflateResultToPostJSON(r: any): PostJSON {
     const json = r as any;
 
     const meta = {

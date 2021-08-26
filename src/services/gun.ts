@@ -139,12 +139,14 @@ export default class GunService extends GenericService {
         const postDB = await this.call('db', 'getPosts');
         const metaDB = await this.call('db', 'getMeta');
         const semaphoreDB = await this.call('db', 'getSemaphore');
+        const tagDB = await this.call('db', 'getTags');
 
         if (json.hash !== hash) {
             return;
         }
 
         const result = await postDB.findOne(hash);
+
 
         if (result) {
             logger.debug('post already exist', {
@@ -194,6 +196,14 @@ export default class GunService extends GenericService {
 
                 if (subtype === PostMessageSubType.Repost) {
                     await metaDB.addRepost(payload.reference);
+                }
+            }
+
+            const tags = payload.content?.match(/\#[\w\u0590-\u05ff]+/g);
+
+            if (tags) {
+                for (const tagName of tags) {
+                    await tagDB.addTagPost(tagName, messageId);
                 }
             }
 

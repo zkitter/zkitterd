@@ -104,14 +104,21 @@ export default class HttpService extends GenericService {
             const context = req.header('x-contextual-name') || undefined;
             const proposals = await fetchProposals(creator, offset, limit);
             const db = await this.call('db', 'getProposalMeta');
+            const metaDB = await this.call('db', 'getMeta');
             const scores = await db.getProposalMetas(proposals.map(p => p.id));
+            const metas = await metaDB.findMany(
+                proposals.map(p => `https://snapshot.org/#/${p.space.id}/proposal/${p.id}`),
+                context,
+            );
             const result: any = [];
 
             proposals.forEach((proposal, i) => {
+                const ref = `https://snapshot.org/#/${proposal.space.id}/proposal/${proposal.id}`;
                 result.push({
                     ...proposal,
                     meta: {
                         scores: scores[proposal.id],
+                        ...metas[ref],
                     },
                 });
             })
@@ -123,12 +130,16 @@ export default class HttpService extends GenericService {
             const proposalId = req.params.proposalId as string;
             const context = req.header('x-contextual-name') || undefined;
             const db = await this.call('db', 'getProposalMeta');
+            const metaDB = await this.call('db', 'getMeta');
             const scores = await db.getProposalMeta(proposalId);
             const {data} = await fetchProposal(proposalId);
+            const ref = `https://snapshot.org/#/${data.proposal.space.id}/proposal/${data.proposal.id}`;
+            const meta = await metaDB.findOne(ref, context);
             res.send(makeResponse({
                 ...data.proposal,
                 meta: {
                     scores: scores,
+                    ...meta,
                 },
             }));
         }));
@@ -183,6 +194,16 @@ export default class HttpService extends GenericService {
             const context = req.header('x-contextual-name') || undefined;
             const postDB = await this.call('db', 'getPosts');
             const posts = await postDB.findAllPosts(creator, context, offset, limit);
+            res.send(makeResponse(posts));
+        }));
+
+        this.app.get('/v1/tags/:tagName', this.wrapHandler(async (req, res) => {
+            const limit = req.query.limit && Number(req.query.limit);
+            const offset = req.query.offset && Number(req.query.offset);
+            const tagName = req.params.tagName;
+            const context = req.header('x-contextual-name') || undefined;
+            const tagDB = await this.call('db', 'getTags');
+            const posts = await tagDB.getPostsByTag(tagName, context, offset, limit);
             res.send(makeResponse(posts));
         }));
 

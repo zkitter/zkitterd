@@ -12,6 +12,7 @@ import userMeta from "../../models/userMeta";
 import connections from "../../models/connections";
 import semaphore from "../../models/semaphore";
 import proposalMeta from "../../models/proposalMeta";
+import tags from "../../models/tags";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
@@ -24,6 +25,7 @@ export default class DBService extends GenericService {
     profiles?: ReturnType<typeof profiles>;
     moderations?: ReturnType<typeof moderations>;
     connections?: ReturnType<typeof connections>;
+    tags?: ReturnType<typeof tags>;
     semaphore?: ReturnType<typeof semaphore>;
     meta?: ReturnType<typeof meta>;
     userMeta?: ReturnType<typeof userMeta>;
@@ -110,6 +112,14 @@ export default class DBService extends GenericService {
         return this.meta;
     }
 
+    async getTags(): Promise<ReturnType<typeof tags>> {
+        if (!this.tags) {
+            return Promise.reject(new Error('tags is not initialized'));
+        }
+
+        return this.tags;
+    }
+
     async getUserMeta(): Promise<ReturnType<typeof userMeta>> {
         if (!this.userMeta) {
             return Promise.reject(new Error('userMeta is not initialized'));
@@ -150,6 +160,7 @@ export default class DBService extends GenericService {
         this.connections = await connections(this.sequelize);
         this.users = await users(this.sequelize);
         this.posts = await posts(this.sequelize);
+        this.tags = await tags(this.sequelize);
         this.profiles = await profiles(this.sequelize);
         this.semaphore = await semaphore(this.sequelize);
 
@@ -164,6 +175,7 @@ export default class DBService extends GenericService {
         await this.connections?.model.sync({ force: !!process.env.FORCE });
         await this.profiles?.model.sync({ force: !!process.env.FORCE });
         await this.posts?.model.sync({ force: !!process.env.FORCE });
+        await this.tags?.model.sync({ force: !!process.env.FORCE });
 
         await this.userMeta?.model.sync({ force: !!process.env.FORCE });
         await this.meta?.model.sync({ force: !!process.env.FORCE });

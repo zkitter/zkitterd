@@ -7,6 +7,7 @@ type UserMetaModel = {
     followingCount: number;
     blockedCount: number;
     blockingCount: number;
+    mentionedCount: number;
 };
 
 const mutex = new Mutex();
@@ -28,6 +29,9 @@ const userMeta = (sequelize: Sequelize) => {
             type: BIGINT,
         },
         blockingCount: {
+            type: BIGINT,
+        },
+        mentionedCount: {
             type: BIGINT,
         },
     }, {

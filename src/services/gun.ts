@@ -16,6 +16,7 @@ import {
 } from "../util/message";
 import {Mutex} from "async-mutex";
 import {UserModel} from "../models/users";
+import {HASHTAG_REGEX, MENTION_REGEX} from "../util/regex";
 
 const Graph = require("gun/src/graph");
 const State = require("gun/src/state");
@@ -138,6 +139,7 @@ export default class GunService extends GenericService {
         const creator = post.creator;
         const postDB = await this.call('db', 'getPosts');
         const metaDB = await this.call('db', 'getMeta');
+        const userMetaDB = await this.call('db', 'getUserMeta');
         const semaphoreDB = await this.call('db', 'getSemaphore');
         const tagDB = await this.call('db', 'getTags');
 
@@ -199,11 +201,24 @@ export default class GunService extends GenericService {
                 }
             }
 
-            const tags = payload.content?.match(/\#[\w\u0590-\u05ff]+/g);
+            if (!payload.reference && creator) {
+                await userMetaDB.addPostingCount(creator);
+            }
+
+            const tags = payload.content?.match(HASHTAG_REGEX);
 
             if (tags) {
                 for (const tagName of tags) {
                     await tagDB.addTagPost(tagName, messageId);
+                    await metaDB.addPost(tagName);
+                }
+            }
+
+            const mentions = payload.content?.match(MENTION_REGEX);
+
+            if (mentions) {
+                for (const mention of mentions) {
+                    await userMetaDB.addMentionedCount(mention.slice(1));
                 }
             }
 

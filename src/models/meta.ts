@@ -2,20 +2,31 @@ import {BIGINT, QueryTypes, Sequelize, STRING} from "sequelize";
 import {Mutex} from "async-mutex";
 
 type MetaModel = {
-    messageId: string;
+    reference: string;
     replyCount: number;
     likeCount: number;
     repostCount: number;
+    postCount: number;
 };
 
 const mutex = new Mutex();
 
+const emptyMeta = {
+    replyCount: 0,
+    likeCount: 0,
+    repostCount: 0,
+    postCount: 0,
+};
+
 const meta = (sequelize: Sequelize) => {
     const model = sequelize.define('meta', {
-        messageId: {
+        reference: {
             type: STRING,
             allowNull: false,
             primaryKey: true,
+        },
+        postCount: {
+            type: BIGINT,
         },
         replyCount: {
             type: BIGINT,
@@ -28,7 +39,7 @@ const meta = (sequelize: Sequelize) => {
         },
     }, {
         indexes: [
-            { fields: ['messageId'], unique: true },
+            { fields: ['reference'], unique: true },
         ],
     });
 
@@ -53,6 +64,7 @@ const meta = (sequelize: Sequelize) => {
                 replyCount: row.replyCount ? Number(row.replyCount) : 0,
                 repostCount: row.repostCount ? Number(row.repostCount) : 0,
                 likeCount: row.likeCount ? Number(row.likeCount) : 0,
+                postCount: row.postCount ? Number(row.postCount) : 0,
             };
             values.push(meta);
         }
@@ -60,9 +72,7 @@ const meta = (sequelize: Sequelize) => {
         return values[0] ? values[0] : {
             liked: null,
             reposted: null,
-            replyCount: 0,
-            repostCount: 0,
-            likeCount: 0,
+            ...emptyMeta,
         };
     }
 
@@ -78,7 +88,7 @@ const meta = (sequelize: Sequelize) => {
         });
 
         const mapping = result.reduce((acc: any, row: any) => {
-            acc[row.messageId] = row;
+            acc[row.reference] = row;
             return acc;
         }, {});
 
@@ -93,6 +103,7 @@ const meta = (sequelize: Sequelize) => {
                 replyCount: row?.replyCount ? Number(row?.replyCount) : 0,
                 repostCount: row?.repostCount ? Number(row?.repostCount) : 0,
                 likeCount: row?.likeCount ? Number(row?.likeCount) : 0,
+                postCount: row?.postCount ? Number(row?.postCount) : 0,
             };
             values[reference] = meta;
         }
@@ -100,11 +111,37 @@ const meta = (sequelize: Sequelize) => {
         return values;
     }
 
-    const addLike = async (messageId: string) => {
+    const findTags = async (
+        offset = 0,
+        limit = 20,
+    ) => {
+        const result = await sequelize.query(`
+            SELECT
+                "reference",
+                "postCount"
+            from meta
+            WHERE "reference" LIKE '#%'
+            ORDER BY "postCount" DESC
+            LIMIT :limit OFFSET :offset
+        `, {
+            replacements: {
+                limit,
+                offset,
+            },
+            type: QueryTypes.SELECT,
+        });
+
+        return result.map((r: any) => ({
+            tagName: r.reference,
+            postCount: Number(r.postCount),
+        }));
+    }
+
+    const addLike = async (reference: string) => {
         return mutex.runExclusive(async () => {
             const result = await model.findOne({
                 where: {
-                    messageId,
+                    reference,
                 },
             });
 
@@ -117,20 +154,19 @@ const meta = (sequelize: Sequelize) => {
             }
 
             const res = await model.create({
-                messageId,
+                reference,
+                ...emptyMeta,
                 likeCount: 1,
-                replyCount: 0,
-                repostCount: 0,
             });
 
             return res;
         });
     }
 
-    const addReply = async (messageId: string) => {
+    const addReply = async (reference: string) => {
         return mutex.runExclusive(async () => {
             const result = await model.findOne({
-                where: { messageId },
+                where: { reference },
             });
 
             if (result) {
@@ -142,21 +178,20 @@ const meta = (sequelize: Sequelize) => {
             }
 
             const res = await model.create({
-                messageId,
-                likeCount: 0,
+                reference,
+                ...emptyMeta,
                 replyCount: 1,
-                repostCount: 0,
             });
 
             return res;
         });
     }
 
-    const addRepost = async (messageId: string) => {
+    const addRepost = async (reference: string) => {
         return mutex.runExclusive(async () => {
             const result = await model.findOne({
                 where: {
-                    messageId,
+                    reference,
                 },
             });
 
@@ -169,10 +204,35 @@ const meta = (sequelize: Sequelize) => {
             }
 
             const res = await model.create({
-                messageId,
-                likeCount: 0,
-                replyCount: 0,
+                reference,
+                ...emptyMeta,
                 repostCount: 1,
+            });
+
+            return res;
+        });
+    }
+
+    const addPost = async (reference: string) => {
+        return mutex.runExclusive(async () => {
+            const result = await model.findOne({
+                where: {
+                    reference,
+                },
+            });
+
+            if (result) {
+                const data = result.toJSON() as MetaModel;
+                return result.update({
+                    ...data,
+                    postCount: Number(data.postCount) + 1,
+                });
+            }
+
+            const res = await model.create({
+                reference,
+                ...emptyMeta,
+                postCount: 1,
             });
 
             return res;
@@ -183,9 +243,11 @@ const meta = (sequelize: Sequelize) => {
         model,
         findOne,
         findMany,
+        findTags,
         addLike,
         addReply,
         addRepost,
+        addPost,
     };
 }
 
@@ -198,11 +260,11 @@ SELECT
     mt."replyCount",
     mt."repostCount",
     mt."likeCount",
-    mt."messageId"
+    mt."reference"
 FROM meta mt
-    LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = mt."messageId" AND creator = :context AND subtype = 'LIKE' LIMIT 1)
-    LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE mt."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
-WHERE mt."messageId" = :reference
+    LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = mt."reference" AND creator = :context AND subtype = 'LIKE' LIMIT 1)
+    LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE mt."reference" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
+WHERE mt."reference" = :reference
 `;
 
 const selectManyMetaQuery = `
@@ -212,9 +274,9 @@ SELECT
     mt."replyCount",
     mt."repostCount",
     mt."likeCount",
-    mt."messageId"
+    mt."reference"
 FROM meta mt
-    LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = mt."messageId" AND creator = :context AND subtype = 'LIKE' LIMIT 1)
-    LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE mt."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
-WHERE mt."messageId" in (:references)
+    LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = mt."reference" AND creator = :context AND subtype = 'LIKE' LIMIT 1)
+    LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE mt."reference" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
+WHERE mt."reference" in (:references)
 `;

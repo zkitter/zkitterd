@@ -395,8 +395,8 @@ const selectJoinQuery = `
         LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
-        LEFT JOIN meta mt ON mt."messageId" = p."messageId"
-        LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."messageId" = p.reference
+        LEFT JOIN meta mt ON mt."reference" = p."messageId"
+        LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."reference" = p.reference
 `;
 
 const selectLikedPostsQuery = `
@@ -427,6 +427,6 @@ const selectLikedPostsQuery = `
         LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
-        LEFT JOIN meta mt ON mt."messageId" = p."messageId"
-        LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."messageId" = p.reference
+        LEFT JOIN meta mt ON mt."reference" = p."messageId"
+        LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."reference" = p.reference
 `;

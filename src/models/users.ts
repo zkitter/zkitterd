@@ -16,6 +16,8 @@ export type UserModel = {
         blockingCount: number;
         followerCount: number;
         followingCount: number;
+        postingCount: number;
+        mentionedCount: number;
         followed: string | null;
         blocked: string | null;
     }
@@ -85,12 +87,31 @@ const users = (sequelize: Sequelize) => {
     const readAll = async (context = '', offset = 0, limit = 20): Promise<UserModel[]> => {
         const values = await sequelize.query(`
             ${userSelectQuery}
+            ORDER BY (umt."followerCount"+umt."postingCount"+umt."mentionedCount") DESC
+            LIMIT :limit OFFSET :offset
+        `, {
+            type: QueryTypes.SELECT,
+            replacements: {
+                context: context || '',
+                limit,
+                offset,
+            },
+        });
+
+        return inflateValuesToUserJSON(values);
+    }
+
+    const search = async (query: string, context = '', offset = 0, limit = 5): Promise<UserModel[]> => {
+        const values = await sequelize.query(`
+            ${userSelectQuery}
+            WHERE u."name" LIKE :query
             ORDER BY u."joinedAt" ASC
             LIMIT :limit OFFSET :offset
         `, {
             type: QueryTypes.SELECT,
             replacements: {
                 context: context || '',
+                query: `${query}%`,
                 limit,
                 offset,
             },
@@ -143,6 +164,7 @@ const users = (sequelize: Sequelize) => {
         findOneByName,
         findOneByPubkey,
         readAll,
+        search,
         updateOrCreateUser,
     };
 }
@@ -158,6 +180,8 @@ const userSelectQuery = `
         umt."followingCount",
         umt."blockedCount",
         umt."blockingCount",
+        umt."postingCount",
+        umt."mentionedCount",
         f."messageId" as followed,
         b."messageId" as blocked,
         bio.value as bio,
@@ -180,17 +204,19 @@ function inflateValuesToUserJSON(values: any[]): UserModel[] {
     return values.map(value => ({
         ens: value.name,
         pubkey: value.pubkey,
-        joinedAt: value.joinedAt,
+        joinedAt: Number(value.joinedAt),
         name: value.nickname || '',
         bio: value.bio || '',
         profileImage: value.profileImage || '',
         coverImage: value.coverImage || '',
         website: value.website || '',
         meta: {
-            blockedCount: value.blockedCount || 0,
-            blockingCount: value.blockingCount || 0,
-            followerCount: value.followerCount || 0,
-            followingCount: value.followingCount || 0,
+            blockedCount: value.blockedCount ? Number(value.blockedCount) : 0,
+            blockingCount: value.blockingCount ? Number(value.blockingCount) : 0,
+            followerCount: value.followerCount ? Number(value.followerCount) : 0,
+            followingCount: value.followingCount ? Number(value.followingCount) : 0,
+            postingCount: value.postingCount ? Number(value.postingCount) : 0,
+            mentionedCount: value.mentionedCount ? Number(value.mentionedCount) : 0,
             followed: value.followed,
             blocked: value.blocked,
         },

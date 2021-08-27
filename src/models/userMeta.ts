@@ -8,9 +8,19 @@ type UserMetaModel = {
     blockedCount: number;
     blockingCount: number;
     mentionedCount: number;
+    postingCount: number;
 };
 
 const mutex = new Mutex();
+
+const emptyMeta = {
+    followerCount: 0,
+    followingCount: 0,
+    blockedCount: 0,
+    blockingCount: 0,
+    mentionedCount: 0,
+    postingCount: 0,
+};
 
 const userMeta = (sequelize: Sequelize) => {
     const model = sequelize.define('usermeta', {
@@ -34,6 +44,9 @@ const userMeta = (sequelize: Sequelize) => {
         mentionedCount: {
             type: BIGINT,
         },
+        postingCount: {
+            type: BIGINT,
+        },
     }, {
         indexes: [
             { fields: ['name'], unique: true }
@@ -48,10 +61,7 @@ const userMeta = (sequelize: Sequelize) => {
         });
 
         return result?.toJSON() as UserMetaModel || {
-            followerCount: 0,
-            followingCount: 0,
-            blockedCount: 0,
-            blockingCount: 0,
+            ...emptyMeta,
         };
     }
 
@@ -71,10 +81,8 @@ const userMeta = (sequelize: Sequelize) => {
 
             const res = await model.create({
                 name,
+                ...emptyMeta,
                 followerCount: 1,
-                followingCount: 0,
-                blockedCount: 0,
-                blockingCount: 0,
             });
 
             return res;
@@ -98,10 +106,8 @@ const userMeta = (sequelize: Sequelize) => {
 
             const res = await model.create({
                 name,
-                followerCount: 0,
+                ...emptyMeta,
                 followingCount: 1,
-                blockedCount: 0,
-                blockingCount: 0,
             });
 
             return res;
@@ -125,10 +131,8 @@ const userMeta = (sequelize: Sequelize) => {
 
             const res = await model.create({
                 name,
-                followerCount: 0,
-                followingCount: 0,
+                ...emptyMeta,
                 blockedCount: 1,
-                blockingCount: 0,
             });
 
             return res;
@@ -152,10 +156,58 @@ const userMeta = (sequelize: Sequelize) => {
 
             const res = await model.create({
                 name,
-                followerCount: 0,
-                followingCount: 0,
-                blockedCount: 0,
+                ...emptyMeta,
                 blockingCount: 1,
+            });
+
+            return res;
+        });
+    }
+
+    const addPostingCount = async (name: string) => {
+        return mutex.runExclusive(async () => {
+
+            const result = await model.findOne({
+                where: { name },
+            });
+
+            if (result) {
+                const data = result.toJSON() as UserMetaModel;
+                return result.update({
+                    ...data,
+                    postingCount: Number(data.postingCount) + 1,
+                });
+            }
+
+            const res = await model.create({
+                name,
+                ...emptyMeta,
+                postingCount: 1,
+            });
+
+            return res;
+        });
+    }
+
+    const addMentionedCount = async (name: string) => {
+        return mutex.runExclusive(async () => {
+
+            const result = await model.findOne({
+                where: { name },
+            });
+
+            if (result) {
+                const data = result.toJSON() as UserMetaModel;
+                return result.update({
+                    ...data,
+                    mentionedCount: Number(data.mentionedCount) + 1,
+                });
+            }
+
+            const res = await model.create({
+                name,
+                ...emptyMeta,
+                mentionedCount: 1,
             });
 
             return res;
@@ -169,6 +221,8 @@ const userMeta = (sequelize: Sequelize) => {
         addFollowing,
         addBlocked,
         addBlocking,
+        addPostingCount,
+        addMentionedCount,
     };
 }
 

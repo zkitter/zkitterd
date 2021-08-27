@@ -84,6 +84,26 @@ export default class HttpService extends GenericService {
             res.send(makeResponse(payload));
         }));
 
+        this.app.get('/v1/users/search/:query?', this.wrapHandler(async (req, res) => {
+            const limit = req.query.limit && Number(req.query.limit);
+            const offset = req.query.offset && Number(req.query.offset);
+            const query = req.params.query;
+            const context = req.header('x-contextual-name') || undefined;
+            const usersDB = await this.call('db', 'getUsers');
+            const users = await usersDB.search(query || '', context, offset, limit);
+            const payload = [];
+
+            // for (const user of users) {
+            //     const space = await fetchSpace(user.ens);
+            //     payload.push({
+            //         ...user,
+            //         snapshotSpace: space,
+            //     });
+            // }
+
+            res.send(makeResponse(users));
+        }));
+
         this.app.get('/v1/users/:name', this.wrapHandler(async (req, res) => {
             const name = req.params.name;
             const context = req.header('x-contextual-name') || undefined;
@@ -205,6 +225,14 @@ export default class HttpService extends GenericService {
             const tagDB = await this.call('db', 'getTags');
             const posts = await tagDB.getPostsByTag(tagName, context, offset, limit);
             res.send(makeResponse(posts));
+        }));
+
+        this.app.get('/v1/tags', this.wrapHandler(async (req, res) => {
+            const limit = req.query.limit && Number(req.query.limit);
+            const offset = req.query.offset && Number(req.query.offset);
+            const db = await this.call('db', 'getMeta');
+            const tags = await db.findTags(offset, limit);
+            res.send(makeResponse(tags));
         }));
 
         this.app.get('/v1/:creator/replies', this.wrapHandler(async (req, res) => {

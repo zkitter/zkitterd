@@ -33,7 +33,13 @@ export default class GunService extends GenericService {
         if (!this.gun) throw new Error('gun is not set up');
 
         this.gun.get('message')
-            .map(async (data, messageId) => this.handleGunMessage(data, messageId));
+            .map(async (data, messageId) => {
+                try {
+                    await this.handleGunMessage(data, messageId);
+                } catch (e) {
+                    logger.error(e.message, e);
+                }
+            });
     }
 
     watch = async (pubkey: string) => {
@@ -46,7 +52,13 @@ export default class GunService extends GenericService {
 
         this.gun.user(pubkey)
             .get('message')
-            .map(async (data, messageId) => this.handleGunMessage(data, messageId, user));
+            .map(async (data, messageId) => {
+                try {
+                    await this.handleGunMessage(data, messageId, user);
+                } catch (e) {
+                    logger.error(e.message, e);
+                }
+            });
     }
 
     handleGunMessage = async (data: any, messageId: string, user?: UserModel) => {
@@ -65,6 +77,10 @@ export default class GunService extends GenericService {
             if(data.payload) {
                 // @ts-ignore
                 payload = await this.gun.get(data.payload['#']);
+            }
+
+            if (!payload) {
+                return;
             }
 
             switch (type) {

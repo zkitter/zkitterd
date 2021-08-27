@@ -105,6 +105,7 @@ const semaphore = (sequelize: Sequelize) => {
     }
 
     const validateProof = async (hash: string, proof: string, publicSignals: string) => {
+        await initTree();
         const parsedProof = unstringifyBigInts(JSON.parse(proof));
         const parsedPublicSignals = unstringifyBigInts(
             JSON.parse(publicSignals)

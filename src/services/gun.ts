@@ -79,17 +79,13 @@ export default class GunService extends GenericService {
                 payload = await this.gun.get(data.payload['#']);
             }
 
-            if (!payload) {
-                return;
-            }
-
             switch (type) {
                 case MessageType.Post:
                     const post = new Post({
                         type: type,
                         subtype: Post.getSubtype(data.subtype),
                         creator: creator,
-                        createdAt: new Date(data.createdAt),
+                        createdAt: new Date(Number(data.createdAt)),
                         payload: {
                             topic: payload.topic,
                             title: payload.title,
@@ -105,7 +101,7 @@ export default class GunService extends GenericService {
                         type: type,
                         subtype: Moderation.getSubtype(data.subtype),
                         creator: creator,
-                        createdAt: new Date(data.createdAt),
+                        createdAt: new Date(Number(data.createdAt)),
                         payload: {
                             reference: payload.reference,
                         },
@@ -117,7 +113,7 @@ export default class GunService extends GenericService {
                         type: type,
                         subtype: Connection.getSubtype(data.subtype),
                         creator: creator,
-                        createdAt: new Date(data.createdAt),
+                        createdAt: new Date(Number(data.createdAt)),
                         payload: {
                             name: payload.name,
                         },
@@ -129,7 +125,7 @@ export default class GunService extends GenericService {
                         type: type,
                         subtype: Profile.getSubtype(data.subtype),
                         creator: creator,
-                        createdAt: new Date(data.createdAt),
+                        createdAt: new Date(Number(data.createdAt)),
                         payload: {
                             key: payload.key,
                             value: payload.value,
@@ -164,7 +160,6 @@ export default class GunService extends GenericService {
         }
 
         const result = await postDB.findOne(hash);
-
 
         if (result) {
             logger.debug('post already exist', {

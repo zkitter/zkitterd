@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 
 let json: {
+    interrepAPI?: string;
     web3HttpProvider?: string;
     ensResolver?: string;
     dbDialect?: string;
@@ -36,6 +37,7 @@ const dbPort = json.dbPort || process.env.DB_PORT;
 const port = json.port || process.env.PORT;
 const gunPort = json.gunPort || process.env.GUN_PORT;
 const gunPeers = json.gunPeers || process.env?.GUN_PEERS?.split(' ') || [];
+const interrepAPI = json.interrepAPI || process.env.INTERREP_APIT || 'https://kovan.interrep.link';
 
 if (!web3HttpProvider) {
     throw new Error('WEB3_HTTP_PROVIDER is not valid');
@@ -46,6 +48,7 @@ if (!ensResolver) {
 }
 
 const config = {
+    interrepAPI,
     web3HttpProvider,
     ensResolver,
     dbDialect,

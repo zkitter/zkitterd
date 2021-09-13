@@ -17,6 +17,8 @@ import {
 import {Mutex} from "async-mutex";
 import {UserModel} from "../models/users";
 import {HASHTAG_REGEX, MENTION_REGEX} from "../util/regex";
+import vKey from "../../static/verification_key.json";
+const snarkjs = require('snarkjs');
 
 const Graph = require("gun/src/graph");
 const State = require("gun/src/state");
@@ -174,8 +176,19 @@ export default class GunService extends GenericService {
         }
 
         if (proof && signals) {
-            const validProof = await semaphoreDB.validateProof(json.hash, proof, signals);
-            if (!validProof) return;
+            const parsedProof = JSON.parse(proof);
+            const [rootStr, nullifierHashStr, signalHashStr, externalNullifier] = JSON.parse(signals);
+            const parsedSignals = [
+                BigInt('0x04eaa07c896526f9bf24c2d050b5b184325bdaf72be6161bea79f880807599ee'),
+                BigInt(nullifierHashStr),
+                BigInt(signalHashStr),
+                externalNullifier,
+            ];
+
+            console.log(parsedProof, parsedSignals)
+            const res = await snarkjs.groth16.verify(vKey, parsedSignals, parsedProof);
+            console.log(res);
+            return;
         }
 
         try {

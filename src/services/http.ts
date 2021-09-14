@@ -31,6 +31,7 @@ export default class HttpService extends GenericService {
         this.app.use(cors(corsOptions));
         this.app.use('/dev/semaphore_wasm', express.static(path.join(process.cwd(), 'static', 'semaphore.wasm')));
         this.app.use('/dev/semaphore_final_zkey', express.static(path.join(process.cwd(), 'static', 'semaphore_final.zkey')));
+        this.app.use('/dev/semaphore_vkey', express.static(path.join(process.cwd(), 'static', 'verification_key.json')));
         this.addRoutes();
     }
 

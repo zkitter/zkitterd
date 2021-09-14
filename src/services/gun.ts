@@ -28,6 +28,9 @@ const getMutex = new Mutex();
 const putMutex = new Mutex();
 const insertMutex = new Mutex();
 
+import { OrdinarySemaphore } from "semaphore-lib";
+OrdinarySemaphore.setHasher('poseidon');
+
 export default class GunService extends GenericService {
     gun?: IGunChainReference;
 
@@ -177,16 +180,24 @@ export default class GunService extends GenericService {
 
         if (proof && signals) {
             const parsedProof = JSON.parse(proof);
-            const [rootStr, nullifierHashStr, signalHashStr, externalNullifier] = JSON.parse(signals);
-            const parsedSignals = [
-                BigInt('0x04eaa07c896526f9bf24c2d050b5b184325bdaf72be6161bea79f880807599ee'),
-                BigInt(nullifierHashStr),
-                BigInt(signalHashStr),
-                externalNullifier,
-            ];
-
-            console.log(parsedProof, parsedSignals)
-            const res = await snarkjs.groth16.verify(vKey, parsedSignals, parsedProof);
+            const parsedSignals = JSON.parse(signals);
+            console.log([
+                BigInt(parsedSignals[0]),
+                BigInt(parsedSignals[1]),
+                BigInt(parsedSignals[2]),
+                parsedSignals[3],
+            ]);
+            const res = await OrdinarySemaphore.verifyProof(
+                vKey,
+                {
+                    proof: parsedProof,
+                    publicSignals: [
+                        BigInt(parsedSignals[0]),
+                        BigInt(parsedSignals[1]),
+                        BigInt(parsedSignals[2]),
+                        parsedSignals[3],
+                    ],
+                });
             console.log(res);
             return;
         }

@@ -25,7 +25,7 @@
     "isomorphic-fetch": "^3.0.0",
     "libsemaphore": "^1.0.16",
     "pg": "^8.7.1",
-    "semaphore-lib": "git+https://github.com/akinovak/semaphore-lib.git",
+    "semaphore-lib": "git+https://github.com/akinovak/semaphore-lib.git#dev",
     "sequelize": "^6.6.2",
     "snarkjs": "^0.4.6",
     "sqlite3": "^5.0.2",

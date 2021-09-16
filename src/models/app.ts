@@ -2,11 +2,15 @@ import {Sequelize, BIGINT} from "sequelize";
 
 type AppModel = {
     lastENSBlockScanned: number;
+    lastInterrepBlockScanned: number;
 };
 
 const app = (sequelize: Sequelize) => {
     const model = sequelize.define('app', {
         lastENSBlockScanned: {
+            type: BIGINT,
+        },
+        lastInterrepBlockScanned: {
             type: BIGINT,
         },
     }, {});
@@ -30,10 +34,25 @@ const app = (sequelize: Sequelize) => {
         });
     }
 
+    const updateLastInterrepBlock = async (blockHeight: number) => {
+        const result = await model.findOne();
+
+        if (result) {
+            return result.update({
+                lastInterrepBlockScanned: blockHeight,
+            });
+        }
+
+        return model.create({
+            lastInterrepBlockScanned: blockHeight,
+        });
+    }
+
     return {
         model,
         read,
         updateLastENSBlock,
+        updateLastInterrepBlock,
     };
 }
 

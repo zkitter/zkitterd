@@ -101,7 +101,6 @@ export default class ENSService extends GenericService {
                 fromBlock: data?.lastENSBlockScanned,
             });
         }
-
     }
 
     scan = async () => {

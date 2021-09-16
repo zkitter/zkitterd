@@ -29,8 +29,9 @@ export default class HttpService extends GenericService {
         super();
         this.app = express();
         this.app.use(cors(corsOptions));
-        this.app.use('/dev/circuit', express.static(path.join(process.cwd(), 'static', 'circuit.json')));
-        this.app.use('/dev/provingKey', express.static(path.join(process.cwd(), 'static', 'proving_key.bin')));
+        this.app.use('/dev/semaphore_wasm', express.static(path.join(process.cwd(), 'static', 'semaphore.wasm')));
+        this.app.use('/dev/semaphore_final_zkey', express.static(path.join(process.cwd(), 'static', 'semaphore_final.zkey')));
+        this.app.use('/dev/semaphore_vkey', express.static(path.join(process.cwd(), 'static', 'verification_key.json')));
         this.addRoutes();
     }
 
@@ -279,6 +280,26 @@ export default class HttpService extends GenericService {
             const semaphoreDB = await this.call('db', 'getSemaphore');
             const path = await semaphoreDB.addID(identityCommitment);
             res.send(path);
+        }));
+
+        this.app.get('/interrep/groups/:groupId/path/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
+            const identityCommitment = req.params.identityCommitment;
+            const groupId = req.params.groupId;
+            // @ts-ignore
+            const resp = await fetch(`${config.interrepAPI}/api/groups/${groupId}/${identityCommitment}/path`);
+            const json = await resp.json();
+
+            res.send(makeResponse(json));
+        }));
+
+        this.app.get('/interrep/groups/:groupId/checkIdentity/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
+            const identityCommitment = req.params.identityCommitment;
+            const groupId = req.params.groupId;
+            // @ts-ignore
+            const resp = await fetch(`${config.interrepAPI}/api/groups/${groupId}/${identityCommitment}/check`);
+            const json = await resp.json();
+
+            res.send(makeResponse(json));
         }));
 
         this.app.get('/dev/semaphore/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {

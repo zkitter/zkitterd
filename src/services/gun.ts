@@ -18,7 +18,6 @@ import {Mutex} from "async-mutex";
 import {UserModel} from "../models/users";
 import {HASHTAG_REGEX, MENTION_REGEX} from "../util/regex";
 import vKey from "../../static/verification_key.json";
-const snarkjs = require('snarkjs');
 
 const Graph = require("gun/src/graph");
 const State = require("gun/src/state");
@@ -71,7 +70,6 @@ export default class GunService extends GenericService {
             const type = Message.getType(data.type);
             const parsed = messageId.split('/');
             const creator = parsed[1] ? parsed[0] : '';
-            const hash = parsed[1] || parsed[0];
 
             let payload;
 
@@ -178,31 +176,32 @@ export default class GunService extends GenericService {
             return;
         }
 
-        if (proof && signals) {
-            const parsedProof = JSON.parse(proof);
-            const parsedSignals = JSON.parse(signals);
-            console.log([
-                BigInt(parsedSignals[0]),
-                BigInt(parsedSignals[1]),
-                BigInt(parsedSignals[2]),
-                parsedSignals[3],
-            ]);
-            const res = await OrdinarySemaphore.verifyProof(
-                vKey,
-                {
-                    proof: parsedProof,
-                    publicSignals: [
-                        BigInt(parsedSignals[0]),
-                        BigInt(parsedSignals[1]),
-                        BigInt(parsedSignals[2]),
-                        parsedSignals[3],
-                    ],
-                });
-            console.log(res);
-            return;
-        }
-
         try {
+            if (proof && signals) {
+                const parsedProof = JSON.parse(proof);
+                const parsedSignals = JSON.parse(signals);
+                const externalNullifier = OrdinarySemaphore.genExternalNullifier('POST');
+                const signalHash = await OrdinarySemaphore.genSignalHash(hash);
+
+                if (BigInt(externalNullifier).toString() !== parsedSignals[3]) return;
+                if (signalHash.toString() !== parsedSignals[2]) return;
+
+                const foundHash = await semaphoreDB.findOneByHash(BigInt(parsedSignals[0]).toString(16));
+
+                if (!foundHash) return;
+
+                const res = await OrdinarySemaphore.verifyProof(
+                    vKey as any,
+                    {
+                        proof: parsedProof,
+                        publicSignals: parsedSignals,
+                    });
+
+                if (!res) {
+                    return;
+                }
+            }
+
             await postDB.createPost({
                 messageId: messageId,
                 hash: hash,

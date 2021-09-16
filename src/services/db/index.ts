@@ -165,10 +165,10 @@ export default class DBService extends GenericService {
         this.semaphore = await semaphore(this.sequelize);
 
 
-        await this.app?.model.sync({ force: !!process.env.FORCE });
+        await this.app?.model.sync({ force: true });
         await this.records?.model.sync({ force: !!process.env.FORCE });
 
-        await this.semaphore?.model.sync({ force: !!process.env.FORCE });
+        await this.semaphore?.model.sync({ force: true });
 
         await this.users?.model.sync({ force: !!process.env.FORCE });
         await this.moderations?.model.sync({ force: !!process.env.FORCE });

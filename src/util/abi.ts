@@ -4,7 +4,7 @@ export const interrepABI = [
         "anonymous": false,
         "inputs": [
             {
-                "indexed": false,
+                "indexed": true,
                 "internalType": "bytes32",
                 "name": "_groupId",
                 "type": "bytes32"

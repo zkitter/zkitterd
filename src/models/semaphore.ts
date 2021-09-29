@@ -3,6 +3,7 @@ import {Mutex} from "async-mutex";
 
 type SemaphoreModel = {
     id_commitment: string;
+    group_id: string;
     root_hash: string;
 };
 
@@ -13,7 +14,10 @@ const semaphore = (sequelize: Sequelize) => {
         id_commitment: {
             type: STRING,
             allowNull: false,
-            primaryKey: true,
+        },
+        group_id: {
+            type: STRING,
+            allowNull: false,
         },
         root_hash: {
             type: STRING,
@@ -21,7 +25,8 @@ const semaphore = (sequelize: Sequelize) => {
         },
     }, {
         indexes: [
-            { fields: ['id_commitment'], unique: true },
+            { fields: ['id_commitment'] },
+            { fields: ['group_id'] },
             { fields: ['root_hash'], unique: true },
         ],
     });
@@ -36,10 +41,21 @@ const semaphore = (sequelize: Sequelize) => {
         return result?.toJSON() as SemaphoreModel;
     }
 
-    const addID = async (id_commitment: string, root_hash: string) => {
+    const findOneByCommitment = async (id_commitment: string): Promise<SemaphoreModel|null> => {
+        let result = await model.findOne({
+            where: {
+                id_commitment,
+            },
+        });
+
+        return result?.toJSON() as SemaphoreModel;
+    }
+
+    const addID = async (id_commitment: string, group_id: string, root_hash: string) => {
         return mutex.runExclusive(async () => {
             return model.create({
                 id_commitment,
+                group_id,
                 root_hash,
             });
         });
@@ -48,6 +64,7 @@ const semaphore = (sequelize: Sequelize) => {
     return {
         model,
         findOneByHash,
+        findOneByCommitment,
         addID,
     };
 }

@@ -42,6 +42,7 @@ export default class InterrepService extends GenericService {
             for (let event of events) {
                 await semaphore.addID(
                     BigInt(event.returnValues._identityCommitment).toString(16),
+                    event.returnValues._groupId,
                     BigInt(event.returnValues._rootHash).toString(16),
                 );
 

@@ -7,12 +7,41 @@ import config from "../util/config";
 import logger from "../util/logger";
 import path from "path";
 import {fetchProposal, fetchProposals, fetchSpace, fetchVotes} from "../util/snapshot";
+import semaphore from "../models/semaphore";
+import Web3 from "web3";
 const jsonParser = bodyParser.json();
 
 const corsOptions: CorsOptions = {
     origin: function (origin= '', callback) {
         callback(null, true)
     }
+};
+
+const TWITTER_GOLD_HASH = Web3.utils.padRight(Web3.utils.stringToHex('TWITTER_GOLD'), 64);
+const TWITTER_SILVER_HASH = Web3.utils.padRight(Web3.utils.stringToHex('TWITTER_SILVER'), 64);
+const TWITTER_BRONZE_HASH = Web3.utils.padRight(Web3.utils.stringToHex('TWITTER_BRONZE'), 64);
+const TWITTER_NOT_SUFFICIENT_HASH = Web3.utils.padRight(Web3.utils.stringToHex('TWITTER_NOT_SUFFICIENT'), 64);
+const REDDIT_GOLD_HASH = Web3.utils.padRight(Web3.utils.stringToHex('REDDIT_GOLD'), 64);
+const REDDIT_SILVER_HASH = Web3.utils.padRight(Web3.utils.stringToHex('REDDIT_SILVER'), 64);
+const REDDIT_BRONZE_HASH = Web3.utils.padRight(Web3.utils.stringToHex('REDDIT_BRONZE'), 64);
+const REDDIT_NOT_SUFFICIENT_HASH = Web3.utils.padRight(Web3.utils.stringToHex('REDDIT_NOT_SUFFICIENT'), 64);
+const GITHUB_GOLD_HASH = Web3.utils.padRight(Web3.utils.stringToHex('GITHUB_GOLD'), 64);
+const GITHUB_SILVER_HASH = Web3.utils.padRight(Web3.utils.stringToHex('GITHUB_SILVER'), 64);
+const GITHUB_BRONZE_HASH = Web3.utils.padRight(Web3.utils.stringToHex('GITHUB_BRONZE'), 64);
+const GITHUB_NOT_SUFFICIENT_HASH = Web3.utils.padRight(Web3.utils.stringToHex('GITHUB_NOT_SUFFICIENT'), 64);
+const HASH_TO_GROUP_ID = {
+    [TWITTER_GOLD_HASH]: 'TWITTER_GOLD',
+    [TWITTER_SILVER_HASH]: 'TWITTER_SILVER',
+    [TWITTER_BRONZE_HASH]: 'TWITTER_BRONZE',
+    [TWITTER_NOT_SUFFICIENT_HASH]: 'TWITTER_NOT_SUFFICIENT',
+    [REDDIT_GOLD_HASH]: 'REDDIT_GOLD',
+    [REDDIT_SILVER_HASH]: 'REDDIT_SILVER',
+    [REDDIT_BRONZE_HASH]: 'REDDIT_BRONZE',
+    [REDDIT_NOT_SUFFICIENT_HASH]: 'REDDIT_NOT_SUFFICIENT',
+    [GITHUB_GOLD_HASH]: 'GITHUB_GOLD',
+    [GITHUB_SILVER_HASH]: 'GITHUB_SILVER',
+    [GITHUB_BRONZE_HASH]: 'GITHUB_BRONZE',
+    [GITHUB_NOT_SUFFICIENT_HASH]: 'GITHUB_NOT_SUFFICIENT',
 };
 
 function makeResponse(payload: any, error?: boolean) {
@@ -292,11 +321,18 @@ export default class HttpService extends GenericService {
             res.send(makeResponse(json));
         }));
 
-        this.app.get('/interrep/groups/:groupId/checkIdentity/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
+        this.app.get('/interrep/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;
-            const groupId = req.params.groupId;
+            const semaphoreDB = await this.call('db', 'getSemaphore');
+            const sem = await semaphoreDB.findOneByCommitment(BigInt(identityCommitment).toString(16));
+
+            if (!sem) {
+                res.status(404).send(makeResponse('not found', true));
+                return;
+            }
+
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/groups/${groupId}/${identityCommitment}/check`);
+            const resp = await fetch(`${config.interrepAPI}/api/groups/${HASH_TO_GROUP_ID[sem.group_id]}/${identityCommitment}/path`);
             const json = await resp.json();
 
             res.send(makeResponse(json));

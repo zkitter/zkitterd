@@ -24,6 +24,8 @@
     "gun": "^0.2020.1232",
     "isomorphic-fetch": "^3.0.0",
     "libsemaphore": "^1.0.16",
+    "link-preview-js": "^2.1.8",
+    "link-preview-node": "^1.0.7",
     "pg": "^8.7.1",
     "semaphore-lib": "git+https://github.com/akinovak/semaphore-lib.git#dev",
     "sequelize": "^6.6.2",

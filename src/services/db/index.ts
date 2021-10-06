@@ -13,12 +13,14 @@ import connections from "../../models/connections";
 import semaphore from "../../models/semaphore";
 import proposalMeta from "../../models/proposalMeta";
 import tags from "../../models/tags";
+import linkPreview from "../../models/linkPreview";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
     sqlite: Sequelize;
 
     app?: ReturnType<typeof app>;
+    linkPreview?: ReturnType<typeof linkPreview>;
     users?: ReturnType<typeof users>;
     records?: ReturnType<typeof records>;
     posts?: ReturnType<typeof posts>;
@@ -143,6 +145,13 @@ export default class DBService extends GenericService {
         return this.app;
     }
 
+    async getLinkPreview(): Promise<ReturnType<typeof linkPreview>> {
+        if (!this.linkPreview) {
+            return Promise.reject(new Error('linkPreview is not initialized'));
+        }
+        return this.linkPreview;
+    }
+
     async getSemaphore(): Promise<ReturnType<typeof semaphore>> {
         if (!this.semaphore) {
             return Promise.reject(new Error('semaphore is not initialized'));
@@ -153,6 +162,7 @@ export default class DBService extends GenericService {
     async start() {
         this.app = await app(this.sqlite);
         this.records = await records(this.sqlite);
+        this.linkPreview = await linkPreview(this.sequelize);
         this.meta = await meta(this.sequelize);
         this.userMeta = await userMeta(this.sequelize);
         this.proposalMeta = await proposalMeta(this.sequelize);
@@ -166,6 +176,7 @@ export default class DBService extends GenericService {
 
 
         await this.app?.model.sync({ force: !!process.env.FORCE });
+        await this.linkPreview?.model.sync({ force: !!process.env.FORCE });
         await this.records?.model.sync({ force: !!process.env.FORCE });
 
         await this.semaphore?.model.sync({ force: !!process.env.FORCE });

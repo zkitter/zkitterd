@@ -7,9 +7,9 @@ import config from "../util/config";
 import logger from "../util/logger";
 import path from "path";
 import {fetchProposal, fetchProposals, fetchSpace, fetchVotes} from "../util/snapshot";
-import semaphore from "../models/semaphore";
 import Web3 from "web3";
 const jsonParser = bodyParser.json();
+import { getLinkPreview } from "link-preview-js";
 
 const corsOptions: CorsOptions = {
     origin: function (origin= '', callback) {
@@ -101,17 +101,7 @@ export default class HttpService extends GenericService {
             const context = req.header('x-contextual-name') || undefined;
             const usersDB = await this.call('db', 'getUsers');
             const users = await usersDB.readAll(context, offset, limit);
-            const payload = [];
-
-            for (const user of users) {
-                const space = await fetchSpace(user.ens);
-                payload.push({
-                    ...user,
-                    snapshotSpace: space,
-                });
-            }
-
-            res.send(makeResponse(payload));
+            res.send(makeResponse(users));
         }));
 
         this.app.get('/v1/users/search/:query?', this.wrapHandler(async (req, res) => {
@@ -121,15 +111,6 @@ export default class HttpService extends GenericService {
             const context = req.header('x-contextual-name') || undefined;
             const usersDB = await this.call('db', 'getUsers');
             const users = await usersDB.search(query || '', context, offset, limit);
-            const payload = [];
-
-            // for (const user of users) {
-            //     const space = await fetchSpace(user.ens);
-            //     payload.push({
-            //         ...user,
-            //         snapshotSpace: space,
-            //     });
-            // }
 
             res.send(makeResponse(users));
         }));
@@ -139,11 +120,9 @@ export default class HttpService extends GenericService {
             const context = req.header('x-contextual-name') || undefined;
             const usersDB = await this.call('db', 'getUsers');
             const user = await usersDB.findOneByName(name, context);
-            const space = await fetchSpace(name);
             res.send(makeResponse({
                 ...user,
                 ens: name,
-                snapshotSpace: space,
             }));
         }));
 
@@ -303,14 +282,6 @@ export default class HttpService extends GenericService {
             res.send(makeResponse(post));
         }));
 
-        this.app.post('/dev/semaphore', jsonParser, this.wrapHandler(async (req, res) => {
-            const identityCommitment = req.body.identityCommitment;
-
-            const semaphoreDB = await this.call('db', 'getSemaphore');
-            const path = await semaphoreDB.addID(identityCommitment);
-            res.send(path);
-        }));
-
         this.app.get('/interrep/groups/:groupId/path/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;
             const groupId = req.params.groupId;
@@ -338,11 +309,36 @@ export default class HttpService extends GenericService {
             res.send(makeResponse(json));
         }));
 
-        this.app.get('/dev/semaphore/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
-            const identityCommitment = req.params.identityCommitment;
-            const semaphoreDB = await this.call('db', 'getSemaphore');
-            const path = await semaphoreDB.getPathByID(identityCommitment);
-            res.send(makeResponse(path));
+        this.app.get('/preview', this.wrapHandler(async (req, res) => {
+            const linkDB = await this.call('db', 'getLinkPreview');
+
+            if (typeof req.query.link !== 'string') {
+                res.status(400).send(makeResponse(`link must be present in query string.`, true));
+                return;
+            }
+
+            const url = decodeURI(req.query.link);
+
+            const model = await linkDB.read(url);
+
+            if (model && model.updatedAt.getTime() + (1000 * 60 * 60 * 24) > new Date().getTime()) {
+                res.send(makeResponse(model));
+                return;
+            }
+
+            const preview: any = await getLinkPreview(url);
+            const data = {
+                link: preview.url,
+                mediaType: preview.mediaType || '',
+                contentType: preview.contentType || '',
+                title: preview.title || '',
+                description: preview.description || '',
+                image: preview.images[0] || '',
+                favicon: preview.favicon || '',
+            };
+
+            await linkDB.update(data);
+            res.send(makeResponse(data));
         }));
     }
 

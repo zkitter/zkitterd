@@ -238,7 +238,7 @@ const posts = (sequelize: Sequelize) => {
         context?: string,
         offset = 0,
         limit = 20,
-        order: 'DESC' | 'ASC' = 'ASC',
+        order: 'DESC' | 'ASC' = 'DESC',
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectLikedPostsQuery}

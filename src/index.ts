@@ -13,7 +13,7 @@ import ArbitrumService from "./services/arbitrum";
         const main = new MainService();
         main.add('db', new DBService());
         main.add('interrep', new InterrepService());
-        // main.add('ens', new ENSService());
+        main.add('ens', new ENSService());
         main.add('arbitrum', new ArbitrumService());
         main.add('gun', new GunService());
         main.add('http', new HttpService());

@@ -193,6 +193,8 @@ const userSelectQuery = `
         u.name,
         u.pubkey,
         u."joinedAt",
+        u."tx",
+        u."type",
         umt."followerCount",
         umt."followingCount",
         umt."blockedCount",

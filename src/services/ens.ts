@@ -86,8 +86,7 @@ export default class ENSService extends GenericService {
 
             for (let event of events) {
                 const addr = await this.resolver.methods.addr(event.returnValues.node).call();
-                const username = addr;
-                // const { name } = await this.ens.getName(addr);
+                const { name } = await this.ens.getName(addr);
                 const tx = await this.web3.eth.getTransaction(event.transactionHash);
                 const block = await this.web3.eth.getBlock(event.blockNumber);
                 const params = this.web3.eth.abi.decodeParameters(
@@ -108,7 +107,7 @@ export default class ENSService extends GenericService {
 
                 const users = await this.call('db', 'getUsers');
                 await users.updateOrCreateUser({
-                    name: username,
+                    name: name,
                     pubkey,
                     joinedAt: Number(block.timestamp) * 1000,
                     tx: event.transactionHash,
@@ -117,10 +116,10 @@ export default class ENSService extends GenericService {
 
                 await this.call('gun', 'watch', pubkey);
 
-                logger.info(`added pubkey for ${username}`, {
+                logger.info(`added pubkey for ${name}`, {
                     transactionHash: tx.hash,
                     blockNumber: tx.blockNumber,
-                    name: username,
+                    name: name,
                     pubkey: pubkey,
                     fromBlock: data?.lastENSBlockScanned,
                 });

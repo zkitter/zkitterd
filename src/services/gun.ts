@@ -49,33 +49,39 @@ export default class GunService extends GenericService {
     watch = async (pubkey: string) => {
         if (!this.gun) throw new Error('gun is not set up');
 
-        const users = await this.call('db', 'getUsers');
-        const user = await users.findOneByPubkey(pubkey);
-
-        if (!user) throw new Error(`cannot find user with pubkey ${pubkey}`);
+        // const users = await this.call('db', 'getUsers');
+        // const user = await users.findOneByPubkey(pubkey);
+        //
+        // if (!user) throw new Error(`cannot find user with pubkey ${pubkey}`);
 
         this.gun.user(pubkey)
             .get('message')
             .map(async (data, messageId) => {
                 try {
-                    await this.handleGunMessage(data, messageId, user);
+                    await this.handleGunMessage(data, messageId);
                 } catch (e) {
                     logger.error(e.message, e);
                 }
             });
     }
 
-    handleGunMessage = async (data: any, messageId: string, user?: UserModel) => {
+    handleGunMessage = async (data: any, messageId: string) => {
         return insertMutex.runExclusive(async () => {
             const type = Message.getType(data.type);
             const {creator, hash} = parseMessageId(messageId);
-            const creatorName = await this.call('ens', 'fetchNameByAddress', creator);
+
+            let user: UserModel | null = null;
+
+            if (creator) {
+                const users = await this.call('db', 'getUsers');
+                user = await users.findOneByName(creator);
+            }
 
             let payload;
 
             if (!type) return;
 
-            if (creator && !([creator, creatorName].includes(user?.name))) return;
+            if (creator && creator !== user?.username) return;
 
             if(data.payload) {
                 // @ts-ignore
@@ -202,8 +208,6 @@ export default class GunService extends GenericService {
                 }
             }
 
-            const creatorAddr = await this.call('ens', 'fetchAddressByName', creator);
-
             await postDB.createPost({
                 messageId: messageId,
                 hash: hash,
@@ -211,7 +215,7 @@ export default class GunService extends GenericService {
                 signals,
                 type: type,
                 subtype: subtype,
-                creator: creator ? creatorAddr : '',
+                creator: creator || '',
                 createdAt: createdAt,
                 topic: payload.topic,
                 title: payload.title,
@@ -306,14 +310,13 @@ export default class GunService extends GenericService {
         }
 
         try {
-            const creatorAddr = await this.call('ens', 'fetchAddressByName', creator);
             await postDB.ensurePost(payload.reference);
             await moderationDB.createModeration({
                 messageId,
                 hash: hash,
                 type: type,
                 subtype: subtype,
-                creator: creatorAddr,
+                creator: creator || '',
                 createdAt: createdAt,
                 reference: payload.reference,
             });
@@ -347,11 +350,6 @@ export default class GunService extends GenericService {
             messageId,
         } = json;
         const [creator, hash] = messageId.split('/');
-        let creatorAddr;
-
-        if (creator) {
-            creatorAddr = await this.call('ens', 'fetchAddressByName', creator);
-        }
 
         const connDB = await this.call('db', 'getConnections');
         const userDB = await this.call('db', 'getUsers');
@@ -372,25 +370,24 @@ export default class GunService extends GenericService {
         }
 
         try {
-            const addr = await this.call('ens', 'fetchAddressByName', payload.name);
-            await userDB.ensureUser(addr);
+            await userDB.ensureUser(payload.name);
 
             await connDB.createConnection({
                 messageId,
                 hash: hash,
                 type: type,
                 subtype: subtype,
-                creator: creatorAddr,
+                creator: creator || '',
                 createdAt: createdAt,
-                name: addr,
+                name: payload.name,
             });
 
             if (subtype === ConnectionMessageSubType.Follow) {
-                await userMetaDB.addFollower(addr);
-                await userMetaDB.addFollowing(creatorAddr);
+                await userMetaDB.addFollower(payload.name);
+                await userMetaDB.addFollowing(creator);
             } else if (subtype === ConnectionMessageSubType.Block) {
-                await userMetaDB.addBlocked(addr);
-                await userMetaDB.addBlocking(creatorAddr);
+                await userMetaDB.addBlocked(payload.name);
+                await userMetaDB.addBlocking(creator);
             }
 
             logger.info(`insert connection`, {

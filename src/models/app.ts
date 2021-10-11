@@ -3,6 +3,7 @@ import {Sequelize, BIGINT} from "sequelize";
 type AppModel = {
     lastENSBlockScanned: number;
     lastInterrepBlockScanned: number;
+    lastArbitrumBlockScanned: number;
 };
 
 const app = (sequelize: Sequelize) => {
@@ -11,6 +12,9 @@ const app = (sequelize: Sequelize) => {
             type: BIGINT,
         },
         lastInterrepBlockScanned: {
+            type: BIGINT,
+        },
+        lastArbitrumBlockScanned: {
             type: BIGINT,
         },
     }, {});
@@ -48,11 +52,26 @@ const app = (sequelize: Sequelize) => {
         });
     }
 
+    const updateLastArbitrumBlock = async (blockHeight: number) => {
+        const result = await model.findOne();
+
+        if (result) {
+            return result.update({
+                lastArbitrumBlockScanned: blockHeight,
+            });
+        }
+
+        return model.create({
+            lastArbitrumBlockScanned: blockHeight,
+        });
+    }
+
     return {
         model,
         read,
         updateLastENSBlock,
         updateLastInterrepBlock,
+        updateLastArbitrumBlock,
     };
 }
 

@@ -4,6 +4,8 @@ import path from "path";
 let json: {
     interrepAPI?: string;
     web3HttpProvider?: string;
+    arbitrumHttpProvider?: string;
+    arbitrumRegistrar?: string;
     ensResolver?: string;
     interrepContract?: string;
     dbDialect?: string;
@@ -28,6 +30,8 @@ try {
 
 const web3HttpProvider = json.web3HttpProvider || process.env.WEB3_HTTP_PROVIDER;
 const ensResolver = json.ensResolver || process.env.ENS_RESOLVER;
+const arbitrumHttpProvider = json.arbitrumHttpProvider || process.env.ARB_HTTP_PROVIDER;
+const arbitrumRegistrar = json.arbitrumRegistrar || process.env.ARB_REGISTRAR;
 const dbDialect = json.dbDialect || process.env.DB_DIALECT;
 const dbStorage = json.dbStorage || process.env.DB_STORAGE;
 const dbName = json.dbName || process.env.DB_NAME;
@@ -49,9 +53,19 @@ if (!ensResolver) {
     throw new Error('ENS_RESOLVER is not valid');
 }
 
+if (!arbitrumHttpProvider) {
+    throw new Error('ARC_HTTP_PROVIDER is not valid');
+}
+
+if (!arbitrumRegistrar) {
+    throw new Error('ARB_REGISTRAR is not valid');
+}
+
 const config = {
     interrepAPI,
     web3HttpProvider,
+    arbitrumHttpProvider,
+    arbitrumRegistrar,
     ensResolver,
     interrepContract,
     dbDialect,

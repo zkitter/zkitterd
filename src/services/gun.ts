@@ -9,7 +9,7 @@ import {
     ConnectionMessageSubType,
     Message,
     MessageType,
-    Moderation,
+    Moderation, parseMessageId,
     Post,
     PostMessageSubType,
     Profile
@@ -68,14 +68,14 @@ export default class GunService extends GenericService {
     handleGunMessage = async (data: any, messageId: string, user?: UserModel) => {
         return insertMutex.runExclusive(async () => {
             const type = Message.getType(data.type);
-            const parsed = messageId.split('/');
-            const creator = parsed[1] ? parsed[0] : '';
+            const {creator, hash} = parseMessageId(messageId);
+            const creatorName = await this.call('ens', 'fetchNameByAddress', creator);
 
             let payload;
 
             if (!type) return;
 
-            if (creator && (creator !== user?.name)) return;
+            if (creator && !([creator, creatorName].includes(user?.name))) return;
 
             if(data.payload) {
                 // @ts-ignore
@@ -202,6 +202,8 @@ export default class GunService extends GenericService {
                 }
             }
 
+            const creatorAddr = await this.call('ens', 'fetchAddressByName', creator);
+
             await postDB.createPost({
                 messageId: messageId,
                 hash: hash,
@@ -209,7 +211,7 @@ export default class GunService extends GenericService {
                 signals,
                 type: type,
                 subtype: subtype,
-                creator: creator,
+                creator: creator ? creatorAddr : '',
                 createdAt: createdAt,
                 topic: payload.topic,
                 title: payload.title,
@@ -236,7 +238,8 @@ export default class GunService extends GenericService {
             }
 
             if (!payload.reference && creator) {
-                await userMetaDB.addPostingCount(creator);
+                const addr = await this.call('ens', 'fetchAddressByName', creator);
+                await userMetaDB.addPostingCount(addr);
             }
 
             const tags = payload.content?.match(HASHTAG_REGEX);
@@ -252,7 +255,8 @@ export default class GunService extends GenericService {
 
             if (mentions) {
                 for (const mention of mentions) {
-                    await userMetaDB.addMentionedCount(mention.slice(1));
+                    const addr = await this.call('ens', 'fetchAddressByName', mention.slice(1));
+                    await userMetaDB.addMentionedCount(addr);
                 }
             }
 
@@ -280,7 +284,8 @@ export default class GunService extends GenericService {
             payload,
             messageId,
         } = json;
-        const [creator, hash] = messageId.split('/');
+
+        const {creator, hash} = parseMessageId(messageId);
 
         const moderationDB = await this.call('db', 'getModerations');
         const postDB = await this.call('db', 'getPosts');
@@ -301,13 +306,14 @@ export default class GunService extends GenericService {
         }
 
         try {
+            const creatorAddr = await this.call('ens', 'fetchAddressByName', creator);
             await postDB.ensurePost(payload.reference);
             await moderationDB.createModeration({
                 messageId,
                 hash: hash,
                 type: type,
                 subtype: subtype,
-                creator: creator,
+                creator: creatorAddr,
                 createdAt: createdAt,
                 reference: payload.reference,
             });
@@ -341,6 +347,11 @@ export default class GunService extends GenericService {
             messageId,
         } = json;
         const [creator, hash] = messageId.split('/');
+        let creatorAddr;
+
+        if (creator) {
+            creatorAddr = await this.call('ens', 'fetchAddressByName', creator);
+        }
 
         const connDB = await this.call('db', 'getConnections');
         const userDB = await this.call('db', 'getUsers');
@@ -361,23 +372,25 @@ export default class GunService extends GenericService {
         }
 
         try {
-            await userDB.ensureUser(payload.name);
+            const addr = await this.call('ens', 'fetchAddressByName', payload.name);
+            await userDB.ensureUser(addr);
+
             await connDB.createConnection({
                 messageId,
                 hash: hash,
                 type: type,
                 subtype: subtype,
-                creator: creator,
+                creator: creatorAddr,
                 createdAt: createdAt,
-                name: payload.name,
+                name: addr,
             });
 
             if (subtype === ConnectionMessageSubType.Follow) {
-                await userMetaDB.addFollower(payload.name);
-                await userMetaDB.addFollowing(creator);
+                await userMetaDB.addFollower(addr);
+                await userMetaDB.addFollowing(creatorAddr);
             } else if (subtype === ConnectionMessageSubType.Block) {
-                await userMetaDB.addBlocked(payload.name);
-                await userMetaDB.addBlocking(creator);
+                await userMetaDB.addBlocked(addr);
+                await userMetaDB.addBlocking(creatorAddr);
             }
 
             logger.info(`insert connection`, {
@@ -404,9 +417,10 @@ export default class GunService extends GenericService {
             payload,
             messageId,
         } = json;
-        const [creator, hash] = messageId.split('/');
+        const {creator, hash} = parseMessageId(messageId);
 
         const profileDB = await this.call('db', 'getProfiles');
+        const creatorAddr = await this.call('ens', 'fetchAddressByName', creator);
 
         if (json.hash !== hash) {
             return;
@@ -428,7 +442,7 @@ export default class GunService extends GenericService {
                 hash: hash,
                 type: type,
                 subtype: subtype,
-                creator: creator,
+                creator: creatorAddr,
                 createdAt: createdAt,
                 key: payload.key,
                 value: payload.value,
@@ -476,7 +490,7 @@ export default class GunService extends GenericService {
                     const state = put['>'];
                     const value =  put[':'];
 
-                    const [raw, key, name, messageId] = soul.split('/');
+                    const [raw, key, username, messageId] = soul.split('/');
                     const recordDB = await ctx.call('db', 'getRecords');
                     const userDB = await ctx.call('db', 'getUsers');
 
@@ -493,8 +507,10 @@ export default class GunService extends GenericService {
                             throw new Error(`cannot find user with pubkey ${pubKey}`);
                         }
 
-                        if (name && user.name !== name) {
-                            throw new Error(`${user.name} does not match ${name}`);
+                        const creatorAddress = await ctx.call('ens', 'fetchAddressByName', username);
+
+                        if (username && ![username, creatorAddress].includes(user.name)) {
+                            throw new Error(`${user.name} does not match ${username}`);
                         }
 
                     }

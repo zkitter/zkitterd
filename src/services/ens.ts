@@ -11,6 +11,8 @@ const {
     getEnsAddress,
 } = require('@ensdomains/ensjs');
 
+const cachedName: any = {};
+
 export default class ENSService extends GenericService {
     web3: Web3;
     resolver: Contract;
@@ -29,6 +31,32 @@ export default class ENSService extends GenericService {
             provider: httpProvider,
             ensAddress: getEnsAddress('1'),
         });
+    }
+
+    fetchNameByAddress = async (address: string) => {
+        if (typeof cachedName[address] !== 'undefined') {
+            return cachedName[address];
+        }
+
+        const {name} = await this.ens.getName(address);
+        cachedName[address] = name || null;
+        setTimeout(() => delete cachedName[address], 1000 * 60 * 60 * 48);
+        return name;
+    }
+
+    fetchAddressByName = async (name: string) => {
+        if (Web3.utils.isAddress(name)) return name;
+
+        if (typeof cachedName[name] !== 'undefined') {
+            return cachedName[name];
+        }
+
+        const address = await this.ens.name(name).getAddress();
+
+        if (!address) throw new Error(`cannot find address for ${name}`);
+        cachedName[name] = address || null;
+        setTimeout(() => delete cachedName[name], 1000 * 60 * 60 * 48);
+        return address;
     }
 
     async scanFromLast() {
@@ -58,7 +86,8 @@ export default class ENSService extends GenericService {
 
             for (let event of events) {
                 const addr = await this.resolver.methods.addr(event.returnValues.node).call();
-                const { name } = await this.ens.getName(addr);
+                const username = addr;
+                // const { name } = await this.ens.getName(addr);
                 const tx = await this.web3.eth.getTransaction(event.transactionHash);
                 const block = await this.web3.eth.getBlock(event.blockNumber);
                 const params = this.web3.eth.abi.decodeParameters(
@@ -79,17 +108,19 @@ export default class ENSService extends GenericService {
 
                 const users = await this.call('db', 'getUsers');
                 await users.updateOrCreateUser({
-                    name,
+                    name: username,
                     pubkey,
                     joinedAt: Number(block.timestamp) * 1000,
+                    tx: event.transactionHash,
+                    type: 'ens',
                 });
 
                 await this.call('gun', 'watch', pubkey);
 
-                logger.info(`added pubkey for ${name}`, {
+                logger.info(`added pubkey for ${username}`, {
                     transactionHash: tx.hash,
                     blockNumber: tx.blockNumber,
-                    name: name,
+                    name: username,
                     pubkey: pubkey,
                     fromBlock: data?.lastENSBlockScanned,
                 });
@@ -106,12 +137,12 @@ export default class ENSService extends GenericService {
     scan = async () => {
         await this.scanFromLast();
 
-        if (this.scanTimeout) {
-            clearTimeout(this.scanTimeout);
-            this.scanTimeout = null;
-        }
+        // if (this.scanTimeout) {
+        //     clearTimeout(this.scanTimeout);
+        //     this.scanTimeout = null;
+        // }
 
-        this.scanTimeout = setTimeout(this.scan, 15000);
+        // this.scanTimeout = setTimeout(this.scan, 15000);
     }
 
     async start() {

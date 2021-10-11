@@ -1,11 +1,13 @@
-import {BIGINT, QueryTypes, Sequelize, STRING} from "sequelize";
+import {BIGINT, ENUM, QueryTypes, Sequelize, STRING} from "sequelize";
 import userMetaSeq from "./userMeta";
 import {Mutex} from "async-mutex";
 
 export type UserModel = {
-    ens: string;
+    username: string;
+    type: 'ens' | 'arbitrum' | '';
     pubkey: string;
     joinedAt: number;
+    joinedTx: string;
     name: string;
     bio: string;
     coverImage: string;
@@ -39,17 +41,24 @@ const users = (sequelize: Sequelize) => {
         pubkey: {
             type: STRING,
             allowNull: false,
-            validate: {
-                notEmpty: true,
-            },
         },
         joinedAt: {
             type: BIGINT,
+        },
+        tx: {
+            type: STRING,
+            allowNull: false,
+        },
+        type: {
+            type: ENUM('arbitrum', 'ens', ''),
+            allowNull: false,
         },
     }, {
         indexes: [
             { fields: ['name'] },
             { fields: ['pubkey'] },
+            { fields: ['type'] },
+            { fields: ['tx'] },
         ]
     });
 
@@ -120,7 +129,13 @@ const users = (sequelize: Sequelize) => {
         return inflateValuesToUserJSON(values);
     }
 
-    const updateOrCreateUser = async (user: UserModel) => {
+    const updateOrCreateUser = async (user: {
+        name: string;
+        pubkey: string;
+        joinedAt: number;
+        tx: string;
+        type: 'ens' | 'arbitrum';
+    }) => {
         return mutex.runExclusive(async () => {
             const result = await model.findOne({
                 where: {
@@ -150,6 +165,8 @@ const users = (sequelize: Sequelize) => {
             if (!result) {
                 return model.create({
                     name,
+                    tx: '',
+                    type: '',
                     pubkey: '',
                     joined: 0,
                 });
@@ -202,7 +219,9 @@ const userSelectQuery = `
 
 function inflateValuesToUserJSON(values: any[]): UserModel[] {
     return values.map(value => ({
-        ens: value.name,
+        username: value.name,
+        joinedTx: value.tx,
+        type: value.type,
         pubkey: value.pubkey,
         joinedAt: Number(value.joinedAt),
         name: value.nickname || '',

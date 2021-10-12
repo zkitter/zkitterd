@@ -96,7 +96,7 @@ const users = (sequelize: Sequelize) => {
     const readAll = async (context = '', offset = 0, limit = 20): Promise<UserModel[]> => {
         const values = await sequelize.query(`
             ${userSelectQuery}
-            ORDER BY (umt."followerCount"+umt."postingCount"+umt."mentionedCount") DESC
+            ORDER BY (umt."followerCount"+umt."postingCount"+umt."mentionedCount") ASC
             LIMIT :limit OFFSET :offset
         `, {
             type: QueryTypes.SELECT,
@@ -222,6 +222,7 @@ const userSelectQuery = `
 function inflateValuesToUserJSON(values: any[]): UserModel[] {
     return values.map(value => ({
         username: value.name,
+        address: value.name,
         joinedTx: value.tx,
         type: value.type,
         pubkey: value.pubkey,

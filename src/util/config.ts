@@ -6,6 +6,8 @@ let json: {
     web3HttpProvider?: string;
     arbitrumHttpProvider?: string;
     arbitrumRegistrar?: string;
+    arbitrumPrivateKey?: string;
+    arbitrumAddress?: string;
     ensResolver?: string;
     interrepContract?: string;
     dbDialect?: string;
@@ -32,6 +34,8 @@ const web3HttpProvider = json.web3HttpProvider || process.env.WEB3_HTTP_PROVIDER
 const ensResolver = json.ensResolver || process.env.ENS_RESOLVER;
 const arbitrumHttpProvider = json.arbitrumHttpProvider || process.env.ARB_HTTP_PROVIDER;
 const arbitrumRegistrar = json.arbitrumRegistrar || process.env.ARB_REGISTRAR;
+const arbitrumPrivateKey = json.arbitrumPrivateKey || process.env.ARB_PRIVATE_KEY;
+const arbitrumAddress = json.arbitrumAddress || process.env.ARB_ADDRESS;
 const dbDialect = json.dbDialect || process.env.DB_DIALECT;
 const dbStorage = json.dbStorage || process.env.DB_STORAGE;
 const dbName = json.dbName || process.env.DB_NAME;
@@ -61,11 +65,21 @@ if (!arbitrumRegistrar) {
     throw new Error('ARB_REGISTRAR is not valid');
 }
 
+if (!arbitrumPrivateKey) {
+    throw new Error('ARB_PRIVATE_KEY is not valid');
+}
+
+if (!arbitrumAddress) {
+    throw new Error('ARB_ADDRESS is not valid');
+}
+
 const config = {
     interrepAPI,
     web3HttpProvider,
     arbitrumHttpProvider,
     arbitrumRegistrar,
+    arbitrumPrivateKey,
+    arbitrumAddress,
     ensResolver,
     interrepContract,
     dbDialect,

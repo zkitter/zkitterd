@@ -75,13 +75,17 @@ export default class GunService extends GenericService {
             if (creator) {
                 const users = await this.call('db', 'getUsers');
                 user = await users.findOneByName(creator);
+
+                if (!user) return;
+
+                if (!['arbitrum'].includes(user.type)) return;
+
+                if (creator !== user.username) return;
             }
 
             let payload;
 
             if (!type) return;
-
-            if (creator && creator !== user?.username) return;
 
             if(data.payload) {
                 // @ts-ignore
@@ -242,8 +246,7 @@ export default class GunService extends GenericService {
             }
 
             if (!payload.reference && creator) {
-                const addr = await this.call('ens', 'fetchAddressByName', creator);
-                await userMetaDB.addPostingCount(addr);
+                await userMetaDB.addPostingCount(creator);
             }
 
             const tags = payload.content?.match(HASHTAG_REGEX);
@@ -261,6 +264,7 @@ export default class GunService extends GenericService {
                 for (const mention of mentions) {
                     const addr = await this.call('ens', 'fetchAddressByName', mention.slice(1));
                     await userMetaDB.addMentionedCount(addr);
+                    await tagDB.addTagPost('@' + addr, messageId);
                 }
             }
 
@@ -417,7 +421,6 @@ export default class GunService extends GenericService {
         const {creator, hash} = parseMessageId(messageId);
 
         const profileDB = await this.call('db', 'getProfiles');
-        const creatorAddr = await this.call('ens', 'fetchAddressByName', creator);
 
         if (json.hash !== hash) {
             return;
@@ -439,7 +442,7 @@ export default class GunService extends GenericService {
                 hash: hash,
                 type: type,
                 subtype: subtype,
-                creator: creatorAddr,
+                creator: creator,
                 createdAt: createdAt,
                 key: payload.key,
                 value: payload.value,
@@ -504,9 +507,7 @@ export default class GunService extends GenericService {
                             throw new Error(`cannot find user with pubkey ${pubKey}`);
                         }
 
-                        const creatorAddress = await ctx.call('ens', 'fetchAddressByName', username);
-
-                        if (username && ![username, creatorAddress].includes(user.name)) {
+                        if (username && ![username].includes(user.name)) {
                             throw new Error(`${user.name} does not match ${username}`);
                         }
 

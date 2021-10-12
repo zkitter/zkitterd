@@ -182,6 +182,26 @@ export const arbRegistrarABI = [
     {
         "inputs": [
             {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "nonces",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function",
+        "constant": true
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "bytes",
                 "name": "value",
                 "type": "bytes"
@@ -264,6 +284,26 @@ export const arbRegistrarABI = [
                 "internalType": "uint8",
                 "name": "v",
                 "type": "uint8"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function",
+        "constant": true
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "_messageHash",
+                "type": "bytes32"
+            }
+        ],
+        "name": "getEthSignedMessageHash",
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
             }
         ],
         "stateMutability": "pure",

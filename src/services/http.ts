@@ -102,7 +102,15 @@ export default class HttpService extends GenericService {
             const context = req.header('x-contextual-name') || undefined;
             const usersDB = await this.call('db', 'getUsers');
             const users = await usersDB.readAll(context, offset, limit);
-            res.send(makeResponse(users));
+
+            const result = [];
+
+            for (let user of users) {
+                const ens = await this.call('ens', 'fetchNameByAddress', user.username);
+                result.push({ ens, ...user });
+            }
+
+            res.send(makeResponse(result));
         }));
 
         this.app.get('/v1/users/search/:query?', this.wrapHandler(async (req, res) => {
@@ -113,13 +121,21 @@ export default class HttpService extends GenericService {
             const usersDB = await this.call('db', 'getUsers');
             const users = await usersDB.search(query || '', context, offset, limit);
 
-            res.send(makeResponse(users));
+            const result = [];
+
+            for (let user of users) {
+                const ens = await this.call('ens', 'fetchNameByAddress', user.username);
+                result.push({ ens, ...user });
+            }
+
+            res.send(makeResponse(result));
         }));
 
         this.app.get('/v1/users/:address', this.wrapHandler(async (req, res) => {
             const usersDB = await this.call('db', 'getUsers');
 
             let address = req.params.address;
+            address = Web3.utils.toChecksumAddress(address);
 
             if (!Web3.utils.isAddress(address)) {
                 address = await this.call('ens', 'fetchAddressByName', address);
@@ -127,9 +143,10 @@ export default class HttpService extends GenericService {
 
             const context = req.header('x-contextual-name') || undefined;
             const user = await usersDB.findOneByName(address, context);
-
+            const ens = await this.call('ens', 'fetchNameByAddress', user?.username);
             res.send(makeResponse({
                 ...user,
+                ens: ens,
                 address: address,
                 username: address,
             }));

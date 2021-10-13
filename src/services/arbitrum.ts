@@ -45,15 +45,17 @@ export default class ArbitrumService extends GenericService {
 
         try {
             const block = await this.web3.eth.getBlock('latest');
+            const toBlock = Math.min(block.number, lastBlock + 99999);
+
             const events = await this.registrar.getPastEvents('RecordUpdatedFor', {
                 fromBlock: lastBlock,
-                toBlock: block.number,
+                toBlock: toBlock,
             });
-            await app.updateLastArbitrumBlock(block.number);
             logger.info('scanned Autism Registrar on arbitrum', {
-                fromBlock: data?.lastArbitrumBlockScanned,
-                toBlock: block.number,
+                fromBlock: lastBlock,
+                toBlock: toBlock,
             });
+
 
             for (let event of events) {
                 const tx = await this.web3.eth.getTransaction(event.transactionHash);
@@ -93,6 +95,7 @@ export default class ArbitrumService extends GenericService {
                     fromBlock: lastBlock,
                 });
             }
+            await app.updateLastArbitrumBlock(toBlock);
         } catch (e) {
             logger.error(e.message, {
                 parent: e.parent,

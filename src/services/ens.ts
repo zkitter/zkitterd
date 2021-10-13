@@ -52,7 +52,8 @@ export default class ENSService extends GenericService {
         if (!name) return null;
 
         cache.set(address, name);
-
+        const ens = await this.call('db', 'getENS');
+        await ens.update(name, address);
         return name;
     }
 
@@ -70,6 +71,8 @@ export default class ENSService extends GenericService {
         if (!address) throw new Error(`cannot find address for ${name}`);
 
         cache.set(name, address);
+        const ens = await this.call('db', 'getENS');
+        await ens.update(name, address);
 
         return address;
     }

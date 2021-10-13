@@ -23,7 +23,7 @@ export default class InterrepService extends GenericService {
         const semaphore = await this.call('db', 'getSemaphore');
         const data = await app.read();
 
-        logger.info('scanning ens TextChanged events', {
+        logger.info('scanning interrep NewRootHash events', {
             fromBlock: data?.lastInterrepBlockScanned,
         });
 
@@ -34,7 +34,7 @@ export default class InterrepService extends GenericService {
                 toBlock: block.number,
             });
             await app.updateLastInterrepBlock(block.number);
-            logger.info('scanned ens TextChanged events', {
+            logger.info('scanned interrep NewRootHash events', {
                 fromBlock: data?.lastInterrepBlockScanned,
                 toBlock: block.number,
             });

@@ -143,25 +143,6 @@ export const arbRegistrarABI = [
                 "internalType": "bytes",
                 "name": "value",
                 "type": "bytes"
-            }
-        ],
-        "name": "RecordUpdated",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "account",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "bytes",
-                "name": "value",
-                "type": "bytes"
             },
             {
                 "indexed": false,
@@ -198,19 +179,6 @@ export const arbRegistrarABI = [
         "stateMutability": "view",
         "type": "function",
         "constant": true
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bytes",
-                "name": "value",
-                "type": "bytes"
-            }
-        ],
-        "name": "update",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
     },
     {
         "inputs": [

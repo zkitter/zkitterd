@@ -598,6 +598,8 @@ export default class GunService extends GenericService {
                         error: e.message,
                         stack: e.stack,
                         origin: 'gun',
+                        soul,
+                        field,
                     });
                 }
             });

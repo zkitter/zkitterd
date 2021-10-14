@@ -134,7 +134,10 @@ export default class HttpService extends GenericService {
             const usersDB = await this.call('db', 'getUsers');
 
             let address = req.params.address;
-            address = Web3.utils.toChecksumAddress(address);
+
+            try {
+                address = Web3.utils.toChecksumAddress(address);
+            } catch (e) {}
 
             if (!Web3.utils.isAddress(address)) {
                 address = await this.call('ens', 'fetchAddressByName', address);

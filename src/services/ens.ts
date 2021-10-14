@@ -3,13 +3,18 @@ import {Contract} from "web3-eth-contract";
 import Web3 from "web3";
 import config from "../util/config";
 import {ensResolverABI} from "../util/abi";
-import logger from "../util/logger";
+import LRU from 'lru-cache';
 import Timeout = NodeJS.Timeout;
 
 const {
     default: ENS,
     getEnsAddress,
 } = require('@ensdomains/ensjs');
+
+const cache = new LRU({
+    max: 1000,
+    maxAge: 60 * 60 * 1000,
+});
 
 export default class ENSService extends GenericService {
     web3: Web3;
@@ -31,90 +36,44 @@ export default class ENSService extends GenericService {
         });
     }
 
-    async scanFromLast() {
-        const app = await this.call('db', 'getApp');
-        const data = await app.read();
-
-        logger.info('scanning ens TextChanged events', {
-            fromBlock: data?.lastENSBlockScanned,
-        });
-
-        try {
-            const block = await this.web3.eth.getBlock('latest');
-            const events = await this.resolver.getPastEvents('TextChanged', {
-                fromBlock: data?.lastENSBlockScanned,
-                toBlock: block.number,
-                topics: [
-                    null,
-                    null,
-                    this.web3.utils.sha3('gun.social'),
-                ],
-            });
-            await app.updateLastENSBlock(block.number);
-            logger.info('scanned ens TextChanged events', {
-                fromBlock: data?.lastENSBlockScanned,
-                toBlock: block.number,
-            });
-
-            for (let event of events) {
-                const addr = await this.resolver.methods.addr(event.returnValues.node).call();
-                const { name } = await this.ens.getName(addr);
-                const tx = await this.web3.eth.getTransaction(event.transactionHash);
-                const block = await this.web3.eth.getBlock(event.blockNumber);
-                const params = this.web3.eth.abi.decodeParameters(
-                    ['bytes32', 'string', 'string'],
-                    tx.input.slice(10),
-                );
-                const pubkey = params[2];
-                const x = pubkey.split('.')[0];
-                const y = pubkey.split('.')[1];
-
-                if (x.length !== 43 || y.length !== 43) {
-                    logger.error('invalid pubkey', {
-                        fromBlock: data?.lastENSBlockScanned,
-                        toBlock: block.number,
-                    });
-                    continue;
-                }
-
-                const users = await this.call('db', 'getUsers');
-                await users.updateOrCreateUser({
-                    name,
-                    pubkey,
-                    joinedAt: Number(block.timestamp) * 1000,
-                });
-
-                await this.call('gun', 'watch', pubkey);
-
-                logger.info(`added pubkey for ${name}`, {
-                    transactionHash: tx.hash,
-                    blockNumber: tx.blockNumber,
-                    name: name,
-                    pubkey: pubkey,
-                    fromBlock: data?.lastENSBlockScanned,
-                });
-            }
-        } catch (e) {
-            logger.error(e.message, {
-                parent: e.parent,
-                stack: e.stack,
-                fromBlock: data?.lastENSBlockScanned,
-            });
-        }
+    ecrecover = async (data: string, sig: string) => {
+        return this.web3.eth.accounts.recover(data, sig);
     }
 
-    scan = async () => {
-        await this.scanFromLast();
+    fetchNameByAddress = async (address: string) => {
+        const cached = cache.get(address);
 
-        if (this.scanTimeout) {
-            clearTimeout(this.scanTimeout);
-            this.scanTimeout = null;
+        if (cache.get(address)) {
+            return cached;
         }
 
-        this.scanTimeout = setTimeout(this.scan, 15000);
+        const {name} = await this.ens.getName(address);
+
+        if (!name) return null;
+
+        cache.set(address, name);
+        const ens = await this.call('db', 'getENS');
+        await ens.update(name, address);
+        return name;
     }
 
-    async start() {
-        this.scan();
+    fetchAddressByName = async (name: string) => {
+        if (Web3.utils.isAddress(name)) return name;
+
+        const cached = cache.get(name);
+
+        if (cache.get(name)) {
+            return cached;
+        }
+
+        const address = await this.ens.name(name).getAddress();
+
+        if (!address) throw new Error(`cannot find address for ${name}`);
+
+        cache.set(name, address);
+        const ens = await this.call('db', 'getENS');
+        await ens.update(name, address);
+
+        return address;
     }
 }

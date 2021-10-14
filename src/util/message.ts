@@ -553,16 +553,6 @@ function pad(str: string, len: number) {
 
 const HEX_64_REGEX = /\b[A-Fa-f0-9]{64}$\b/;
 export function parseMessageId(id: string) {
-    try {
-        // @ts-ignore
-        const url = new URL(id);
-        return {
-            hash: '',
-            creator: '',
-            url,
-        };
-    } catch (e) {}
-
     const parsed = id.split('/');
     let hash = '', creator = '';
 

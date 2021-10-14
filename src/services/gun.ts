@@ -9,7 +9,7 @@ import {
     ConnectionMessageSubType,
     Message,
     MessageType,
-    Moderation,
+    Moderation, parseMessageId,
     Post,
     PostMessageSubType,
     Profile
@@ -49,33 +49,43 @@ export default class GunService extends GenericService {
     watch = async (pubkey: string) => {
         if (!this.gun) throw new Error('gun is not set up');
 
-        const users = await this.call('db', 'getUsers');
-        const user = await users.findOneByPubkey(pubkey);
-
-        if (!user) throw new Error(`cannot find user with pubkey ${pubkey}`);
+        // const users = await this.call('db', 'getUsers');
+        // const user = await users.findOneByPubkey(pubkey);
+        //
+        // if (!user) throw new Error(`cannot find user with pubkey ${pubkey}`);
 
         this.gun.user(pubkey)
             .get('message')
             .map(async (data, messageId) => {
                 try {
-                    await this.handleGunMessage(data, messageId, user);
+                    await this.handleGunMessage(data, messageId);
                 } catch (e) {
                     logger.error(e.message, e);
                 }
             });
     }
 
-    handleGunMessage = async (data: any, messageId: string, user?: UserModel) => {
+    handleGunMessage = async (data: any, messageId: string) => {
         return insertMutex.runExclusive(async () => {
             const type = Message.getType(data.type);
-            const parsed = messageId.split('/');
-            const creator = parsed[1] ? parsed[0] : '';
+            const {creator, hash} = parseMessageId(messageId);
+
+            let user: UserModel | null = null;
+
+            if (creator) {
+                const users = await this.call('db', 'getUsers');
+                user = await users.findOneByName(creator);
+
+                if (!user) return;
+
+                if (!['arbitrum'].includes(user.type)) return;
+
+                if (creator !== user.username) return;
+            }
 
             let payload;
 
             if (!type) return;
-
-            if (creator && (creator !== user?.name)) return;
 
             if(data.payload) {
                 // @ts-ignore
@@ -209,7 +219,7 @@ export default class GunService extends GenericService {
                 signals,
                 type: type,
                 subtype: subtype,
-                creator: creator,
+                creator: creator || '',
                 createdAt: createdAt,
                 topic: payload.topic,
                 title: payload.title,
@@ -252,7 +262,9 @@ export default class GunService extends GenericService {
 
             if (mentions) {
                 for (const mention of mentions) {
-                    await userMetaDB.addMentionedCount(mention.slice(1));
+                    const addr = await this.call('ens', 'fetchAddressByName', mention.slice(1));
+                    await userMetaDB.addMentionedCount(addr);
+                    await tagDB.addTagPost('@' + addr, messageId);
                 }
             }
 
@@ -280,7 +292,8 @@ export default class GunService extends GenericService {
             payload,
             messageId,
         } = json;
-        const [creator, hash] = messageId.split('/');
+
+        const {creator, hash} = parseMessageId(messageId);
 
         const moderationDB = await this.call('db', 'getModerations');
         const postDB = await this.call('db', 'getPosts');
@@ -307,7 +320,7 @@ export default class GunService extends GenericService {
                 hash: hash,
                 type: type,
                 subtype: subtype,
-                creator: creator,
+                creator: creator || '',
                 createdAt: createdAt,
                 reference: payload.reference,
             });
@@ -362,12 +375,13 @@ export default class GunService extends GenericService {
 
         try {
             await userDB.ensureUser(payload.name);
+
             await connDB.createConnection({
                 messageId,
                 hash: hash,
                 type: type,
                 subtype: subtype,
-                creator: creator,
+                creator: creator || '',
                 createdAt: createdAt,
                 name: payload.name,
             });
@@ -404,7 +418,7 @@ export default class GunService extends GenericService {
             payload,
             messageId,
         } = json;
-        const [creator, hash] = messageId.split('/');
+        const {creator, hash} = parseMessageId(messageId);
 
         const profileDB = await this.call('db', 'getProfiles');
 
@@ -476,7 +490,7 @@ export default class GunService extends GenericService {
                     const state = put['>'];
                     const value =  put[':'];
 
-                    const [raw, key, name, messageId] = soul.split('/');
+                    const [raw, key, username, messageId] = soul.split('/');
                     const recordDB = await ctx.call('db', 'getRecords');
                     const userDB = await ctx.call('db', 'getUsers');
 
@@ -493,8 +507,8 @@ export default class GunService extends GenericService {
                             throw new Error(`cannot find user with pubkey ${pubKey}`);
                         }
 
-                        if (name && user.name !== name) {
-                            throw new Error(`${user.name} does not match ${name}`);
+                        if (username && ![username].includes(user.name)) {
+                            throw new Error(`${user.name} does not match ${username}`);
                         }
 
                     }

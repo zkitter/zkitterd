@@ -14,12 +14,14 @@ import semaphore from "../../models/semaphore";
 import proposalMeta from "../../models/proposalMeta";
 import tags from "../../models/tags";
 import linkPreview from "../../models/linkPreview";
+import ens from "../../models/ens";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
     sqlite: Sequelize;
 
     app?: ReturnType<typeof app>;
+    ens?: ReturnType<typeof ens>;
     linkPreview?: ReturnType<typeof linkPreview>;
     users?: ReturnType<typeof users>;
     records?: ReturnType<typeof records>;
@@ -145,6 +147,13 @@ export default class DBService extends GenericService {
         return this.app;
     }
 
+    async getENS(): Promise<ReturnType<typeof ens>> {
+        if (!this.ens) {
+            return Promise.reject(new Error('ens is not initialized'));
+        }
+        return this.ens;
+    }
+
     async getLinkPreview(): Promise<ReturnType<typeof linkPreview>> {
         if (!this.linkPreview) {
             return Promise.reject(new Error('linkPreview is not initialized'));
@@ -173,7 +182,7 @@ export default class DBService extends GenericService {
         this.tags = await tags(this.sequelize);
         this.profiles = await profiles(this.sequelize);
         this.semaphore = await semaphore(this.sequelize);
-
+        this.ens = await ens(this.sequelize);
 
         await this.app?.model.sync({ force: !!process.env.FORCE });
         await this.linkPreview?.model.sync({ force: !!process.env.FORCE });
@@ -191,12 +200,15 @@ export default class DBService extends GenericService {
         await this.userMeta?.model.sync({ force: !!process.env.FORCE });
         await this.meta?.model.sync({ force: !!process.env.FORCE });
         await this.proposalMeta?.model.sync({ force: !!process.env.FORCE });
+        await this.ens?.model.sync({ force: !!process.env.FORCE });
 
         const appData = await this.app?.read();
 
         if (!appData) {
             await this.app?.updateLastENSBlock(12957300);
             await this.app?.updateLastInterrepBlock(27202837);
+            // await this.app?.updateLastArbitrumBlock(2193241);
+            await this.app?.updateLastArbitrumBlock(5587681);
         }
 
         // await this.app?.updateLastInterrepBlock(27202837);

@@ -9,6 +9,7 @@ import path from "path";
 import {fetchProposal, fetchProposals, fetchSpace, fetchVotes} from "../util/snapshot";
 import Web3 from "web3";
 const jsonParser = bodyParser.json();
+import * as ethUtil from 'ethereumjs-util';
 import { getLinkPreview } from "link-preview-js";
 
 const corsOptions: CorsOptions = {
@@ -101,7 +102,15 @@ export default class HttpService extends GenericService {
             const context = req.header('x-contextual-name') || undefined;
             const usersDB = await this.call('db', 'getUsers');
             const users = await usersDB.readAll(context, offset, limit);
-            res.send(makeResponse(users));
+
+            const result = [];
+
+            for (let user of users) {
+                const ens = await this.call('ens', 'fetchNameByAddress', user.username);
+                result.push({ ens, ...user });
+            }
+
+            res.send(makeResponse(result));
         }));
 
         this.app.get('/v1/users/search/:query?', this.wrapHandler(async (req, res) => {
@@ -111,19 +120,71 @@ export default class HttpService extends GenericService {
             const context = req.header('x-contextual-name') || undefined;
             const usersDB = await this.call('db', 'getUsers');
             const users = await usersDB.search(query || '', context, offset, limit);
+            const result = [];
 
-            res.send(makeResponse(users));
+            for (let user of users) {
+                const ens = await this.call('ens', 'fetchNameByAddress', user.username);
+                result.push({ ens, ...user });
+            }
+
+            res.send(makeResponse(result));
         }));
 
-        this.app.get('/v1/users/:name', this.wrapHandler(async (req, res) => {
-            const name = req.params.name;
-            const context = req.header('x-contextual-name') || undefined;
+        this.app.get('/v1/users/:address', this.wrapHandler(async (req, res) => {
             const usersDB = await this.call('db', 'getUsers');
-            const user = await usersDB.findOneByName(name, context);
+
+            let address = req.params.address;
+            address = Web3.utils.toChecksumAddress(address);
+
+            if (!Web3.utils.isAddress(address)) {
+                address = await this.call('ens', 'fetchAddressByName', address);
+            }
+
+            const context = req.header('x-contextual-name') || undefined;
+            const user = await usersDB.findOneByName(address, context);
+            const ens = await this.call('ens', 'fetchNameByAddress', address);
             res.send(makeResponse({
                 ...user,
-                ens: name,
+                ens: ens,
+                address: address,
+                username: address,
             }));
+        }));
+
+        this.app.post('/v1/users', jsonParser, this.wrapHandler(async (req, res) => {
+            const {
+                account,
+                publicKey,
+                proof,
+            } = req.body;
+
+            if (!account || !Web3.utils.isAddress(account)) {
+                res.status(400).send(makeResponse('invalid account'));
+                return;
+            }
+
+            if (!publicKey) {
+                res.status(400).send(makeResponse('invalid publicKey'));
+                return;
+            }
+
+            if (!proof) {
+                res.status(400).send(makeResponse('invalid proof'));
+                return;
+            }
+
+            const pubkeyBytes = Web3.utils.utf8ToHex(publicKey);
+            const nonce = await this.call('arbitrum', 'getNonce', account);
+            const hash = Web3.utils.keccak256(Web3.utils.encodePacked(account, pubkeyBytes, nonce)!);
+            const recover = await this.call('ens', 'ecrecover', hash, proof);
+
+            if (recover !== account) {
+                throw new Error('invalid signature');
+            }
+
+            const tx = await this.call('arbitrum', 'updateFor', account, publicKey, proof);
+
+            res.send(makeResponse(tx));
         }));
 
         this.app.get('/v1/snapshot-proposals', this.wrapHandler(async (req, res) => {

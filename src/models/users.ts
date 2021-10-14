@@ -1,11 +1,13 @@
-import {BIGINT, QueryTypes, Sequelize, STRING} from "sequelize";
+import {BIGINT, ENUM, QueryTypes, Sequelize, STRING} from "sequelize";
 import userMetaSeq from "./userMeta";
 import {Mutex} from "async-mutex";
 
 export type UserModel = {
-    ens: string;
+    username: string;
+    type: 'ens' | 'arbitrum' | '';
     pubkey: string;
     joinedAt: number;
+    joinedTx: string;
     name: string;
     bio: string;
     coverImage: string;
@@ -39,17 +41,24 @@ const users = (sequelize: Sequelize) => {
         pubkey: {
             type: STRING,
             allowNull: false,
-            validate: {
-                notEmpty: true,
-            },
         },
         joinedAt: {
             type: BIGINT,
+        },
+        tx: {
+            type: STRING,
+            allowNull: false,
+        },
+        type: {
+            type: ENUM('arbitrum', 'ens', ''),
+            allowNull: false,
         },
     }, {
         indexes: [
             { fields: ['name'] },
             { fields: ['pubkey'] },
+            { fields: ['type'] },
+            { fields: ['tx'] },
         ]
     });
 
@@ -87,7 +96,7 @@ const users = (sequelize: Sequelize) => {
     const readAll = async (context = '', offset = 0, limit = 20): Promise<UserModel[]> => {
         const values = await sequelize.query(`
             ${userSelectQuery}
-            ORDER BY (umt."followerCount"+umt."postingCount"+umt."mentionedCount") DESC
+            ORDER BY (umt."followerCount"+umt."postingCount"+umt."mentionedCount") ASC
             LIMIT :limit OFFSET :offset
         `, {
             type: QueryTypes.SELECT,
@@ -104,14 +113,13 @@ const users = (sequelize: Sequelize) => {
     const search = async (query: string, context = '', offset = 0, limit = 5): Promise<UserModel[]> => {
         const values = await sequelize.query(`
             ${userSelectQuery}
-            WHERE u."name" LIKE :query
-            ORDER BY u."joinedAt" ASC
+            WHERE LOWER(u."name") LIKE :query OR LOWER(u."name") IN (SELECT LOWER(address) from ens WHERE LOWER(ens) LIKE :query)
             LIMIT :limit OFFSET :offset
         `, {
             type: QueryTypes.SELECT,
             replacements: {
                 context: context || '',
-                query: `${query}%`,
+                query: `${query.toLowerCase()}%`,
                 limit,
                 offset,
             },
@@ -120,7 +128,13 @@ const users = (sequelize: Sequelize) => {
         return inflateValuesToUserJSON(values);
     }
 
-    const updateOrCreateUser = async (user: UserModel) => {
+    const updateOrCreateUser = async (user: {
+        name: string;
+        pubkey: string;
+        joinedAt: number;
+        tx: string;
+        type: 'ens' | 'arbitrum';
+    }) => {
         return mutex.runExclusive(async () => {
             const result = await model.findOne({
                 where: {
@@ -150,6 +164,8 @@ const users = (sequelize: Sequelize) => {
             if (!result) {
                 return model.create({
                     name,
+                    tx: '',
+                    type: '',
                     pubkey: '',
                     joined: 0,
                 });
@@ -176,6 +192,8 @@ const userSelectQuery = `
         u.name,
         u.pubkey,
         u."joinedAt",
+        u."tx",
+        u."type",
         umt."followerCount",
         umt."followingCount",
         umt."blockedCount",
@@ -202,7 +220,10 @@ const userSelectQuery = `
 
 function inflateValuesToUserJSON(values: any[]): UserModel[] {
     return values.map(value => ({
-        ens: value.name,
+        username: value.name,
+        address: value.name,
+        joinedTx: value.tx,
+        type: value.type,
         pubkey: value.pubkey,
         joinedAt: Number(value.joinedAt),
         name: value.nickname || '',

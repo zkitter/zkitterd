@@ -207,8 +207,8 @@ export default class DBService extends GenericService {
         if (!appData) {
             await this.app?.updateLastENSBlock(12957300);
             await this.app?.updateLastInterrepBlock(27202837);
-            // await this.app?.updateLastArbitrumBlock(2193241);
-            await this.app?.updateLastArbitrumBlock(5587681);
+            await this.app?.updateLastArbitrumBlock(2193241);
+            // await this.app?.updateLastArbitrumBlock(5587681);
         }
 
         // await this.app?.updateLastInterrepBlock(27202837);

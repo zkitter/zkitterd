@@ -114,7 +114,6 @@ const users = (sequelize: Sequelize) => {
         const values = await sequelize.query(`
             ${userSelectQuery}
             WHERE LOWER(u."name") LIKE :query OR LOWER(u."name") IN (SELECT LOWER(address) from ens WHERE LOWER(ens) LIKE :query)
-            ORDER BY u."joinedAt" ASC
             LIMIT :limit OFFSET :offset
         `, {
             type: QueryTypes.SELECT,

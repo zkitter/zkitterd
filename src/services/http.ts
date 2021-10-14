@@ -119,10 +119,7 @@ export default class HttpService extends GenericService {
             const query = req.params.query;
             const context = req.header('x-contextual-name') || undefined;
             const usersDB = await this.call('db', 'getUsers');
-            const users = query
-                ? await usersDB.search(query || '', context, offset, limit)
-                : await usersDB.readAll(context, offset, limit);
-
+            const users = await usersDB.search(query || '', context, offset, limit);
             const result = [];
 
             for (let user of users) {

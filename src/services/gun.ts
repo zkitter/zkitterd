@@ -58,29 +58,40 @@ export default class GunService extends GenericService {
             .get('message')
             .map(async (data, messageId) => {
                 try {
-                    await this.handleGunMessage(data, messageId);
+                    await this.handleGunMessage(data, messageId, pubkey);
                 } catch (e) {
                     logger.error(e.message, e);
                 }
             });
     }
 
-    handleGunMessage = async (data: any, messageId: string) => {
+    handleGunMessage = async (data: any, messageId: string, pubkey?: string) => {
         return insertMutex.runExclusive(async () => {
             const type = Message.getType(data.type);
             const {creator, hash} = parseMessageId(messageId);
+
+            // const user = await userDB.findOneByPubkey(pubKey);
+            //
+            // if (!user) {
+            //     throw new Error(`cannot find user with pubkey ${pubKey}`);
+            // }
+            //
+            // if (username && ![username].includes(user.name)) {
+            //     throw new Error(`${user.name} does not match ${username}`);
+            // }
 
             let user: UserModel | null = null;
 
             if (creator) {
                 const users = await this.call('db', 'getUsers');
-                user = await users.findOneByName(creator);
+
+                user = await users.findOneByPubkey(pubkey);
 
                 if (!user) return;
 
                 if (!['arbitrum'].includes(user.type)) return;
 
-                if (creator !== user.username) return;
+                if (creator !== user.name) return;
             }
 
             let payload;

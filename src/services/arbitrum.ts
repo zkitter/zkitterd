@@ -77,13 +77,22 @@ export default class ArbitrumService extends GenericService {
                 }
 
                 const users = await this.call('db', 'getUsers');
-                await users.updateOrCreateUser({
-                    name: account,
-                    pubkey,
-                    joinedAt: Number(block.timestamp) * 1000,
-                    tx: tx.hash,
-                    type: 'arbitrum',
-                });
+
+                try {
+                    await users.updateOrCreateUser({
+                        name: account,
+                        pubkey,
+                        joinedAt: Number(block.timestamp) * 1000,
+                        tx: tx.hash,
+                        type: 'arbitrum',
+                    });
+                } catch (e) {
+                    logger.error(e.message, {
+                        parent: e.parent,
+                        stack: e.stack,
+                        fromBlock: lastBlock,
+                    });
+                }
 
                 await this.call('gun', 'watch', pubkey);
 
@@ -96,6 +105,8 @@ export default class ArbitrumService extends GenericService {
                 });
             }
             await app.updateLastArbitrumBlock(toBlock);
+
+            if (block.number > toBlock) return true;
         } catch (e) {
             logger.error(e.message, {
                 parent: e.parent,
@@ -106,14 +117,14 @@ export default class ArbitrumService extends GenericService {
     }
 
     scan = async () => {
-        await this.scanFromLast();
+        const shouldScanAgain = await this.scanFromLast();
 
         if (this.scanTimeout) {
             clearTimeout(this.scanTimeout);
             this.scanTimeout = null;
         }
 
-        this.scanTimeout = setTimeout(this.scan, 15000);
+        this.scanTimeout = setTimeout(this.scan, shouldScanAgain ? 0 : 15000);
     }
 
     async start() {

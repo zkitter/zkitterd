@@ -144,9 +144,10 @@ const users = (sequelize: Sequelize) => {
 
             if (result) {
                 const json = result.toJSON() as UserModel;
-                if (user.joinedAt > json.joinedAt) {
+                if (user.joinedAt > Number(json.joinedAt)) {
                     return result.update(user);
                 }
+                return;
             }
 
             return model.create(user);

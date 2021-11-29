@@ -208,7 +208,8 @@ const userSelectQuery = `
         name.value as nickname,
         "profileImage".value as "profileImage",
         "coverImage".value as "coverImage",
-        "twitterVerification".value as "twitterVerification",
+        "twitterVerification".value as "tweetId",
+        "twitterVerification".key as "twitterHandle",
         website.value as website
     FROM users u
     LEFT JOIN usermeta umt ON umt.name = u.name
@@ -223,28 +224,37 @@ const userSelectQuery = `
 `;
 
 function inflateValuesToUserJSON(values: any[]): UserModel[] {
-    return values.map(value => ({
-        username: value.name,
-        address: value.name,
-        joinedTx: value.tx,
-        type: value.type,
-        pubkey: value.pubkey,
-        joinedAt: Number(value.joinedAt),
-        name: value.nickname || '',
-        bio: value.bio || '',
-        profileImage: value.profileImage || '',
-        coverImage: value.coverImage || '',
-        twitterVerification: value.twitterVerification || '',
-        website: value.website || '',
-        meta: {
-            blockedCount: value.blockedCount ? Number(value.blockedCount) : 0,
-            blockingCount: value.blockingCount ? Number(value.blockingCount) : 0,
-            followerCount: value.followerCount ? Number(value.followerCount) : 0,
-            followingCount: value.followingCount ? Number(value.followingCount) : 0,
-            postingCount: value.postingCount ? Number(value.postingCount) : 0,
-            mentionedCount: value.mentionedCount ? Number(value.mentionedCount) : 0,
-            followed: value.followed,
-            blocked: value.blocked,
-        },
-    }));
+
+    return values.map(value => {
+        let twitterVerification = '';
+
+        if (value.tweetId && value.twitterHandle) {
+            twitterVerification = `https://twitter.com/${value.twitterHandle}/status/${value.tweetId}`;
+        }
+
+        return {
+            username: value.name,
+            address: value.name,
+            joinedTx: value.tx,
+            type: value.type,
+            pubkey: value.pubkey,
+            joinedAt: Number(value.joinedAt),
+            name: value.nickname || '',
+            bio: value.bio || '',
+            profileImage: value.profileImage || '',
+            coverImage: value.coverImage || '',
+            twitterVerification: twitterVerification,
+            website: value.website || '',
+            meta: {
+                blockedCount: value.blockedCount ? Number(value.blockedCount) : 0,
+                blockingCount: value.blockingCount ? Number(value.blockingCount) : 0,
+                followerCount: value.followerCount ? Number(value.followerCount) : 0,
+                followingCount: value.followingCount ? Number(value.followingCount) : 0,
+                postingCount: value.postingCount ? Number(value.postingCount) : 0,
+                mentionedCount: value.mentionedCount ? Number(value.mentionedCount) : 0,
+                followed: value.followed,
+                blocked: value.blocked,
+            },
+        };
+    });
 }

@@ -23,6 +23,7 @@
     "circomlib": "^0.5.3",
     "connect-session-sequelize": "^7.1.2",
     "cors": "^2.8.5",
+    "elliptic": "^6.5.4",
     "ethereumjs-util": "^7.1.2",
     "express": "^4.17.1",
     "express-session": "^1.17.2",
@@ -44,6 +45,7 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.10",
+    "@types/elliptic": "^6.4.14",
     "@types/express": "^4.17.11",
     "@types/express-session": "^1.17.4",
     "@types/jsonwebtoken": "^8.5.6",

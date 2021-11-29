@@ -1,4 +1,5 @@
 import {GenericService} from "../util/svc";
+import EC from "elliptic";
 import express, {Express, Request, Response} from "express";
 import bodyParser from "body-parser";
 import cors, {CorsOptions} from "cors";
@@ -19,6 +20,8 @@ import {Dialect, Sequelize} from "sequelize";
 import {URLSearchParams} from "url";
 const SequelizeStore = require("connect-session-sequelize")(session.Store);
 import { calculateReputation, OAuthProvider } from "@interrep/reputation-criteria"
+import {showStatus} from "../util/twitter";
+import {base64ToArrayBuffer, verifySignatureP256} from "../util/crypto";
 
 const corsOptions: CorsOptions = {
     credentials: true,
@@ -571,9 +574,39 @@ export default class HttpService extends GenericService {
         this.app.get('/twitter/session', this.wrapHandler(async (req, res) => {
             // @ts-ignore
             const { twitterToken } = req.session;
-            const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
+            const signature = req.header('X-SIGNED-ADDRESS');
             const twitterAuthDB = await this.call('db', 'getTwitterAuth');
-            const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
+            const userDB = await this.call('db', 'getUsers');
+
+            let token, secret, auth;
+
+            if (signature) {
+                const [sig, address] = signature.split('.');
+                const user = await userDB.findOneByName(address);
+
+                if (user?.pubkey) {
+                   if (verifySignatureP256(user.pubkey, address, sig)) {
+                       const sigAuth = await twitterAuthDB.findUserByAccount(address);
+
+                       if (sigAuth) {
+                           auth = sigAuth;
+                           console.log(auth);
+                           const twitterToken = jwt.sign({
+                               userToken: auth.user_token,
+                           }, JWT_SECRET);
+
+                           // @ts-ignore
+                           req.session.twitterToken = twitterToken;
+                       }
+                   }
+                }
+            }
+
+            if (!auth) {
+                const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
+                auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
+            }
+
             // @ts-ignore
             const headers = oauth.toHeader(oauth.authorize({
                 url: `https://api.twitter.com/1.1/account/verify_credentials.json`,
@@ -622,6 +655,13 @@ export default class HttpService extends GenericService {
             }));
         }));
 
+        this.app.get('/twitter/check', this.wrapHandler(async (req, res) => {
+            const { username } = req.query;
+            const twitterAuthDB = await this.call('db', 'getTwitterAuth');
+            const user = await twitterAuthDB.findUserByUsername(username);
+            res.send(makeResponse(user));
+        }));
+
         this.app.post('/twitter/update', jsonParser, this.wrapHandler(async (req, res) => {
             // @ts-ignore
             const { twitterToken } = req.session;
@@ -659,6 +699,13 @@ export default class HttpService extends GenericService {
                 res.status(resp.status).send(makeResponse(json.errors[0].message, true));
             }
         }));
+
+        this.app.get('/twitter/status', this.wrapHandler(async(req, res) => {
+            // @ts-ignore
+            const { id } = req.query;
+            const status = await showStatus(id as string);
+            res.send(makeResponse(status));
+        }))
 
         this.app.get('/oauth/reset', this.wrapHandler(async (req, res) => {
             // @ts-ignore

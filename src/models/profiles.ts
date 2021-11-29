@@ -93,36 +93,6 @@ const profiles = (sequelize: Sequelize) => {
         return json;
     }
 
-    const findProfile = async (username: string): Promise<UserProfile|null> => {
-        let name, bio, website, coverImage, profileImage, twitterVerification;
-        try {
-            name = await findProfileMessage(username, ProfileMessageSubType.Name);
-            bio = await findProfileMessage(username, ProfileMessageSubType.Bio);
-            website = await findProfileMessage(username, ProfileMessageSubType.Website);
-            coverImage = await findProfileMessage(username, ProfileMessageSubType.CoverImage);
-            profileImage = await findProfileMessage(username, ProfileMessageSubType.ProfileImage);
-            twitterVerification = await findProfileMessage(username, ProfileMessageSubType.TwitterVerification);
-
-            return {
-                name: name?.value || '',
-                bio: bio?.value || '',
-                website: website?.value || '',
-                coverImage: coverImage?.value || '',
-                profileImage: profileImage?.value || '',
-                twitterVerification: twitterVerification?.value || '',
-            };
-        } catch (e) {
-            return {
-                name: name?.value || '',
-                bio: bio?.value || '',
-                website: website?.value || '',
-                coverImage: coverImage?.value || '',
-                profileImage: profileImage?.value || '',
-                twitterVerification: twitterVerification?.value || '',
-            };
-        }
-    }
-
     const createProfile = async (record: ProfileModel) => {
         return model.create(record);
     }
@@ -130,7 +100,6 @@ const profiles = (sequelize: Sequelize) => {
     return {
         model,
         findOne,
-        findProfile,
         createProfile,
     };
 }

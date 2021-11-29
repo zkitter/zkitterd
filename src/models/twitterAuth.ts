@@ -1,4 +1,6 @@
 import {Sequelize, STRING} from "sequelize";
+import {Mutex} from "async-mutex";
+const mutex = new Mutex();
 
 type TwitterAuthModel = {
     userToken: string;
@@ -21,6 +23,9 @@ const twitterAuth = (sequelize: Sequelize) => {
         user_id: {
             type: STRING,
         },
+        account: {
+            type: STRING,
+        },
     }, {
         indexes: [
             {
@@ -35,45 +40,106 @@ const twitterAuth = (sequelize: Sequelize) => {
                 unique: true,
                 fields: ['user_id'],
             },
+            {
+                unique: true,
+                fields: ['account'],
+            },
         ],
     });
 
-    const findUserByToken = async (token: string): Promise<TwitterAuthModel> => {
+    const findUserByToken = async (token?: string | null): Promise<TwitterAuthModel|null> => {
+        if (!token) return null;
+
         const result = await model.findOne({
             where: {
                 user_token: token,
             },
         });
+
         return result?.toJSON() as TwitterAuthModel;
     }
 
-    const updateUserToken = async (data: TwitterAuthModel) => {
+    const findUserByUsername = async (username: string): Promise<TwitterAuthModel|null> => {
+        if (!username) return null;
+
         const result = await model.findOne({
             where: {
-                username: data.userName,
+                username: username,
             },
         });
 
-        if (result) {
-            return result.update({
+        return result?.toJSON() as TwitterAuthModel;
+    }
+
+    const findUserByAccount = async (account: string): Promise<TwitterAuthModel|null> => {
+        if (!account) return null;
+
+        const result = await model.findOne({
+            where: {
+                account: account,
+            },
+        });
+
+        return result?.toJSON() as TwitterAuthModel;
+    }
+
+    const addAccount = async (username: string, account: string) => {
+        return mutex.runExclusive(async () => {
+            const result = await model.findOne({
+                where: {
+                    username: username,
+                },
+            });
+
+            if (result) {
+                const json: any = await result?.toJSON();
+
+                if (json.username !== username) throw new Error(`${username} already exists`);
+
+                return result.update({
+                    account,
+                });
+            }
+
+            return model.create({
+                account,
+                username,
+            });
+        });
+    }
+
+    const updateUserToken = async (data: TwitterAuthModel) => {
+        return mutex.runExclusive(async () => {
+            const result = await model.findOne({
+                where: {
+                    username: data.userName,
+                },
+            });
+
+            if (result) {
+                return result.update({
+                    user_token: data.userToken,
+                    user_token_secret: data.userTokenSecret,
+                    username: data.userName,
+                    user_id: data.userId,
+                });
+            }
+
+            return model.create({
                 user_token: data.userToken,
                 user_token_secret: data.userTokenSecret,
                 username: data.userName,
                 user_id: data.userId,
             });
-        }
-
-        return model.create({
-            user_token: data.userToken,
-            user_token_secret: data.userTokenSecret,
-            username: data.userName,
-            user_id: data.userId,
         });
     }
 
     return {
         model,
+        addAccount,
         findUserByToken,
+        findUserByAccount,
+        findUserByUsername,
         updateUserToken,
     };
 }

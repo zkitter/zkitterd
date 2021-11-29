@@ -12,12 +12,13 @@ import {
     Moderation, parseMessageId,
     Post,
     PostMessageSubType,
-    Profile
+    Profile, ProfileMessageSubType
 } from "../util/message";
 import {Mutex} from "async-mutex";
 import {UserModel} from "../models/users";
 import {HASHTAG_REGEX, MENTION_REGEX} from "../util/regex";
 import vKey from "../../static/verification_key.json";
+import {showStatus} from "../util/twitter";
 
 const Graph = require("gun/src/graph");
 const State = require("gun/src/state");
@@ -420,6 +421,7 @@ export default class GunService extends GenericService {
         const {creator, hash} = parseMessageId(messageId);
 
         const profileDB = await this.call('db', 'getProfiles');
+        const twitterAuthDb = await this.call('db', 'getTwitterAuth');
 
         if (json.hash !== hash) {
             return;
@@ -433,6 +435,33 @@ export default class GunService extends GenericService {
                 messageId,
             });
             return;
+        }
+
+        if (subtype === ProfileMessageSubType.TwitterVerification) {
+            const { key, value } = payload;
+
+            if (!key || !value) return;
+
+            const {
+                entities: {
+                    urls: [{
+                        expanded_url: profileUrl,
+                    }],
+                },
+                user: {
+                    screen_name,
+                }
+            } = await showStatus(value);
+
+            if (screen_name !== key) {
+                return;
+            }
+
+            if (!profileUrl.includes(creator)) {
+                return;
+            }
+
+            await twitterAuthDb.addAccount(key, creator);
         }
 
         try {

@@ -17,6 +17,7 @@ export type UserProfile = {
     bio: string;
     coverImage: string;
     profileImage: string;
+    twitterVerification: string;
     website: string;
 }
 
@@ -93,13 +94,14 @@ const profiles = (sequelize: Sequelize) => {
     }
 
     const findProfile = async (username: string): Promise<UserProfile|null> => {
-        let name, bio, website, coverImage, profileImage;
+        let name, bio, website, coverImage, profileImage, twitterVerification;
         try {
             name = await findProfileMessage(username, ProfileMessageSubType.Name);
             bio = await findProfileMessage(username, ProfileMessageSubType.Bio);
             website = await findProfileMessage(username, ProfileMessageSubType.Website);
             coverImage = await findProfileMessage(username, ProfileMessageSubType.CoverImage);
             profileImage = await findProfileMessage(username, ProfileMessageSubType.ProfileImage);
+            twitterVerification = await findProfileMessage(username, ProfileMessageSubType.TwitterVerification);
 
             return {
                 name: name?.value || '',
@@ -107,6 +109,7 @@ const profiles = (sequelize: Sequelize) => {
                 website: website?.value || '',
                 coverImage: coverImage?.value || '',
                 profileImage: profileImage?.value || '',
+                twitterVerification: twitterVerification?.value || '',
             };
         } catch (e) {
             return {
@@ -115,6 +118,7 @@ const profiles = (sequelize: Sequelize) => {
                 website: website?.value || '',
                 coverImage: coverImage?.value || '',
                 profileImage: profileImage?.value || '',
+                twitterVerification: twitterVerification?.value || '',
             };
         }
     }

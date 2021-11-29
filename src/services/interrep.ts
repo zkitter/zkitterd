@@ -22,29 +22,40 @@ export default class InterrepService extends GenericService {
         const app = await this.call('db', 'getApp');
         const semaphore = await this.call('db', 'getSemaphore');
         const data = await app.read();
-
-        logger.info('scanning interrep NewRootHash events', {
+        const lastBlock = data?.lastInterrepBlockScanned;
+        logger.info('scanning interrep IdentityCommitmentAdded events', {
             fromBlock: data?.lastInterrepBlockScanned,
         });
 
         try {
             const block = await this.web3.eth.getBlock('latest');
-            const events = await this.interrep.getPastEvents('NewRootHash', {
+            const toBlock = Math.min(block.number, lastBlock + 99999);
+
+            const events = await this.interrep.getPastEvents('IdentityCommitmentAdded', {
                 fromBlock: data?.lastInterrepBlockScanned,
-                toBlock: block.number,
+                toBlock: toBlock,
             });
-            await app.updateLastInterrepBlock(block.number);
-            logger.info('scanned interrep NewRootHash events', {
+            logger.info('scanned interrep IdentityCommitmentAdded events', {
                 fromBlock: data?.lastInterrepBlockScanned,
-                toBlock: block.number,
+                toBlock: toBlock,
             });
 
             for (let event of events) {
-                await semaphore.addID(
-                    BigInt(event.returnValues._identityCommitment).toString(16),
-                    event.returnValues._groupId,
-                    BigInt(event.returnValues._rootHash).toString(16),
-                );
+                try {
+                    await semaphore.addID(
+                        BigInt(event.returnValues.identityCommitment).toString(16),
+                        Web3.utils.hexToUtf8(event.returnValues.provider),
+                        Web3.utils.hexToUtf8(event.returnValues.name),
+                        BigInt(event.returnValues.root).toString(16),
+                    );
+                } catch (e) {
+                    logger.error(e.message, {
+                        parent: e.parent,
+                        stack: e.stack,
+                        fromBlock: data?.lastInterrepBlockScanned,
+                    });
+                }
+
 
                 logger.info(`added roothash`, {
                     transactionHash: event.transactionHash,
@@ -52,6 +63,9 @@ export default class InterrepService extends GenericService {
                     fromBlock: data?.lastInterrepBlockScanned,
                 });
             }
+
+            await app.updateLastInterrepBlock(toBlock);
+            if (block.number > toBlock) return true;
         } catch (e) {
             logger.error(e.message, {
                 parent: e.parent,
@@ -62,14 +76,14 @@ export default class InterrepService extends GenericService {
     }
 
     scan = async () => {
-        await this.scanFromLast();
+        const shouldScanAgain = await this.scanFromLast();
 
         if (this.scanTimeout) {
             clearTimeout(this.scanTimeout);
             this.scanTimeout = null;
         }
 
-        this.scanTimeout = setTimeout(this.scan, 15000);
+        this.scanTimeout = setTimeout(this.scan, shouldScanAgain ? 0 : 15000);
     }
 
     async start() {

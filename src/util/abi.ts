@@ -6,23 +6,85 @@ export const interrepABI = [
             {
                 "indexed": true,
                 "internalType": "bytes32",
-                "name": "_groupId",
+                "name": "provider",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "name",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint8",
+                "name": "depth",
+                "type": "uint8"
+            }
+        ],
+        "name": "GroupAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "bytes32",
+                "name": "provider",
+                "type": "bytes32"
+            },
+            {
+                "indexed": true,
+                "internalType": "bytes32",
+                "name": "name",
                 "type": "bytes32"
             },
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "_identityCommitment",
+                "name": "identityCommitment",
                 "type": "uint256"
             },
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "_rootHash",
+                "name": "root",
                 "type": "uint256"
             }
         ],
-        "name": "NewRootHash",
+        "name": "IdentityCommitmentAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "bytes32",
+                "name": "provider",
+                "type": "bytes32"
+            },
+            {
+                "indexed": true,
+                "internalType": "bytes32",
+                "name": "name",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "identityCommitment",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "root",
+                "type": "uint256"
+            }
+        ],
+        "name": "IdentityCommitmentDeleted",
         "type": "event"
     },
     {
@@ -48,23 +110,183 @@ export const interrepABI = [
         "inputs": [
             {
                 "internalType": "bytes32",
-                "name": "_groupId",
+                "name": "provider",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "name",
                 "type": "bytes32"
             },
             {
                 "internalType": "uint256",
-                "name": "_identityCommitment",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_rootHash",
+                "name": "identityCommitment",
                 "type": "uint256"
             }
         ],
-        "name": "addRootHash",
+        "name": "addIdentityCommitment",
         "outputs": [],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "provider",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32[]",
+                "name": "names",
+                "type": "bytes32[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "identityCommitments",
+                "type": "uint256[]"
+            }
+        ],
+        "name": "batchAddIdentityCommitment",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "provider",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32[]",
+                "name": "names",
+                "type": "bytes32[]"
+            },
+            {
+                "internalType": "uint8[]",
+                "name": "depths",
+                "type": "uint8[]"
+            },
+            {
+                "internalType": "address[]",
+                "name": "admins",
+                "type": "address[]"
+            }
+        ],
+        "name": "batchCreateGroup",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "provider",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "name",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "uint8",
+                "name": "depth",
+                "type": "uint8"
+            },
+            {
+                "internalType": "address",
+                "name": "admin",
+                "type": "address"
+            }
+        ],
+        "name": "createGroup",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "provider",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "name",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "uint256",
+                "name": "identityCommitment",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "pathSiblingNodes",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint8[]",
+                "name": "pathPositions",
+                "type": "uint8[]"
+            }
+        ],
+        "name": "deleteIdentityCommitment",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "provider",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "name",
+                "type": "bytes32"
+            }
+        ],
+        "name": "getRoot",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "provider",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "name",
+                "type": "bytes32"
+            }
+        ],
+        "name": "getSize",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -92,25 +314,6 @@ export const interrepABI = [
         "name": "renounceOwnership",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bytes32",
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
-        "name": "rootHashes",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {

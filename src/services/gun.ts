@@ -27,8 +27,7 @@ const getMutex = new Mutex();
 const putMutex = new Mutex();
 const insertMutex = new Mutex();
 
-import { OrdinarySemaphore } from "semaphore-lib";
-OrdinarySemaphore.setHasher('poseidon');
+const { Semaphore, genExternalNullifier, genSignalHash } = require("@libsem/protocols");
 
 export default class GunService extends GenericService {
     gun?: IGunChainReference;
@@ -69,16 +68,6 @@ export default class GunService extends GenericService {
         return insertMutex.runExclusive(async () => {
             const type = Message.getType(data.type);
             const {creator, hash} = parseMessageId(messageId);
-
-            // const user = await userDB.findOneByPubkey(pubKey);
-            //
-            // if (!user) {
-            //     throw new Error(`cannot find user with pubkey ${pubKey}`);
-            // }
-            //
-            // if (username && ![username].includes(user.name)) {
-            //     throw new Error(`${user.name} does not match ${username}`);
-            // }
 
             let user: UserModel | null = null;
 
@@ -201,17 +190,16 @@ export default class GunService extends GenericService {
             if (proof && signals) {
                 const parsedProof = JSON.parse(proof);
                 const parsedSignals = JSON.parse(signals);
-                const externalNullifier = OrdinarySemaphore.genExternalNullifier('POST');
-                const signalHash = await OrdinarySemaphore.genSignalHash(hash);
+                const externalNullifier = await genExternalNullifier('POST');
+                const signalHash = await genSignalHash(hash);
 
                 if (BigInt(externalNullifier).toString() !== parsedSignals[3]) return;
                 if (signalHash.toString() !== parsedSignals[2]) return;
 
                 const foundHash = await semaphoreDB.findOneByHash(BigInt(parsedSignals[0]).toString(16));
-
                 if (!foundHash) return;
 
-                const res = await OrdinarySemaphore.verifyProof(
+                const res = await Semaphore.verifyProof(
                     vKey as any,
                     {
                         proof: parsedProof,

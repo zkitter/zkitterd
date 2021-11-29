@@ -13,6 +13,7 @@ export type UserModel = {
     coverImage: string;
     profileImage: string;
     website: string;
+    twitterVerification: string;
     meta: {
         blockedCount: number;
         blockingCount: number;
@@ -207,6 +208,7 @@ const userSelectQuery = `
         name.value as nickname,
         "profileImage".value as "profileImage",
         "coverImage".value as "coverImage",
+        "twitterVerification".value as "twitterVerification",
         website.value as website
     FROM users u
     LEFT JOIN usermeta umt ON umt.name = u.name
@@ -216,6 +218,7 @@ const userSelectQuery = `
     LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles "profileImage" ON "profileImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'PROFILE_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles "coverImage" ON "coverImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'COVER_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)
+    LEFT JOIN profiles "twitterVerification" ON "twitterVerification"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'TWT_VERIFICATION' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles website ON website."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'WEBSITE' ORDER BY "createdAt" DESC LIMIT 1)
 `;
 
@@ -231,6 +234,7 @@ function inflateValuesToUserJSON(values: any[]): UserModel[] {
         bio: value.bio || '',
         profileImage: value.profileImage || '',
         coverImage: value.coverImage || '',
+        twitterVerification: value.twitterVerification || '',
         website: value.website || '',
         meta: {
             blockedCount: value.blockedCount ? Number(value.blockedCount) : 0,

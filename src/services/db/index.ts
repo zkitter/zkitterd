@@ -15,6 +15,7 @@ import proposalMeta from "../../models/proposalMeta";
 import tags from "../../models/tags";
 import linkPreview from "../../models/linkPreview";
 import ens from "../../models/ens";
+import twitterAuth from "../../models/twitterAuth";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
@@ -34,6 +35,7 @@ export default class DBService extends GenericService {
     meta?: ReturnType<typeof meta>;
     userMeta?: ReturnType<typeof userMeta>;
     proposalMeta?: ReturnType<typeof proposalMeta>;
+    twitterAuth?: ReturnType<typeof twitterAuth>;
 
     constructor() {
         super();
@@ -140,6 +142,14 @@ export default class DBService extends GenericService {
         return this.proposalMeta;
     }
 
+    async getTwitterAuth(): Promise<ReturnType<typeof twitterAuth>> {
+        if (!this.twitterAuth) {
+            return Promise.reject(new Error('twitterAuth is not initialized'));
+        }
+
+        return this.twitterAuth;
+    }
+
     async getApp(): Promise<ReturnType<typeof app>> {
         if (!this.app) {
             return Promise.reject(new Error('app is not initialized'));
@@ -183,6 +193,7 @@ export default class DBService extends GenericService {
         this.profiles = await profiles(this.sequelize);
         this.semaphore = await semaphore(this.sequelize);
         this.ens = await ens(this.sequelize);
+        this.twitterAuth = await twitterAuth(this.sequelize);
 
         await this.app?.model.sync({ force: !!process.env.FORCE });
         await this.linkPreview?.model.sync({ force: !!process.env.FORCE });
@@ -201,12 +212,13 @@ export default class DBService extends GenericService {
         await this.meta?.model.sync({ force: !!process.env.FORCE });
         await this.proposalMeta?.model.sync({ force: !!process.env.FORCE });
         await this.ens?.model.sync({ force: !!process.env.FORCE });
+        await this.twitterAuth?.model.sync({ force: !!process.env.FORCE });
 
         const appData = await this.app?.read();
 
         if (!appData) {
             await this.app?.updateLastENSBlock(12957300);
-            await this.app?.updateLastInterrepBlock(27202837);
+            await this.app?.updateLastInterrepBlock(28311377);
             await this.app?.updateLastArbitrumBlock(2193241);
             // await this.app?.updateLastArbitrumBlock(5587681);
         }

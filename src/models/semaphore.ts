@@ -3,7 +3,8 @@ import {Mutex} from "async-mutex";
 
 type SemaphoreModel = {
     id_commitment: string;
-    group_id: string;
+    provider: string;
+    name: string;
     root_hash: string;
 };
 
@@ -15,7 +16,11 @@ const semaphore = (sequelize: Sequelize) => {
             type: STRING,
             allowNull: false,
         },
-        group_id: {
+        provider: {
+            type: STRING,
+            allowNull: false,
+        },
+        name: {
             type: STRING,
             allowNull: false,
         },
@@ -26,7 +31,8 @@ const semaphore = (sequelize: Sequelize) => {
     }, {
         indexes: [
             { fields: ['id_commitment'] },
-            { fields: ['group_id'] },
+            { fields: ['provider'] },
+            { fields: ['name'] },
             { fields: ['root_hash'], unique: true },
         ],
     });
@@ -51,11 +57,12 @@ const semaphore = (sequelize: Sequelize) => {
         return result?.toJSON() as SemaphoreModel;
     }
 
-    const addID = async (id_commitment: string, group_id: string, root_hash: string) => {
+    const addID = async (id_commitment: string, provider: string, name: string, root_hash: string) => {
         return mutex.runExclusive(async () => {
             return model.create({
                 id_commitment,
-                group_id,
+                provider,
+                name,
                 root_hash,
             });
         });

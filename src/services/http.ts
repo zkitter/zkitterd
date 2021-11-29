@@ -9,41 +9,42 @@ import path from "path";
 import {fetchProposal, fetchProposals, fetchSpace, fetchVotes} from "../util/snapshot";
 import Web3 from "web3";
 const jsonParser = bodyParser.json();
-import * as ethUtil from 'ethereumjs-util';
+const OAuth = require('oauth-1.0a');
 import { getLinkPreview } from "link-preview-js";
+import crypto from "crypto";
+import queryString from "querystring";
+import session from 'express-session';
+import jwt from "jsonwebtoken";
+import {Dialect, Sequelize} from "sequelize";
+import {URLSearchParams} from "url";
+const SequelizeStore = require("connect-session-sequelize")(session.Store);
+import { calculateReputation, OAuthProvider } from "@interrep/reputation-criteria"
 
 const corsOptions: CorsOptions = {
+    credentials: true,
     origin: function (origin= '', callback) {
         callback(null, true)
     }
 };
 
-const TWITTER_GOLD_HASH = Web3.utils.padRight(Web3.utils.stringToHex('TWITTER_GOLD'), 64);
-const TWITTER_SILVER_HASH = Web3.utils.padRight(Web3.utils.stringToHex('TWITTER_SILVER'), 64);
-const TWITTER_BRONZE_HASH = Web3.utils.padRight(Web3.utils.stringToHex('TWITTER_BRONZE'), 64);
-const TWITTER_NOT_SUFFICIENT_HASH = Web3.utils.padRight(Web3.utils.stringToHex('TWITTER_NOT_SUFFICIENT'), 64);
-const REDDIT_GOLD_HASH = Web3.utils.padRight(Web3.utils.stringToHex('REDDIT_GOLD'), 64);
-const REDDIT_SILVER_HASH = Web3.utils.padRight(Web3.utils.stringToHex('REDDIT_SILVER'), 64);
-const REDDIT_BRONZE_HASH = Web3.utils.padRight(Web3.utils.stringToHex('REDDIT_BRONZE'), 64);
-const REDDIT_NOT_SUFFICIENT_HASH = Web3.utils.padRight(Web3.utils.stringToHex('REDDIT_NOT_SUFFICIENT'), 64);
-const GITHUB_GOLD_HASH = Web3.utils.padRight(Web3.utils.stringToHex('GITHUB_GOLD'), 64);
-const GITHUB_SILVER_HASH = Web3.utils.padRight(Web3.utils.stringToHex('GITHUB_SILVER'), 64);
-const GITHUB_BRONZE_HASH = Web3.utils.padRight(Web3.utils.stringToHex('GITHUB_BRONZE'), 64);
-const GITHUB_NOT_SUFFICIENT_HASH = Web3.utils.padRight(Web3.utils.stringToHex('GITHUB_NOT_SUFFICIENT'), 64);
-const HASH_TO_GROUP_ID = {
-    [TWITTER_GOLD_HASH]: 'TWITTER_GOLD',
-    [TWITTER_SILVER_HASH]: 'TWITTER_SILVER',
-    [TWITTER_BRONZE_HASH]: 'TWITTER_BRONZE',
-    [TWITTER_NOT_SUFFICIENT_HASH]: 'TWITTER_NOT_SUFFICIENT',
-    [REDDIT_GOLD_HASH]: 'REDDIT_GOLD',
-    [REDDIT_SILVER_HASH]: 'REDDIT_SILVER',
-    [REDDIT_BRONZE_HASH]: 'REDDIT_BRONZE',
-    [REDDIT_NOT_SUFFICIENT_HASH]: 'REDDIT_NOT_SUFFICIENT',
-    [GITHUB_GOLD_HASH]: 'GITHUB_GOLD',
-    [GITHUB_SILVER_HASH]: 'GITHUB_SILVER',
-    [GITHUB_BRONZE_HASH]: 'GITHUB_BRONZE',
-    [GITHUB_NOT_SUFFICIENT_HASH]: 'GITHUB_NOT_SUFFICIENT',
-};
+const TW_REQ_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
+const TW_AUTH_URL = 'https://api.twitter.com/oauth/authenticate'
+const TW_ACCESS_TOKEN_URL = 'https://api.twitter.com/oauth/access_token'
+const TW_CALLBACK_URL = 'http://127.0.0.1:3000/twitter/callback';
+const TW_CONSUMER_KEY = '7LMfRtYmWztFPq4t2RPMROa0Q';
+const TW_CONSUMER_SECRET = 'Knsv5ZqWQk37IW6P3RsVCRJ3PvOKnxJTrAmcJ88D4WbgxY7F43';
+const JWT_SECRET = process.env.JWT_SECRET || 'topsecret';
+
+const oauth = OAuth({
+    consumer: {
+        key: TW_CONSUMER_KEY,
+        secret: TW_CONSUMER_SECRET,
+    },
+    signature_method: 'HMAC-SHA1',
+    hash_function: (baseString: string, key: string) => {
+        return crypto.createHmac('sha1', key).update(baseString).digest('base64')
+    },
+});
 
 function makeResponse(payload: any, error?: boolean) {
     return {
@@ -58,7 +59,39 @@ export default class HttpService extends GenericService {
     constructor() {
         super();
         this.app = express();
+        this.app.set('trust proxy', 1);
         this.app.use(cors(corsOptions));
+
+        const sequelize = new Sequelize(
+            config.dbName as string,
+            config.dbUsername as string,
+            config.dbPassword,
+            {
+                host: config.dbHost,
+                port: Number(config.dbPort),
+                dialect: config.dbDialect as Dialect,
+                logging: false,
+            },
+        );
+
+        const sessionStore = new SequelizeStore({
+            db: sequelize,
+        })
+
+        this.app.use(session({
+            proxy: true,
+            secret: 'autistic cat',
+            resave: false,
+            saveUninitialized: false,
+            store: sessionStore,
+            cookie: {
+                secure: false,
+                maxAge: 30 * 24 * 60 * 60 * 1000,
+            },
+        }));
+
+        sessionStore.sync();
+
         this.app.use('/dev/semaphore_wasm', express.static(path.join(process.cwd(), 'static', 'semaphore.wasm')));
         this.app.use('/dev/semaphore_final_zkey', express.static(path.join(process.cwd(), 'static', 'semaphore_final.zkey')));
         this.app.use('/dev/semaphore_vkey', express.static(path.join(process.cwd(), 'static', 'verification_key.json')));
@@ -356,6 +389,41 @@ export default class HttpService extends GenericService {
             res.send(makeResponse(json));
         }));
 
+        this.app.post('/interrep/groups/:provider/:name/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
+            const identityCommitment = req.params.identityCommitment;
+            const provider = req.params.provider;
+            const name = req.params.name;
+
+            // @ts-ignore
+            const { twitterToken } = req.session;
+            const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
+            const twitterAuthDB = await this.call('db', 'getTwitterAuth');
+            const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
+
+            const headers = oauth.toHeader(oauth.authorize({
+                url: `https://api.twitter.com/1.1/account/verify_credentials.json`,
+                method: 'GET',
+            }, {
+                key: auth.user_token,
+                secret: auth.user_token_secret,
+            }));
+
+            // @ts-ignore
+            const resp = await fetch(`https://api.twitter.com/1.1/account/verify_credentials.json`, {
+                // method: 'POST',
+                headers: headers,
+            });
+
+            if (resp.status !== 200) {
+                res.status(resp.status).send(makeResponse(resp.statusText, true));
+                return;
+            }
+
+            const json = await resp.json();
+
+            res.send(makeResponse(json));
+        }));
+
         this.app.get('/interrep/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;
             const semaphoreDB = await this.call('db', 'getSemaphore');
@@ -365,12 +433,14 @@ export default class HttpService extends GenericService {
                 res.status(404).send(makeResponse('not found', true));
                 return;
             }
-
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/groups/${HASH_TO_GROUP_ID[sem.group_id]}/${identityCommitment}/path`);
+            const resp = await fetch(`${config.interrepAPI}/api/groups/${sem.provider}/${sem.name}/${identityCommitment}/path`);
             const json = await resp.json();
-
-            res.send(makeResponse(json));
+            res.send(makeResponse({
+                ...json,
+                provider: sem.provider,
+                name: sem.name,
+            }));
         }));
 
         this.app.get('/preview', this.wrapHandler(async (req, res) => {
@@ -403,6 +473,197 @@ export default class HttpService extends GenericService {
 
             await linkDB.update(data);
             res.send(makeResponse(data));
+        }));
+
+        this.app.get('/twitter', this.wrapHandler(async (req, res) => {
+            const requestData = {
+                url: TW_REQ_TOKEN_URL,
+                method: 'POST',
+                data: {
+                    oauth_callbank: TW_CALLBACK_URL,
+                },
+            }
+
+            // @ts-ignore
+            const resp = await fetch(requestData.url, {
+                method: requestData.method,
+                form: requestData.data,
+                headers: {
+                    ...oauth.toHeader(oauth.authorize(requestData)),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            });
+            const text = await resp.text();
+            const {
+                oauth_token: token,
+                oauth_token_secret: tokenSecret,
+                oauth_callback_confirmed: callbackConfirmed
+            } = queryString.parse(text);
+
+            // @ts-ignore
+            req.session.tokenSecret = tokenSecret;
+            // @ts-ignore
+            req.session.redirectUrl = req.query.redirectUrl;
+            res.send(makeResponse(`${TW_AUTH_URL}?${queryString.stringify({ oauth_token: token })}`));
+        }));
+
+        this.app.get('/twitter/callback', this.wrapHandler(async (req, res) => {
+            // @ts-ignore
+            const {
+                oauth_token: token,
+                oauth_verifier: verifier
+            } = req.query;
+            // @ts-ignore
+            const tokenSecret = req.session.tokenSecret;
+            // @ts-ignore
+            delete req.session.tokenSecret
+            const requestData = {
+                url: TW_ACCESS_TOKEN_URL,
+                method: 'POST',
+                data: {
+                    oauth_token: token,
+                    oauth_verifier: verifier,
+                    oauth_token_secret: tokenSecret,
+                },
+            }
+
+            // @ts-ignore
+            const resp = await fetch(requestData.url, {
+                method: requestData.method,
+                form: requestData.data,
+                headers: {
+                    ...oauth.toHeader(oauth.authorize(requestData)),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            });
+            const text = await resp.text();
+            const {
+                oauth_token: userToken,
+                oauth_token_secret: userTokenSecret,
+                screen_name: userName,
+                user_id: userId
+            } = queryString.parse(text);
+
+            if (!userToken || !userTokenSecret || !userName || !userId) {
+                throw new Error('invalid oauth');
+            }
+
+            const twitterAuthDB = await this.call('db', 'getTwitterAuth');
+            await twitterAuthDB.updateUserToken({
+                userToken,
+                userTokenSecret,
+                userName,
+                userId,
+            });
+
+            const twitterToken = jwt.sign({ userToken }, JWT_SECRET);
+
+            // @ts-ignore
+            req.session.twitterToken = twitterToken;
+
+            // @ts-ignore
+            const redirectUrl = req.session.redirectUrl;
+            // @ts-ignore
+            delete req.session.redirectUrl
+            res.redirect(redirectUrl);
+        }));
+
+        this.app.get('/twitter/session', this.wrapHandler(async (req, res) => {
+            // @ts-ignore
+            const { twitterToken } = req.session;
+            const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
+            const twitterAuthDB = await this.call('db', 'getTwitterAuth');
+            const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
+            // @ts-ignore
+            const headers = oauth.toHeader(oauth.authorize({
+                url: `https://api.twitter.com/1.1/account/verify_credentials.json`,
+                method: 'GET',
+            }, {
+                key: auth.user_token,
+                secret: auth.user_token_secret,
+            }));
+
+            // @ts-ignore
+            const resp = await fetch(`https://api.twitter.com/1.1/account/verify_credentials.json`, {
+                // method: 'POST',
+                headers: headers,
+            });
+
+            if (resp.status !== 200) {
+                res.status(resp.status).send(makeResponse(resp.statusText, true));
+                return;
+            }
+
+            const json = await resp.json();
+
+            const {
+                followers_count,
+                verified,
+                profile_image_url,
+                profile_image_url_https,
+                screen_name,
+            } = json;
+            const reputation = calculateReputation(OAuthProvider.TWITTER, {
+                followers: followers_count,
+                verifiedProfile: verified,
+            })
+
+            res.send(makeResponse({
+                user_id: auth.user_id,
+                user_token: auth.user_token,
+                user_token_secret: auth.user_token_secret,
+                username: auth.username,
+                followers: followers_count,
+                verifiedProfile: verified,
+                profileImageUrl: profile_image_url,
+                profileImageUrlHttps: profile_image_url_https,
+                screenName: screen_name,
+                reputation,
+            }));
+        }));
+
+        this.app.post('/twitter/update', jsonParser, this.wrapHandler(async (req, res) => {
+            // @ts-ignore
+            const { twitterToken } = req.session;
+            const { status } = req.body;
+            const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
+            const twitterAuthDB = await this.call('db', 'getTwitterAuth');
+            const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
+
+            const requestData = {
+                url: `https://api.twitter.com/1.1/statuses/update.json`,
+                method: 'POST',
+                data: {
+                    status: status,
+                },
+            };
+            const headers = oauth.toHeader(oauth.authorize(requestData, {
+                key: auth.user_token,
+                secret: auth.user_token_secret,
+            }));
+
+            // @ts-ignore
+            const resp = await fetch(requestData.url, {
+                method: requestData.method,
+                body: new URLSearchParams(requestData.data).toString(),
+                headers: {
+                    ...headers,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            });
+            const json = await resp.json();
+
+            if (resp.status === 200) {
+                res.send(makeResponse(`https://twitter.com/${auth.username}/status/${json.id_str}`));
+            } else {
+                res.status(resp.status).send(makeResponse(json.errors[0].message, true));
+            }
+        }));
+
+        this.app.get('/oauth/reset', this.wrapHandler(async (req, res) => {
+            // @ts-ignore
+            if (req.session.twitterToken) delete req.session.twitterToken;
+            res.send(makeResponse('ok'));
         }));
     }
 

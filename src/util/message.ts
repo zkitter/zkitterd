@@ -390,6 +390,7 @@ export enum ProfileMessageSubType {
     ProfileImage = 'PROFILE_IMAGE',
     CoverImage = 'COVER_IMAGE',
     Website = 'WEBSITE',
+    TwitterVerification = 'TWT_VERIFICATION',
     Custom = 'CUSTOM',
 }
 
@@ -454,6 +455,8 @@ export class Profile extends Message {
                 return ProfileMessageSubType.ProfileImage;
             case 'COVER_IMAGE':
                 return ProfileMessageSubType.CoverImage;
+            case 'TWT_VERIFICATION':
+                return ProfileMessageSubType.TwitterVerification;
             case 'BIO':
                 return ProfileMessageSubType.Bio;
             case 'WEBSITE':

@@ -1,6 +1,7 @@
 import crypto from "crypto";
 
 export enum MessageType {
+    _TWEET = '@TWEET@',
     Post = 'POST',
     Moderation = 'MODERATION',
     Profile = 'PROFILE',
@@ -55,6 +56,8 @@ export enum PostMessageSubType {
     Default = '',
     Repost = 'REPOST',
     Reply = 'REPLY',
+    MirrorPost = 'M_POST',
+    MirrorReply = 'M_REPLY',
 }
 
 export type PostMessagePayload = {
@@ -84,12 +87,15 @@ export type PostMessageOption = {
         reference?: string;
         attachment?: string;
     };
+    hash?: string;
 } & MessageOption;
 
 export class Post extends Message {
     subtype: PostMessageSubType;
 
     payload: PostMessagePayload;
+
+    tweetId?: string;
 
     static fromHex(hex: string) {
         let d = hex;
@@ -131,6 +137,10 @@ export class Post extends Message {
                 return PostMessageSubType.Reply;
             case 'REPOST':
                 return PostMessageSubType.Repost;
+            case 'M_POST':
+                return PostMessageSubType.MirrorPost;
+            case 'M_REPLY':
+                return PostMessageSubType.MirrorReply;
             default:
                 return PostMessageSubType.Default;
         }
@@ -138,7 +148,8 @@ export class Post extends Message {
 
     constructor(opt: PostMessageOption) {
         super(opt);
-        this.type = MessageType.Post;
+        this.type = opt.type === MessageType._TWEET ? MessageType._TWEET :  MessageType.Post;
+        this.tweetId = opt.type === MessageType._TWEET ? opt.hash : undefined;
         this.subtype = Post.getSubtype(opt.subtype);
         this.payload = {
             topic: opt.payload.topic || '',
@@ -150,6 +161,7 @@ export class Post extends Message {
     }
 
     hash() {
+        if (this.tweetId) return this.tweetId;
         return crypto.createHash('sha256').update(this.toHex()).digest('hex');
     }
 

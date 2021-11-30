@@ -1,10 +1,10 @@
-import {BIGINT, QueryTypes, Sequelize, STRING} from "sequelize";
+import {BIGINT, Op, QueryTypes, Sequelize, STRING} from "sequelize";
 import {MessageType, PostJSON, PostMessageSubType} from "../util/message";
 import {Mutex} from "async-mutex";
 
 const mutex = new Mutex();
 
-type PostModel = {
+export type PostModel = {
     messageId: string;
     hash: string;
     proof?: string;
@@ -114,7 +114,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.subtype != 'REPLY' AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}
+            WHERE p.type = 'POST' AND p.subtype IN ('', 'M_POST') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -208,10 +208,11 @@ const posts = (sequelize: Sequelize) => {
         offset = 0,
         limit = 20,
         order: 'DESC' | 'ASC' = 'ASC',
+        tweetId = '',
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.subtype = 'REPLY' AND p."createdAt" != -1 AND p.reference = :reference
+            WHERE (p.subtype = 'REPLY' AND p."createdAt" != -1 AND p.reference = :reference) OR (p.type = '@TWEET@' AND p.reference = '${tweetId}')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -262,6 +263,53 @@ const posts = (sequelize: Sequelize) => {
         }
 
         return values;
+    }
+
+    const findLastTweetInConversation = async (id: string) => {
+        const result = await model.findOne({
+            where: {
+                [Op.or]: [
+                    {
+                        reference: id,
+                        type: '@TWEET@',
+                    },
+                ]
+            },
+            order: [['createdAt', 'DESC']],
+            limit: 1,
+        });
+
+        return result?.toJSON();
+    }
+
+    const createTwitterPosts = async (records: PostModel[]) => {
+        return mutex.runExclusive(async () => {
+            for (let record of records) {
+                if (record.type !== '@TWEET@') continue;
+
+                const topic = `https://twitter.com/${record.creator}/status/${record.messageId}`
+                const result = await model.findOne({
+                    where: {
+                        [Op.or]: [
+                            {
+                                topic: topic,
+                                subtype: [PostMessageSubType.MirrorPost, PostMessageSubType.MirrorReply],
+                            },
+                            {
+                                messageId: record.messageId,
+                                type: '@TWEET@',
+                            },
+                        ]
+                    },
+                });
+
+                if (result) {
+                    continue;
+                }
+
+                await model.create(record);
+            }
+        });
     }
 
     const createPost = async (record: PostModel) => {
@@ -323,8 +371,10 @@ const posts = (sequelize: Sequelize) => {
         findAllPosts,
         findAllRepliesFromCreator,
         findAllLikedPostsByCreator,
+        findLastTweetInConversation,
         findAllReplies,
         getHomeFeed,
+        createTwitterPosts,
         createPost,
         ensurePost,
     };

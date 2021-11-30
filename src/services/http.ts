@@ -20,8 +20,9 @@ import {Dialect, Sequelize} from "sequelize";
 import {URLSearchParams} from "url";
 const SequelizeStore = require("connect-session-sequelize")(session.Store);
 import { calculateReputation, OAuthProvider } from "@interrep/reputation-criteria"
-import {showStatus} from "../util/twitter";
+import {getReplies, getUser, showStatus} from "../util/twitter";
 import {base64ToArrayBuffer, verifySignatureP256} from "../util/crypto";
+import {parseMessageId, PostMessageSubType} from "../util/message";
 
 const corsOptions: CorsOptions = {
     credentials: true,
@@ -310,9 +311,25 @@ export default class HttpService extends GenericService {
             const limit = req.query.limit && Number(req.query.limit);
             const offset = req.query.offset && Number(req.query.offset);
             const parent = req.query.parent;
+            const {hash} = parseMessageId(parent as string);
             const context = req.header('x-contextual-name') || undefined;
             const postDB = await this.call('db', 'getPosts');
-            const posts = await postDB.findAllReplies(parent, context, offset, limit);
+            const parentPost = await postDB.findOne(hash, context);
+
+            let tweetId;
+
+            if (parentPost?.subtype === PostMessageSubType.MirrorPost) {
+                const tweetUrl = parentPost.payload.topic;
+                const [__, _, id] = tweetUrl
+                    .replace('https://twitter.com/', '')
+                    .split('/');
+                tweetId = id;
+                const lastTweet = await postDB.findLastTweetInConversation(id);
+                const tweets = await getReplies(tweetUrl, lastTweet?.hash);
+                await postDB.createTwitterPosts(tweets);
+            }
+
+            const posts = await postDB.findAllReplies(parent, context, offset, limit, 'DESC', tweetId);
             res.send(makeResponse(posts));
         }));
 
@@ -590,7 +607,6 @@ export default class HttpService extends GenericService {
 
                        if (sigAuth) {
                            auth = sigAuth;
-                           console.log(auth);
                            const twitterToken = jwt.sign({
                                userToken: auth.user_token,
                            }, JWT_SECRET);
@@ -659,6 +675,12 @@ export default class HttpService extends GenericService {
             const { username } = req.query;
             const twitterAuthDB = await this.call('db', 'getTwitterAuth');
             const user = await twitterAuthDB.findUserByUsername(username);
+            res.send(makeResponse(user));
+        }));
+
+        this.app.get('/twitter/user/:username', this.wrapHandler(async (req, res) => {
+            const { username } = req.params;
+            const user = await getUser(username);
             res.send(makeResponse(user));
         }));
 

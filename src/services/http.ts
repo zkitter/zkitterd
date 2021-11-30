@@ -329,7 +329,7 @@ export default class HttpService extends GenericService {
                 await postDB.createTwitterPosts(tweets);
             }
 
-            const posts = await postDB.findAllReplies(parent, context, offset, limit, 'DESC', tweetId);
+            const posts = await postDB.findAllReplies(parent, context, offset, limit, 'ASC', tweetId);
             res.send(makeResponse(posts));
         }));
 
@@ -687,7 +687,7 @@ export default class HttpService extends GenericService {
         this.app.post('/twitter/update', jsonParser, this.wrapHandler(async (req, res) => {
             // @ts-ignore
             const { twitterToken } = req.session;
-            const { status } = req.body;
+            const { status, in_reply_to_status_id } = req.body;
             const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
             const twitterAuthDB = await this.call('db', 'getTwitterAuth');
             const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
@@ -696,7 +696,8 @@ export default class HttpService extends GenericService {
                 url: `https://api.twitter.com/1.1/statuses/update.json`,
                 method: 'POST',
                 data: {
-                    status: status,
+                    status,
+                    in_reply_to_status_id,
                 },
             };
             const headers = oauth.toHeader(oauth.authorize(requestData, {

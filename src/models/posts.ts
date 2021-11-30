@@ -146,7 +146,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.subtype = 'REPLY' AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}
+            WHERE p.type = 'POST' AND p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -212,7 +212,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE (p.subtype = 'REPLY' AND p."createdAt" != -1 AND p.reference = :reference) OR (p.type = '@TWEET@' AND p.reference = '${tweetId}')
+            WHERE (p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1 AND p.reference = :reference) OR (p.type = '@TWEET@' AND p.reference = '${tweetId}')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {

@@ -114,7 +114,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.type = 'POST' AND p.subtype IN ('', 'M_POST') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}
+            WHERE p.type = 'POST' AND p.subtype IN ('', 'M_POST', 'REPOST') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {

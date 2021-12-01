@@ -1,17 +1,28 @@
 import crypto from "crypto";
 import {URLSearchParams} from "url";
 import {PostModel} from "../models/posts";
+import config from "./config";
+const { Botometer } = require("botometer");
 const OAuth = require('oauth-1.0a');
 
 const TW_REQ_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
-const TW_AUTH_URL = 'https://api.twitter.com/oauth/authenticate'
+export const TW_AUTH_URL = 'https://api.twitter.com/oauth/authenticate'
 const TW_ACCESS_TOKEN_URL = 'https://api.twitter.com/oauth/access_token'
-const TW_CALLBACK_URL = 'http://127.0.0.1:3000/twitter/callback';
-const TW_CONSUMER_KEY = '7LMfRtYmWztFPq4t2RPMROa0Q';
-const TW_CONSUMER_SECRET = 'Knsv5ZqWQk37IW6P3RsVCRJ3PvOKnxJTrAmcJ88D4WbgxY7F43';
-const TW_BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAADLVWAEAAAAAKNNON%2FM6n0ig1OO%2FTavJCJZYLkI%3DYN0uoMG2hzjPnkYSGymvN01DErXc65BQQ7yNKcF3tdM71zqDG6';
-const TW_ACCESS_KEY = '1322027810559463425-eN8clVmaaXOwVuHmFPDI4Wo6QKF812';
-const TW_ACCESS_SECRET = 'etsUjiQIxeJf7ikgIaWLtpBk1S1zawVtzV0BcMIKZjEXA';
+const TW_CALLBACK_URL = config.twCallbackUrl;
+const TW_CONSUMER_KEY = config.twConsumerKey;
+const TW_CONSUMER_SECRET = config.twConsumerSecret;
+const TW_BEARER_TOKEN = config.twBearerToken;
+const TW_ACCESS_KEY = config.twAccessKey;
+const TW_ACCESS_SECRET = config.twAccessSecret;
+
+const botometer = new Botometer({
+    consumerKey: TW_CONSUMER_KEY,
+    consumerSecret: TW_CONSUMER_SECRET,
+    accessToken: TW_ACCESS_KEY,
+    accessTokenSecret: TW_ACCESS_SECRET,
+    rapidApiKey: config.rapidAPIKey,
+    usePro: true,
+})
 
 const oauth = OAuth({
     consumer: {
@@ -23,6 +34,119 @@ const oauth = OAuth({
         return crypto.createHmac('sha1', key).update(baseString).digest('base64')
     },
 });
+
+export const createHeader = (requestData: any, key: string, secret: string) => {
+    const headers = oauth.toHeader(oauth.authorize(requestData, {
+        key: key,
+        secret: secret,
+    }));
+    return headers;
+}
+
+export const requestToken = async (): Promise<string> => {
+    const requestData = {
+        url: TW_REQ_TOKEN_URL,
+        method: 'POST',
+        data: {
+            oauth_callbank: TW_CALLBACK_URL,
+        },
+    }
+
+    // @ts-ignore
+    const resp = await fetch(requestData.url, {
+        method: requestData.method,
+        form: requestData.data,
+        headers: {
+            ...oauth.toHeader(oauth.authorize(requestData)),
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    });
+
+    if (resp.status !== 200) throw new Error(resp.statusText);
+
+    return await resp.text();
+}
+
+export const accessToken = async (token: string, verifier: string, tokenSecret: string) => {
+    const requestData = {
+        url: TW_ACCESS_TOKEN_URL,
+        method: 'POST',
+        data: {
+            oauth_token: token,
+            oauth_verifier: verifier,
+            oauth_token_secret: tokenSecret,
+        },
+    }
+
+    // @ts-ignore
+    const resp = await fetch(requestData.url, {
+        method: requestData.method,
+        form: requestData.data,
+        headers: {
+            ...oauth.toHeader(oauth.authorize(requestData)),
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    });
+
+    if (resp.status !== 200) throw new Error(resp.statusText);
+
+    return await resp.text();
+}
+
+export const verifyCredential = async (key: string, secret: string) => {
+    const headers = oauth.toHeader(oauth.authorize({
+        url: `https://api.twitter.com/1.1/account/verify_credentials.json`,
+        method: 'GET',
+    }, {
+        key: key,
+        secret: secret,
+    }));
+
+    // @ts-ignore
+    const resp = await fetch(`https://api.twitter.com/1.1/account/verify_credentials.json`, {
+        headers: headers,
+    });
+
+    if (resp.status !== 200) {
+        throw new Error(resp.statusText);
+    }
+
+    const json = await resp.json();
+
+    return json;
+}
+
+export const updateStatus = async (status: string, in_reply_to_status_id: string, key: string, secret: string) => {
+    const requestData = {
+        url: `https://api.twitter.com/1.1/statuses/update.json`,
+        method: 'POST',
+        data: {
+            status,
+            in_reply_to_status_id,
+        },
+    };
+    const headers = oauth.toHeader(oauth.authorize(requestData, {
+        key: key,
+        secret: secret,
+    }));
+
+    // @ts-ignore
+    const resp = await fetch(requestData.url, {
+        method: requestData.method,
+        body: new URLSearchParams(requestData.data).toString(),
+        headers: {
+            ...headers,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    });
+    const json = await resp.json();
+
+    if (resp.status === 200) {
+        return json;
+    } else {
+        throw new Error(json.errors[0].message);
+    }
+}
 
 export async function showStatus(id: string, key?: string, secret?: string) {
     const requestData = {
@@ -129,4 +253,8 @@ export async function getUser(username: string): Promise<{
     if (json.errors) return null;
 
     return json.data;
+}
+
+export async function getBotometerScore(username: string): Promise<any> {
+    return botometer.getScore(username)
 }

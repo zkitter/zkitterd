@@ -20,6 +20,14 @@ let json: {
     port?: number;
     gunPort?: number;
     gunPeers?: string[];
+    jwtSecret?: string;
+    twCallbackUrl?: string;
+    twConsumerKey?: string;
+    twConsumerSecret?: string;
+    twBearerToken?: string;
+    twAccessKey?: string;
+    twAccessSecret?: string;
+    rapidAPIKey?: string;
 } = {};
 
 try {
@@ -30,6 +38,13 @@ try {
     json = parsed;
 } catch (e) {}
 
+const rapidAPIKey = json.rapidAPIKey || process.env.RAPIDAPI_KEY;
+const twCallbackUrl = json.twCallbackUrl || process.env.TW_CALLBACK_URL;
+const twConsumerKey = json.twConsumerKey || process.env.TW_CONSUMER_KEY;
+const twConsumerSecret = json.twConsumerSecret || process.env.TW_CONSUMER_SECRET;
+const twBearerToken = json.twBearerToken || process.env.TW_BEARER_TOKEN;
+const twAccessKey = json.twAccessKey || process.env.TW_ACCESS_KEY;
+const twAccessSecret = json.twAccessSecret || process.env.TW_ACCESS_SECRET;
 const web3HttpProvider = json.web3HttpProvider || process.env.WEB3_HTTP_PROVIDER;
 const ensResolver = json.ensResolver || process.env.ENS_RESOLVER;
 const arbitrumHttpProvider = json.arbitrumHttpProvider || process.env.ARB_HTTP_PROVIDER;
@@ -48,30 +63,22 @@ const gunPort = json.gunPort || process.env.GUN_PORT;
 const gunPeers = json.gunPeers || process.env?.GUN_PEERS?.split(' ') || [];
 const interrepAPI = json.interrepAPI || process.env.INTERREP_API || 'https://kovan.interrep.link';
 const interrepContract = json.interrepContract || process.env.INTERREP_CONTRACT || '';
+const jwtSecret = json.jwtSecret || process.env.JWT_SECRET || 'topjwtsecret';
 
-if (!web3HttpProvider) {
-    throw new Error('WEB3_HTTP_PROVIDER is not valid');
-}
-
-if (!ensResolver) {
-    throw new Error('ENS_RESOLVER is not valid');
-}
-
-if (!arbitrumHttpProvider) {
-    throw new Error('ARC_HTTP_PROVIDER is not valid');
-}
-
-if (!arbitrumRegistrar) {
-    throw new Error('ARB_REGISTRAR is not valid');
-}
-
-if (!arbitrumPrivateKey) {
-    throw new Error('ARB_PRIVATE_KEY is not valid');
-}
-
-if (!arbitrumAddress) {
-    throw new Error('ARB_ADDRESS is not valid');
-}
+if (!web3HttpProvider) throw new Error('WEB3_HTTP_PROVIDER is not valid');
+if (!ensResolver) throw new Error('ENS_RESOLVER is not valid');
+if (!arbitrumHttpProvider) throw new Error('ARC_HTTP_PROVIDER is not valid');
+if (!arbitrumRegistrar) throw new Error('ARB_REGISTRAR is not valid');
+if (!arbitrumPrivateKey) throw new Error('ARB_PRIVATE_KEY is not valid');
+if (!arbitrumAddress) throw new Error('ARB_ADDRESS is not valid');
+if (!jwtSecret) throw new Error('JWT_SECRET is not valid');
+if (!twCallbackUrl) throw new Error(`twCallbackUrl is not valid`);
+if (!twConsumerKey) throw new Error(`twConsumerKey is not valid`);
+if (!twConsumerSecret) throw new Error(`twConsumerSecret is not valid`);
+if (!twBearerToken) throw new Error(`twBearerToken is not valid`);
+if (!twAccessKey) throw new Error(`twAccessKey is not valid`);
+if (!twAccessSecret) throw new Error(`twAccessSecret is not valid`);
+if (!rapidAPIKey) throw new Error(`rapidAPIKey is not valid`);
 
 const config = {
     interrepAPI,
@@ -92,6 +99,14 @@ const config = {
     port: port ? Number(port) : 3000,
     gunPort: gunPort ? Number(gunPort) : 8765,
     gunPeers,
+    jwtSecret,
+    twCallbackUrl,
+    twConsumerKey,
+    twConsumerSecret,
+    twBearerToken,
+    twAccessKey,
+    twAccessSecret,
+    rapidAPIKey,
 };
 
 export default config;

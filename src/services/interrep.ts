@@ -1,92 +1,121 @@
 import {GenericService} from "../util/svc";
-import {Contract} from "web3-eth-contract";
-import interrep from "../util/interrep";
-import Timeout = NodeJS.Timeout;
-import logger from "../util/logger";
-import Web3 from "web3";
 import config from "../util/config";
 
+export type InterepGroup = {
+    provider: 'twitter' | 'github' | 'reddit';
+    name: string;
+    rootHash: string;
+    size: number;
+}
+
 export default class InterrepService extends GenericService {
-    interrep: Contract;
-    web3: Web3;
-    scanTimeout?: Timeout | null;
+    groups: {
+        [providerName: string]: InterepGroup[],
+    };
+
+    providers = ['twitter', 'github', 'reddit'];
 
     constructor() {
         super();
-        const httpProvider = new Web3.providers.HttpProvider('https://kovan.infura.io/v3/4ccf3cd743eb42b5a8cb1c8b0c0160ee');
-        this.web3 = new Web3(httpProvider);
-        this.interrep = interrep;
+        this.groups = {};
     }
 
-    async scanFromLast() {
-        const app = await this.call('db', 'getApp');
-        const semaphore = await this.call('db', 'getSemaphore');
-        const data = await app.read();
-        const lastBlock = data?.lastInterrepBlockScanned;
-        logger.info('scanning interrep IdentityCommitmentAdded events', {
-            fromBlock: data?.lastInterrepBlockScanned,
-        });
+    async fetchGroups() {
+        // @ts-ignore
+        const resp = await fetch(`${config.interrepAPI}/api/groups`);
+        const json = await resp.json();
 
-        try {
-            const block = await this.web3.eth.getBlock('latest');
-            const toBlock = Math.min(block.number, lastBlock + 99999);
-
-            const events = await this.interrep.getPastEvents('IdentityCommitmentAdded', {
-                fromBlock: data?.lastInterrepBlockScanned,
-                toBlock: toBlock,
-            });
-            logger.info('scanned interrep IdentityCommitmentAdded events', {
-                fromBlock: data?.lastInterrepBlockScanned,
-                toBlock: toBlock,
-            });
-
-            for (let event of events) {
-                try {
-                    await semaphore.addID(
-                        BigInt(event.returnValues.identityCommitment).toString(16),
-                        Web3.utils.hexToUtf8(event.returnValues.provider),
-                        Web3.utils.hexToUtf8(event.returnValues.name),
-                        BigInt(event.returnValues.root).toString(16),
-                    );
-                } catch (e) {
-                    logger.error(e.message, {
-                        parent: e.parent,
-                        stack: e.stack,
-                        fromBlock: data?.lastInterrepBlockScanned,
-                    });
+        if (json?.data?.length) {
+            for (let group of json.data) {
+                if (this.providers.includes(group.provider)) {
+                    const bucket = this.groups[group.provider] || [];
+                    bucket.push(group);
+                    this.groups[group.provider] = bucket;
                 }
+            }
+        }
+    }
 
+    async addID(id_commitment: string, provider: string, name: string) {
+        const semaphore = await this.call('db', 'getSemaphore');
+        await semaphore.addID(id_commitment, provider, name);
+    }
 
-                logger.info(`added roothash`, {
-                    transactionHash: event.transactionHash,
-                    blockNumber: event.blockNumber,
-                    fromBlock: data?.lastInterrepBlockScanned,
-                });
+    async removeID(id_commitment: string, provider: string, name: string) {
+        const semaphore = await this.call('db', 'getSemaphore');
+        await semaphore.removeID(id_commitment, provider, name);
+    }
+
+    async scanIDCommitment(id: string) {
+        for (let provider of this.providers) {
+            if (await this.inProvider(provider, id)) {
+                const groups = this.groups[provider];
+
+                if (groups) {
+                    for (let group of groups) {
+                        const proof = await this.getProofFromGroup(provider, group.name, id);
+                        if (proof) {
+                            await this.addID(id, provider, group.name);
+                        } else {
+                            await this.removeID(id, provider, group.name);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    async getBatchFromRootHash(rootHash: string) {
+        try {
+            const interepGroups = await this.call('db', 'getInterepGroups');
+
+            const exist = await interepGroups.findOneByHash(rootHash);
+
+            if (exist) return exist;
+
+            // @ts-ignore
+            const resp = await fetch(`${config.interrepAPI}/api/trees/batches/${rootHash}`);
+            const json = await resp.json();
+            const group = json?.data?.group;
+
+            if (group) {
+                await interepGroups.addHash(rootHash, group.provider, group.name);
             }
 
-            await app.updateLastInterrepBlock(toBlock);
-            if (block.number > toBlock) return true;
+            return {
+                name: group.name,
+                provider: group.provider,
+                root_hash: rootHash,
+            };
         } catch (e) {
-            logger.error(e.message, {
-                parent: e.parent,
-                stack: e.stack,
-                fromBlock: data?.lastInterrepBlockScanned,
-            });
+            return false;
         }
     }
 
-    scan = async () => {
-        const shouldScanAgain = await this.scanFromLast();
+    async getProofFromGroup(provider: string, name: string, id: string) {
+        try {
+            // @ts-ignore
+            const resp = await fetch(`${config.interrepAPI}/api/groups/${provider}/${name}/${id}/proof`);
+            const json = await resp.json();
+            return json;
+        } catch (e) {
+            return false;
+        }
+    }
 
-        if (this.scanTimeout) {
-            clearTimeout(this.scanTimeout);
-            this.scanTimeout = null;
+    async inProvider(provider: string, id: string): Promise<boolean> {
+        // @ts-ignore
+        const resp = await fetch(`${config.interrepAPI}/api/providers/${provider}/${id}`);
+        const json = await resp.json();
+
+        if (json?.data) {
+            return !!json?.data;
         }
 
-        this.scanTimeout = setTimeout(this.scan, shouldScanAgain ? 0 : 15000);
+        return false;
     }
 
     async start() {
-        this.scan();
+        await this.fetchGroups();
     }
 }

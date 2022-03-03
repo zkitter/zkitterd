@@ -384,13 +384,14 @@ export default posts;
 
 export function inflateResultToPostJSON(r: any): PostJSON {
     const json = r as any;
-
     const meta = {
         replyCount: json?.replyCount || 0,
         likeCount: json?.likeCount || 0,
         repostCount: json?.repostCount || 0,
         liked: json?.liked,
         reposted: json?.reposted,
+        interepProvider: json?.interepProvider,
+        interepGroup: json?.interepGroup,
     };
 
     if (json.subtype === PostMessageSubType.Repost) {
@@ -399,6 +400,8 @@ export function inflateResultToPostJSON(r: any): PostJSON {
         meta.repostCount = json?.rpRepostCount || 0;
         meta.liked = json?.rpLiked || null;
         meta.reposted = json?.rpReposted || null;
+        meta.interepProvider = json?.rpInterepProvider || null;
+        meta.interepGroup = json?.rpInterepGroup || null;
     }
 
     return {
@@ -431,15 +434,19 @@ const selectJoinQuery = `
         p.reference,
         p.attachment,
         m."messageId" as liked,
-        rpm."messageId" as rpLiked,
+        rpm."messageId" as "rpLiked",
         rp."messageId" as reposted,
-        rprp."messageId" as rpReposted,
+        rprp."messageId" as "rpReposted",
         mt."replyCount",
         mt."repostCount",
         mt."likeCount",
-        rpmt."replyCount" as rpReplyCount,
-        rpmt."repostCount" as rpRepostCount,
-        rpmt."likeCount" as rpLikeCount
+        rpmt."replyCount" as "rpReplyCount",
+        rpmt."repostCount" as "rpRepostCount",
+        rpmt."likeCount" as "rpLikeCount",
+        rpsc.provider as "rpInterepProvider",
+        rpsc.group as "rpInterepGroup",
+        sc.provider as "interepProvider",
+        sc.group as "interepGroup"
     FROM posts p
         LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = p."messageId" AND creator = :context LIMIT 1)
         LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
@@ -447,6 +454,8 @@ const selectJoinQuery = `
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"
         LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."reference" = p.reference
+        LEFT JOIN semaphore_creators sc on sc."message_id" = p."messageId"
+        LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
 `;
 
 const selectLikedPostsQuery = `
@@ -462,15 +471,19 @@ const selectLikedPostsQuery = `
         p.reference,
         p.attachment,
         m."messageId" as liked,
-        rpm."messageId" as rpLiked,
+        rpm."messageId" as "rpLiked",
         rp."messageId" as reposted,
-        rprp."messageId" as rpReposted,
+        rprp."messageId" as "rpReposted",
         mt."replyCount",
         mt."repostCount",
         mt."likeCount",
-        rpmt."replyCount" as rpReplyCount,
-        rpmt."repostCount" as rpRepostCount,
-        rpmt."likeCount" as rpLikeCount
+        rpmt."replyCount" as "rpReplyCount",
+        rpmt."repostCount" as "rpRepostCount",
+        rpmt."likeCount" as "rpLikeCount",
+        rpsc.provider as "rpInterepProvider",
+        rpsc.group as "rpInterepGroup",
+        sc.provider as "interepProvider",
+        sc.group as "interepGroup"
     FROM moderations mod
         LEFT JOIN posts p ON p."messageId" = mod.reference
         LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = p."messageId" AND creator = :context LIMIT 1)
@@ -479,4 +492,6 @@ const selectLikedPostsQuery = `
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"
         LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."reference" = p.reference
+        LEFT JOIN semaphore_creators sc on sc."message_id" = mod.reference
+        LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
 `;

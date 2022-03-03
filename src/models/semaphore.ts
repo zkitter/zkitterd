@@ -5,7 +5,6 @@ type SemaphoreModel = {
     id_commitment: string;
     provider: string;
     name: string;
-    root_hash: string;
 };
 
 const mutex = new Mutex();
@@ -24,55 +23,75 @@ const semaphore = (sequelize: Sequelize) => {
             type: STRING,
             allowNull: false,
         },
-        root_hash: {
-            type: STRING,
-            allowNull: false,
-        },
     }, {
         indexes: [
             { fields: ['id_commitment'] },
             { fields: ['provider'] },
             { fields: ['name'] },
-            { fields: ['root_hash'], unique: true },
         ],
     });
-
-    const findOneByHash = async (root_hash: string): Promise<SemaphoreModel|null> => {
-        let result = await model.findOne({
-            where: {
-                root_hash,
-            },
-        });
-
-        return result?.toJSON() as SemaphoreModel;
-    }
 
     const findOneByCommitment = async (id_commitment: string): Promise<SemaphoreModel|null> => {
         let result = await model.findOne({
             where: {
                 id_commitment,
             },
+            order: [
+                ['createdAt', 'DESC'],
+            ],
         });
 
         return result?.toJSON() as SemaphoreModel;
     }
 
-    const addID = async (id_commitment: string, provider: string, name: string, root_hash: string) => {
-        return mutex.runExclusive(async () => {
-            return model.create({
+    const findAllByCommitment = async (id_commitment: string): Promise<SemaphoreModel[]> => {
+        let result = await model.findAll({
+            where: {
                 id_commitment,
-                provider,
-                name,
-                root_hash,
+            },
+        });
+
+        return result.map(r => r.toJSON()) as SemaphoreModel[];
+    }
+
+    const addID = async (id_commitment: string, provider: string, name: string) => {
+        return mutex.runExclusive(async () => {
+            const result = await model.findOne({
+                where: {
+                    id_commitment,
+                    provider,
+                    name,
+                },
+            });
+
+            if (!result) {
+                return model.create({
+                    id_commitment,
+                    provider,
+                    name,
+                });
+            }
+        });
+    }
+
+    const removeID = async (id_commitment: string, provider: string, name: string) => {
+        return mutex.runExclusive(async () => {
+            return model.destroy({
+                where: {
+                    id_commitment,
+                    provider,
+                    name,
+                },
             });
         });
     }
 
     return {
         model,
-        findOneByHash,
         findOneByCommitment,
+        findAllByCommitment,
         addID,
+        removeID,
     };
 }
 

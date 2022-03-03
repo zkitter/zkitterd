@@ -16,6 +16,8 @@ import tags from "../../models/tags";
 import linkPreview from "../../models/linkPreview";
 import ens from "../../models/ens";
 import twitterAuth from "../../models/twitterAuth";
+import interepGroups from "../../models/interepGroups";
+import semaphoreCreators from "../../models/semaphore_creators";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
@@ -36,6 +38,8 @@ export default class DBService extends GenericService {
     userMeta?: ReturnType<typeof userMeta>;
     proposalMeta?: ReturnType<typeof proposalMeta>;
     twitterAuth?: ReturnType<typeof twitterAuth>;
+    interepGroups?: ReturnType<typeof interepGroups>;
+    semaphoreCreators?: ReturnType<typeof semaphoreCreators>;
 
     constructor() {
         super();
@@ -178,6 +182,20 @@ export default class DBService extends GenericService {
         return this.semaphore;
     }
 
+    async getInterepGroups(): Promise<ReturnType<typeof interepGroups>> {
+        if (!this.interepGroups) {
+            return Promise.reject(new Error('interepGroups is not initialized'));
+        }
+        return this.interepGroups;
+    }
+
+    async getSemaphoreCreators(): Promise<ReturnType<typeof semaphoreCreators>> {
+        if (!this.semaphoreCreators) {
+            return Promise.reject(new Error('semaphoreCreators is not initialized'));
+        }
+        return this.semaphoreCreators;
+    }
+
     async start() {
         this.app = await app(this.sqlite);
         this.records = await records(this.sqlite);
@@ -194,6 +212,8 @@ export default class DBService extends GenericService {
         this.semaphore = await semaphore(this.sequelize);
         this.ens = await ens(this.sequelize);
         this.twitterAuth = await twitterAuth(this.sequelize);
+        this.interepGroups = await interepGroups(this.sequelize);
+        this.semaphoreCreators = await semaphoreCreators(this.sequelize);
 
         await this.app?.model.sync({ force: !!process.env.FORCE });
         await this.linkPreview?.model.sync({ force: !!process.env.FORCE });
@@ -213,14 +233,16 @@ export default class DBService extends GenericService {
         await this.proposalMeta?.model.sync({ force: !!process.env.FORCE });
         await this.ens?.model.sync({ force: !!process.env.FORCE });
         await this.twitterAuth?.model.sync({ force: !!process.env.FORCE });
+        await this.interepGroups?.model.sync({ force: !!process.env.FORCE });
+        await this.semaphoreCreators?.model.sync({ force: !!process.env.FORCE });
 
         const appData = await this.app?.read();
 
         if (!appData) {
             await this.app?.updateLastENSBlock(12957300);
             await this.app?.updateLastInterrepBlock(28311377);
-            await this.app?.updateLastArbitrumBlock(2193241);
-            // await this.app?.updateLastArbitrumBlock(5587681);
+            // await this.app?.updateLastArbitrumBlock(2193241);
+            await this.app?.updateLastArbitrumBlock(9317700);
         }
 
         // await this.app?.updateLastArbitrumBlock(2193241);

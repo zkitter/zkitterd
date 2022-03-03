@@ -16,7 +16,7 @@ import session from 'express-session';
 import jwt from "jsonwebtoken";
 import {Dialect, Sequelize} from "sequelize";
 const SequelizeStore = require("connect-session-sequelize")(session.Store);
-import { calculateReputation, OAuthProvider } from "@interrep/reputation-criteria"
+import { calculateReputation, OAuthProvider } from "@interep/reputation";
 import {
     accessToken,
     createHeader, getBotometerScore,
@@ -433,19 +433,26 @@ export default class HttpService extends GenericService {
         this.app.get('/interrep/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;
             const semaphoreDB = await this.call('db', 'getSemaphore');
-            const sem = await semaphoreDB.findOneByCommitment(BigInt(identityCommitment).toString(16));
+            const exist = await semaphoreDB.findOneByCommitment(identityCommitment);
 
-            if (!sem) {
+            if (!exist || exist?.updatedAt.getTime() + 15 * 60 * 1000 > Date.now()) {
+                await this.call('interrep', 'scanIDCommitment', identityCommitment);
+            }
+
+            const sem = await semaphoreDB.findAllByCommitment(identityCommitment);
+            const [group] = sem;
+
+            if (!group) {
                 res.status(404).send(makeResponse('not found', true));
                 return;
             }
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/groups/${sem.provider}/${sem.name}/${identityCommitment}/path`);
+            const resp = await fetch(`${config.interrepAPI}/api/groups/${group.provider}/${group.name}/${identityCommitment}/proof`);
             const json = await resp.json();
             res.send(makeResponse({
                 ...json,
-                provider: sem.provider,
-                name: sem.name,
+                provider: group.provider,
+                name: group.name,
             }));
         }));
 

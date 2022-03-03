@@ -61,7 +61,7 @@ const dbPort = json.dbPort || process.env.DB_PORT;
 const port = json.port || process.env.PORT;
 const gunPort = json.gunPort || process.env.GUN_PORT;
 const gunPeers = json.gunPeers || process.env?.GUN_PEERS?.split(' ') || [];
-const interrepAPI = json.interrepAPI || process.env.INTERREP_API || 'https://kovan.interrep.link';
+const interrepAPI = json.interrepAPI || process.env.INTERREP_API || 'https://kovan.interep.link';
 const interrepContract = json.interrepContract || process.env.INTERREP_CONTRACT || '';
 const jwtSecret = json.jwtSecret || process.env.JWT_SECRET || 'topjwtsecret';
 

@@ -28,7 +28,7 @@ const getMutex = new Mutex();
 const putMutex = new Mutex();
 const insertMutex = new Mutex();
 
-const { Semaphore, genExternalNullifier, genSignalHash } = require("@libsem/protocols");
+import { Semaphore, genExternalNullifier, genSignalHash } from "@zk-kit/protocols";
 
 export default class GunService extends GenericService {
     gun?: IGunChainReference;
@@ -166,7 +166,7 @@ export default class GunService extends GenericService {
         const postDB = await this.call('db', 'getPosts');
         const metaDB = await this.call('db', 'getMeta');
         const userMetaDB = await this.call('db', 'getUserMeta');
-        const semaphoreDB = await this.call('db', 'getSemaphore');
+        const semaphoreCreatorsDB = await this.call('db', 'getSemaphoreCreators');
         const tagDB = await this.call('db', 'getTags');
 
         if (json.hash !== hash) {
@@ -194,11 +194,14 @@ export default class GunService extends GenericService {
                 const externalNullifier = await genExternalNullifier('POST');
                 const signalHash = await genSignalHash(hash);
 
-                if (BigInt(externalNullifier).toString() !== parsedSignals[3]) return;
-                if (signalHash.toString() !== parsedSignals[2]) return;
+                if (BigInt(externalNullifier).toString() !== parsedSignals.externalNullifier) return;
+                if (signalHash.toString() !== parsedSignals.signalHash) return;
 
-                const foundHash = await semaphoreDB.findOneByHash(BigInt(parsedSignals[0]).toString(16));
-                if (!foundHash) return;
+                const hashData = await this.call('interrep', 'getBatchFromRootHash', parsedSignals.merkleRoot);
+
+                if (!hashData) {
+                    return;
+                }
 
                 const res = await Semaphore.verifyProof(
                     vKey as any,
@@ -210,6 +213,9 @@ export default class GunService extends GenericService {
                 if (!res) {
                     return;
                 }
+
+                const { name, provider } = hashData;
+                await semaphoreCreatorsDB.addSemaphoreCreator(messageId, provider, name);
             }
 
             await postDB.createPost({

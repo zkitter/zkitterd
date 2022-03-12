@@ -188,6 +188,7 @@ export default class GunService extends GenericService {
         }
 
         try {
+            console.log(proof, signals);
             if (proof && signals) {
                 const parsedProof = JSON.parse(proof);
                 const parsedSignals = JSON.parse(signals);

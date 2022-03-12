@@ -392,7 +392,7 @@ export default class HttpService extends GenericService {
             const identityCommitment = req.params.identityCommitment;
             const groupId = req.params.groupId;
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/groups/${groupId}/${identityCommitment}/path`);
+            const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${groupId}/${identityCommitment}/path`);
             const json = await resp.json();
 
             res.send(makeResponse(json));
@@ -415,7 +415,7 @@ export default class HttpService extends GenericService {
             }, auth.user_token, auth.user_token_secret);
 
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/groups/${provider}/${name}/${identityCommitment}`, {
+            const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${provider}/${name}/${identityCommitment}`, {
                 method: 'POST',
                 headers: headers,
             });
@@ -447,7 +447,7 @@ export default class HttpService extends GenericService {
                 return;
             }
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/groups/${group.provider}/${group.name}/${identityCommitment}/proof`);
+            const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${group.provider}/${group.name}/${identityCommitment}/proof`);
             const json = await resp.json();
             res.send(makeResponse({
                 ...json,

@@ -22,7 +22,7 @@ export default class InterrepService extends GenericService {
 
     async fetchGroups() {
         // @ts-ignore
-        const resp = await fetch(`${config.interrepAPI}/api/groups`);
+        const resp = await fetch(`${config.interrepAPI}/api/v1/groups`);
         const json = await resp.json();
 
         if (json?.data?.length) {
@@ -74,7 +74,7 @@ export default class InterrepService extends GenericService {
             if (exist) return exist;
 
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/trees/batches/${rootHash}`);
+            const resp = await fetch(`${config.interrepAPI}/api/v1/trees/batches/${rootHash}`);
             const json = await resp.json();
             const group = json?.data?.group;
 
@@ -95,7 +95,7 @@ export default class InterrepService extends GenericService {
     async getProofFromGroup(provider: string, name: string, id: string) {
         try {
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/groups/${provider}/${name}/${id}/proof`);
+            const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${provider}/${name}/${id}/proof`);
             const json = await resp.json();
             return json;
         } catch (e) {
@@ -105,7 +105,7 @@ export default class InterrepService extends GenericService {
 
     async inProvider(provider: string, id: string): Promise<boolean> {
         // @ts-ignore
-        const resp = await fetch(`${config.interrepAPI}/api/providers/${provider}/${id}`);
+        const resp = await fetch(`${config.interrepAPI}/api/v1/providers/${provider}/${id}`);
         const json = await resp.json();
 
         if (json?.data) {

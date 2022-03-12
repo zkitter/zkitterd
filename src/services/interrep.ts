@@ -72,10 +72,9 @@ export default class InterrepService extends GenericService {
             const exist = await interepGroups.findOneByHash(rootHash);
 
             if (exist) return exist;
-            console.log(`${config.interrepAPI}/api/v1/trees/batches/${rootHash}`);
 
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/v1/trees/batches/${rootHash}`);
+            const resp = await fetch(`${config.interrepAPI}/api/trees/batches/${rootHash}`);
             const json = await resp.json();
             const group = json?.data?.group;
 

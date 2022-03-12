@@ -188,7 +188,6 @@ export default class GunService extends GenericService {
         }
 
         try {
-            console.log(proof, signals);
             if (proof && signals) {
                 const parsedProof = JSON.parse(proof);
                 const parsedSignals = JSON.parse(signals);
@@ -200,7 +199,6 @@ export default class GunService extends GenericService {
 
                 const hashData = await this.call('interrep', 'getBatchFromRootHash', parsedSignals.merkleRoot);
 
-                console.log(hashData);
                 if (!hashData) {
                     return;
                 }
@@ -212,7 +210,6 @@ export default class GunService extends GenericService {
                         publicSignals: parsedSignals,
                     });
 
-                console.log(res);
                 if (!res) {
                     return;
                 }

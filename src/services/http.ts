@@ -388,16 +388,6 @@ export default class HttpService extends GenericService {
             res.send(makeResponse(post));
         }));
 
-        this.app.get('/interrep/groups/:groupId/path/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
-            const identityCommitment = req.params.identityCommitment;
-            const groupId = req.params.groupId;
-            // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${groupId}/${identityCommitment}/path`);
-            const json = await resp.json();
-
-            res.send(makeResponse(json));
-        }));
-
         this.app.post('/interrep/groups/:provider/:name/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;
             const provider = req.params.provider;

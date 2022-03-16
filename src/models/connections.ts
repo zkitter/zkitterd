@@ -63,6 +63,14 @@ const connections = (sequelize: Sequelize) => {
         return json;
     }
 
+    const remove = async (hash: string) => {
+        return model.destroy({
+            where: {
+                hash,
+            },
+        });
+    }
+
     const findAllByTargetName = async (
         name: string,
         offset = 0,
@@ -88,6 +96,7 @@ const connections = (sequelize: Sequelize) => {
     return {
         model,
         findOne,
+        remove,
         findAllByTargetName,
         createConnection,
     };

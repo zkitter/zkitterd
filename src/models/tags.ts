@@ -110,6 +110,6 @@ const selectTagPostsQuery = `
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"
         LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."reference" = p.reference
-        LEFT JOIN semaphore_creators sc on sc."message_id" = mod.reference
+        LEFT JOIN semaphore_creators sc on sc."message_id" = p."messageId"
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
 `;

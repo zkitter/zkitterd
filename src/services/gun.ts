@@ -67,7 +67,6 @@ export default class GunService extends GenericService {
 
     handleGunMessage = async (data: any, messageId: string, pubkey?: string) => {
         return insertMutex.runExclusive(async () => {
-            const type = Message.getType(data.type);
             const {creator, hash} = parseMessageId(messageId);
 
             let user: UserModel | null = null;
@@ -85,6 +84,13 @@ export default class GunService extends GenericService {
             }
 
             let payload;
+
+            if (data === null) {
+                await this.deleteMessage(messageId);
+                return;
+            }
+
+            const type = Message.getType(data.type);
 
             if (!type) return;
 
@@ -149,6 +155,45 @@ export default class GunService extends GenericService {
                     return;
             }
         });
+    }
+
+    async deleteMessage(messageId: string) {
+        const { hash } = parseMessageId(messageId);
+        const posts = await this.call('db', 'getPosts');
+        const mods = await this.call('db', 'getModerations');
+        const conns = await this.call('db', 'getConnections');
+        const pfs = await this.call('db', 'getProfiles');
+        const userMeta = await this.call('db', 'getUserMeta');
+
+        let msg;
+
+        if (msg = await conns.findOne(hash)) {
+            switch (msg.subtype) {
+                case "FOLLOW":
+                    await userMeta.removeFollowing(msg.creator);
+                    await userMeta.removeFollower(msg.name);
+                    break;
+                case "BLOCK":
+                    await userMeta.removeBlocking(msg.creator);
+                    await userMeta.removeBlocked(msg.name);
+                    break;
+            }
+
+            await conns.remove(hash);
+        }
+
+        // if (await mods.findOne(hash)) {
+        //     await mods.remove(hash);
+        // }
+
+        // if (msg = await posts.findOne(hash)) {
+        //     await posts.remove(hash);
+        // }
+
+        // if (await pfs.findOne(hash)) {
+        //     await pfs.remove(hash);
+        // }
+
     }
 
     async insertPost(post: Post, proof?: string, signals?: string) {

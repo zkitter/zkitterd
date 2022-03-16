@@ -65,165 +65,51 @@ const userMeta = (sequelize: Sequelize) => {
         };
     }
 
-    const addFollower = async (name: string) => {
-        return mutex.runExclusive(async () => {
-            const result = await model.findOne({
-                where: { name },
-            });
-
-            if (result) {
-                const data = result.toJSON() as UserMetaModel;
-                return result.update({
-                    ...data,
-                    followerCount: Number(data.followerCount) + 1,
-                });
-            }
-
-            const res = await model.create({
-                name,
-                ...emptyMeta,
-                followerCount: 1,
-            });
-
-            return res;
-        });
-    }
-
-    const addFollowing = async (name: string) => {
-        return mutex.runExclusive(async () => {
-
-            const result = await model.findOne({
-                where: { name },
-            });
-
-            if (result) {
-                const data = result.toJSON() as UserMetaModel;
-                return result.update({
-                    ...data,
-                    followingCount: Number(data.followingCount) + 1,
-                });
-            }
-
-            const res = await model.create({
-                name,
-                ...emptyMeta,
-                followingCount: 1,
-            });
-
-            return res;
-        });
-    }
-
-    const addBlocked = async (name: string) => {
-        return mutex.runExclusive(async () => {
-
-            const result = await model.findOne({
-                where: { name },
-            });
-
-            if (result) {
-                const data = result.toJSON() as UserMetaModel;
-                return result.update({
-                    ...data,
-                    blockedCount: Number(data.blockedCount) + 1,
-                });
-            }
-
-            const res = await model.create({
-                name,
-                ...emptyMeta,
-                blockedCount: 1,
-            });
-
-            return res;
-        });
-    }
-
-    const addBlocking = async (name: string) => {
-        return mutex.runExclusive(async () => {
-
-            const result = await model.findOne({
-                where: { name },
-            });
-
-            if (result) {
-                const data = result.toJSON() as UserMetaModel;
-                return result.update({
-                    ...data,
-                    blockingCount: Number(data.blockingCount) + 1,
-                });
-            }
-
-            const res = await model.create({
-                name,
-                ...emptyMeta,
-                blockingCount: 1,
-            });
-
-            return res;
-        });
-    }
-
-    const addPostingCount = async (name: string) => {
-        return mutex.runExclusive(async () => {
-
-            const result = await model.findOne({
-                where: { name },
-            });
-
-            if (result) {
-                const data = result.toJSON() as UserMetaModel;
-                return result.update({
-                    ...data,
-                    postingCount: Number(data.postingCount) + 1,
-                });
-            }
-
-            const res = await model.create({
-                name,
-                ...emptyMeta,
-                postingCount: 1,
-            });
-
-            return res;
-        });
-    }
-
-    const addMentionedCount = async (name: string) => {
-        return mutex.runExclusive(async () => {
-
-            const result = await model.findOne({
-                where: { name },
-            });
-
-            if (result) {
-                const data = result.toJSON() as UserMetaModel;
-                return result.update({
-                    ...data,
-                    mentionedCount: Number(data.mentionedCount) + 1,
-                });
-            }
-
-            const res = await model.create({
-                name,
-                ...emptyMeta,
-                mentionedCount: 1,
-            });
-
-            return res;
-        });
-    }
-
     return {
         model,
         findOne,
-        addFollower,
-        addFollowing,
-        addBlocked,
-        addBlocking,
-        addPostingCount,
-        addMentionedCount,
+        addFollower: makeKeyIncrementer('followerCount', 1),
+        addFollowing: makeKeyIncrementer('followingCount', 1),
+        addBlocked: makeKeyIncrementer('blockedCount', 1),
+        addBlocking: makeKeyIncrementer('blockingCount', 1),
+        addPostingCount: makeKeyIncrementer('postingCount', 1),
+        addMentionedCount: makeKeyIncrementer('mentionedCount', 1),
+        removeFollower: makeKeyIncrementer('followerCount', -1),
+        removeFollowing: makeKeyIncrementer('followingCount', -1),
+        removeBlocked: makeKeyIncrementer('blockedCount', -1),
+        removeBlocking: makeKeyIncrementer('blockingCount', -1),
+        removePostingCount: makeKeyIncrementer('postingCount', -1),
+        removeMentionedCount: makeKeyIncrementer('mentionedCount', -1),
     };
+
+    function makeKeyIncrementer(key: string, delta: number) {
+        return async (name: string) => {
+            return mutex.runExclusive(async () => {
+                const result = await model.findOne({
+                    where: { name },
+                });
+
+                if (result) {
+                    const data = result.toJSON() as UserMetaModel;
+                    return result.update({
+                        ...data,
+                        // @ts-ignore
+                        [key]: (Number(data[key]) || 0) + delta,
+                    });
+                }
+
+                const res = await model.create({
+                    name,
+                    ...emptyMeta,
+                    [key]: Math.max(0, delta),
+                });
+
+                return res;
+            });
+        }
+    }
 }
+
+
 
 export default userMeta;

@@ -214,7 +214,7 @@ const userSelectQuery = `
     FROM users u
     LEFT JOIN usermeta umt ON umt.name = u.name
     LEFT JOIN connections f ON f.subtype = 'FOLLOW' AND f.creator = :context AND f.name = u.name
-    LEFT JOIN connections b ON f.subtype = 'BLOCK' AND f.creator = :context AND f.name = u.name
+    LEFT JOIN connections b ON b.subtype = 'BLOCK' AND b.creator = :context AND b.name = u.name
     LEFT JOIN profiles bio ON bio."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'BIO' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles "profileImage" ON "profileImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'PROFILE_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)

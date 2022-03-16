@@ -84,7 +84,7 @@ const posts = (sequelize: Sequelize) => {
     const findOne = async (hash: string, context?: string): Promise<PostJSON|null> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.hash = :hash AND p."createdAt" != -1
+            WHERE p.hash = :hash AND p."createdAt" != -1 AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
         `, {
             replacements: {
                 context: context || '',
@@ -114,7 +114,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.type = 'POST' AND p.subtype IN ('', 'M_POST', 'REPOST') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}
+            WHERE p.type = 'POST' AND p.subtype IN ('', 'M_POST', 'REPOST') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''} AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -146,7 +146,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.type = 'POST' AND p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}
+            WHERE p.type = 'POST' AND p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''} AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -180,7 +180,7 @@ const posts = (sequelize: Sequelize) => {
             WHERE p.subtype != 'REPLY' AND p."createdAt" != -1 AND (
                 p.creator IN (SELECT name FROM connections WHERE subtype = 'FOLLOW' AND creator = :context) OR
                 p.creator = :context
-            )
+            ) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -212,7 +212,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE (p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1 AND p.reference = :reference) OR (p.type = '@TWEET@' AND p.reference = '${tweetId}')
+            WHERE ((p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1 AND p.reference = :reference) OR (p.type = '@TWEET@' AND p.reference = '${tweetId}')) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -243,7 +243,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectLikedPostsQuery}
-            WHERE p."createdAt" != -1${creator ? ' AND mod.creator = :creator' : ''}
+            WHERE p."createdAt" != -1${creator ? ' AND mod.creator = :creator' : ''} AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -440,7 +440,7 @@ const selectJoinQuery = `
         mt."replyCount",
         mt."repostCount",
         mt."likeCount",
-        rpmt."replyCount" as "rpReplyCount",
+        rpmt."replyCount" as "rpReplyCount",    
         rpmt."repostCount" as "rpRepostCount",
         rpmt."likeCount" as "rpLikeCount",
         rpsc.provider as "rpInterepProvider",

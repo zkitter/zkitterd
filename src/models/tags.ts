@@ -44,7 +44,7 @@ const tags = (sequelize: Sequelize) => {
     ) => {
         const result = await sequelize.query(`
             ${selectTagPostsQuery}
-            WHERE p."createdAt" != -1 AND t."tag_name" = :tagName 
+            WHERE p."createdAt" != -1 AND t."tag_name" = :tagName AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -88,16 +88,20 @@ const selectTagPostsQuery = `
         p.content,
         p.reference,
         p.attachment,
-        m."messageId" as liked,
-        rpm."messageId" as rpLiked,
-        rp."messageId" as reposted,
-        rprp."messageId" as rpReposted,
+        m."messageId" as "liked",
+        rpm."messageId" as "rpLiked",
+        rp."messageId" as "reposted",
+        rprp."messageId" as "rpReposted",
         mt."replyCount",
         mt."repostCount",
         mt."likeCount",
-        rpmt."replyCount" as rpReplyCount,
-        rpmt."repostCount" as rpRepostCount,
-        rpmt."likeCount" as rpLikeCount
+        rpmt."replyCount" as "rpReplyCount",
+        rpmt."repostCount" as "rpRepostCount",
+        rpmt."likeCount" as "rpLikeCount",
+        rpsc.provider as "rpInterepProvider",
+        rpsc.group as "rpInterepGroup",
+        sc.provider as "interepProvider",
+        sc.group as "interepGroup"
     FROM tags t
         LEFT JOIN posts p ON p."messageId" = t."message_id"
         LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = p."messageId" AND creator = :context LIMIT 1)
@@ -106,4 +110,6 @@ const selectTagPostsQuery = `
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"
         LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."reference" = p.reference
+        LEFT JOIN semaphore_creators sc on sc."message_id" = mod.reference
+        LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
 `;

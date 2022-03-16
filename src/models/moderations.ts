@@ -63,6 +63,14 @@ const moderations = (sequelize: Sequelize) => {
         return json;
     }
 
+    const remove = async (hash: string) => {
+        return model.destroy({
+            where: {
+                hash,
+            },
+        });
+    }
+
     const findAllByReference = async (
         reference: string,
         offset = 0,
@@ -88,6 +96,7 @@ const moderations = (sequelize: Sequelize) => {
     return {
         model,
         findOne,
+        remove,
         findAllByReference,
         createModeration,
     };

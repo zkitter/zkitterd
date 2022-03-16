@@ -81,6 +81,14 @@ const posts = (sequelize: Sequelize) => {
         ],
     });
 
+    const remove = async (hash: string) => {
+        return model.destroy({
+            where: {
+                hash,
+            },
+        });
+    }
+
     const findOne = async (hash: string, context?: string): Promise<PostJSON|null> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
@@ -367,6 +375,7 @@ const posts = (sequelize: Sequelize) => {
 
     return {
         model,
+        remove,
         findOne,
         findAllPosts,
         findAllRepliesFromCreator,

@@ -164,8 +164,12 @@ export default class GunService extends GenericService {
         const conns = await this.call('db', 'getConnections');
         const pfs = await this.call('db', 'getProfiles');
         const userMeta = await this.call('db', 'getUserMeta');
+        const postMeta = await this.call('db', 'getMeta');
+        const tagDB = await this.call('db', 'getTags');
 
         let msg;
+
+        console.log(messageId, hash);
 
         if (msg = await conns.findOne(hash)) {
             switch (msg.subtype) {
@@ -182,17 +186,57 @@ export default class GunService extends GenericService {
             await conns.remove(hash);
         }
 
-        // if (await mods.findOne(hash)) {
-        //     await mods.remove(hash);
-        // }
+        else if (msg = await mods.findOne(hash)) {
+            switch (msg.subtype) {
+                case 'LIKE':
+                    await postMeta.removeLike(msg.reference);
+                    break;
+            }
+            await mods.remove(hash);
+        }
 
-        // if (msg = await posts.findOne(hash)) {
-        //     await posts.remove(hash);
-        // }
+        else if (msg = await posts.findOne(hash)) {
+            switch (msg.subtype) {
+                case 'REPOST':
+                    await postMeta.removeRepost(msg.payload.reference);
+                    break;
+                case 'M_REPLY':
+                case 'REPLY':
+                    await postMeta.removeReply(msg.payload.reference);
+                    break;
+                case 'M_POST':
+                default:
+                    await userMeta.removePostingCount(msg.creator);
+                    break;
+            }
 
-        // if (await pfs.findOne(hash)) {
-        //     await pfs.remove(hash);
-        // }
+            const payload = msg.payload;
+
+            const tags = payload.content?.match(HASHTAG_REGEX);
+
+            if (tags) {
+                for (const tagName of tags) {
+                    await tagDB.removeTagPost(tagName, messageId);
+                    await postMeta.removePost(tagName);
+                }
+            }
+
+            const mentions = payload.content?.match(MENTION_REGEX);
+
+            if (mentions) {
+                for (const mention of mentions) {
+                    const addr = await this.call('ens', 'fetchAddressByName', mention.slice(1));
+                    await userMeta.removeMentionedCount(addr);
+                    await tagDB.removeTagPost('@' + addr, messageId);
+                }
+            }
+
+            await posts.remove(hash);
+        }
+
+        else if (await pfs.findOne(hash)) {
+            await pfs.remove(hash);
+        }
 
     }
 

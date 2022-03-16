@@ -63,6 +63,14 @@ const profiles = (sequelize: Sequelize) => {
         ],
     });
 
+    const remove = async (hash: string) => {
+        return model.destroy({
+            where: {
+                hash,
+            },
+        });
+    }
+
     const findProfileMessage = async (name: string, subtype: ProfileMessageSubType): Promise<ProfileModel|null> => {
         let result: any = await model.findOne({
             where: {
@@ -99,6 +107,7 @@ const profiles = (sequelize: Sequelize) => {
 
     return {
         model,
+        remove,
         findOne,
         createProfile,
     };

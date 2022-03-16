@@ -35,6 +35,22 @@ const tags = (sequelize: Sequelize) => {
         });
     }
 
+    const removeTagPost = async (tagName: string, messageId: string) => {
+        return mutex.runExclusive(async () => {
+            try {
+                const res = await model.destroy({
+                    where: {
+                        tag_name: tagName,
+                        message_id: messageId,
+                    },
+                });
+                return res;
+            } catch (e) {
+                return false;
+            }
+        });
+    }
+
     const getPostsByTag = async (
         tagName: string,
         context?: string,
@@ -71,6 +87,7 @@ const tags = (sequelize: Sequelize) => {
         model,
         getPostsByTag,
         addTagPost,
+        removeTagPost,
     };
 }
 

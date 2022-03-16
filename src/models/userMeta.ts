@@ -94,7 +94,7 @@ const userMeta = (sequelize: Sequelize) => {
                     return result.update({
                         ...data,
                         // @ts-ignore
-                        [key]: (Number(data[key]) || 0) + delta,
+                        [key]: Math.max(0, (Number(data[key]) || 0) + delta),
                     });
                 }
 

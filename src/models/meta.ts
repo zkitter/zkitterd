@@ -137,118 +137,49 @@ const meta = (sequelize: Sequelize) => {
         }));
     }
 
-    const addLike = async (reference: string) => {
-        return mutex.runExclusive(async () => {
-            const result = await model.findOne({
-                where: {
-                    reference,
-                },
-            });
-
-            if (result) {
-                const data = result.toJSON() as MetaModel;
-                return result.update({
-                    ...data,
-                    likeCount: Number(data.likeCount) + 1,
-                });
-            }
-
-            const res = await model.create({
-                reference,
-                ...emptyMeta,
-                likeCount: 1,
-            });
-
-            return res;
-        });
-    }
-
-    const addReply = async (reference: string) => {
-        return mutex.runExclusive(async () => {
-            const result = await model.findOne({
-                where: { reference },
-            });
-
-            if (result) {
-                const data = result.toJSON() as MetaModel;
-                return result.update({
-                    ...data,
-                    replyCount: Number(data.replyCount) + 1,
-                });
-            }
-
-            const res = await model.create({
-                reference,
-                ...emptyMeta,
-                replyCount: 1,
-            });
-
-            return res;
-        });
-    }
-
-    const addRepost = async (reference: string) => {
-        return mutex.runExclusive(async () => {
-            const result = await model.findOne({
-                where: {
-                    reference,
-                },
-            });
-
-            if (result) {
-                const data = result.toJSON() as MetaModel;
-                return result.update({
-                    ...data,
-                    repostCount: Number(data.repostCount) + 1,
-                });
-            }
-
-            const res = await model.create({
-                reference,
-                ...emptyMeta,
-                repostCount: 1,
-            });
-
-            return res;
-        });
-    }
-
-    const addPost = async (reference: string) => {
-        return mutex.runExclusive(async () => {
-            const result = await model.findOne({
-                where: {
-                    reference,
-                },
-            });
-
-            if (result) {
-                const data = result.toJSON() as MetaModel;
-                return result.update({
-                    ...data,
-                    postCount: Number(data.postCount) + 1,
-                });
-            }
-
-            const res = await model.create({
-                reference,
-                ...emptyMeta,
-                postCount: 1,
-            });
-
-            return res;
-        });
-    }
-
     return {
         model,
         findOne,
         findMany,
         findTags,
-        addLike,
-        addReply,
-        addRepost,
-        addPost,
+        addLike:  makeIncrementer('likeCount', 1),
+        addReply: makeIncrementer('replyCount', 1),
+        addRepost: makeIncrementer('repostCount', 1),
+        addPost: makeIncrementer('postCount', 1),
+        removeLike:  makeIncrementer('likeCount', -1),
+        removeReply: makeIncrementer('replyCount', -1),
+        removeRepost: makeIncrementer('repostCount', -1),
+        removePost: makeIncrementer('postCount', -1),
     };
+
+    function makeIncrementer(key: string, delta: number) {
+        return async (reference: string) => {
+            return mutex.runExclusive(async () => {
+                const result = await model.findOne({
+                    where: {
+                        reference,
+                    },
+                });
+
+                if (result) {
+                    const data = result.toJSON() as MetaModel;
+                    return result.update({
+                        ...data,
+                        // @ts-ignore
+                        [key]: Math.max(0, (Number(data[key]) || 0) + delta),
+                    });
+                }
+
+                const res = await model.create({
+                    reference,
+                    ...emptyMeta,
+                    [key]: Math.max(0, delta),
+                });
+
+                return res;
+            });
+        }
+    }
 }
 
 export default meta;

@@ -158,7 +158,7 @@ export default class GunService extends GenericService {
     }
 
     async deleteMessage(messageId: string) {
-        const { hash } = parseMessageId(messageId);
+        const { creator, hash } = parseMessageId(messageId);
         const posts = await this.call('db', 'getPosts');
         const mods = await this.call('db', 'getModerations');
         const conns = await this.call('db', 'getConnections');
@@ -168,8 +168,6 @@ export default class GunService extends GenericService {
         const tagDB = await this.call('db', 'getTags');
 
         let msg;
-
-        console.log(messageId, hash);
 
         if (msg = await conns.findOne(hash)) {
             switch (msg.subtype) {
@@ -206,14 +204,13 @@ export default class GunService extends GenericService {
                     break;
                 case 'M_POST':
                 default:
-                    await userMeta.removePostingCount(msg.creator);
+                    await userMeta.removePostingCount(creator);
                     break;
             }
 
             const payload = msg.payload;
 
             const tags = payload.content?.match(HASHTAG_REGEX);
-
             if (tags) {
                 for (const tagName of tags) {
                     await tagDB.removeTagPost(tagName, messageId);
@@ -222,7 +219,6 @@ export default class GunService extends GenericService {
             }
 
             const mentions = payload.content?.match(MENTION_REGEX);
-
             if (mentions) {
                 for (const mention of mentions) {
                     const addr = await this.call('ens', 'fetchAddressByName', mention.slice(1));

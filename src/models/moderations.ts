@@ -1,5 +1,6 @@
-import {BIGINT, ModelCtor, Sequelize, STRING} from "sequelize";
+import {BIGINT, ModelCtor, QueryTypes, Sequelize, STRING} from "sequelize";
 import {Message, MessageType, ModerationJSON, PostJSON, PostMessageSubType} from "../util/message";
+import {PostModel} from "./posts";
 
 type ModerationModel = {
     messageId: string;
@@ -71,6 +72,35 @@ const moderations = (sequelize: Sequelize) => {
         });
     }
 
+    const findThreadModeration = async (message_id: string) => {
+        const result = await sequelize.query(`
+            SELECT 
+                m."messageId",
+                m.creator,
+                m.reference,
+                m.type,
+                m.subtype,
+                m.hash,
+                m."createdAt",
+                m."updatedAt"
+            FROM threads t
+            JOIN posts p ON p."messageId" = t.root_id
+            JOIN moderations m ON m.reference = t.message_id AND m.creator = p.creator AND m.subtype IN ('THREAD_HIDE_BLOCK', 'THREAD_ONLY_MENTION', 'THREAD_SHOW_FOLLOW')
+            WHERE t.message_id = :message_id
+        `, {
+            replacements: {
+                message_id,
+            },
+            type: QueryTypes.SELECT,
+        });
+
+        if (result) {
+            return result;
+        }
+
+        return null;
+    }
+
     const findAllByReference = async (
         reference: string,
         offset = 0,
@@ -98,6 +128,7 @@ const moderations = (sequelize: Sequelize) => {
         findOne,
         remove,
         findAllByReference,
+        findThreadModeration,
         createModeration,
     };
 }

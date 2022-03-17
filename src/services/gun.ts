@@ -253,6 +253,7 @@ export default class GunService extends GenericService {
         const userMetaDB = await this.call('db', 'getUserMeta');
         const semaphoreCreatorsDB = await this.call('db', 'getSemaphoreCreators');
         const tagDB = await this.call('db', 'getTags');
+        const threadsDB = await this.call('db', 'getThreads');
 
         if (json.hash !== hash) {
             return;
@@ -334,6 +335,14 @@ export default class GunService extends GenericService {
                 if (subtype === PostMessageSubType.Repost) {
                     await metaDB.addRepost(payload.reference);
                 }
+
+                const root = await postDB.findRoot(messageId);
+
+                if (root) {
+                    await threadsDB.addThreadData(root, messageId);
+                }
+            } else {
+                await threadsDB.addThreadData(messageId, messageId);
             }
 
             if (!payload.reference && creator) {

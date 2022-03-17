@@ -1,4 +1,4 @@
-import {BIGINT, Op, QueryTypes, Sequelize, STRING} from "sequelize";
+import {BIGINT, Op, QueryTypes, Sequelize, STRING, where} from "sequelize";
 import {MessageType, PostJSON, PostMessageSubType} from "../util/message";
 import {Mutex} from "async-mutex";
 
@@ -89,6 +89,36 @@ const posts = (sequelize: Sequelize) => {
         });
     }
 
+    const findRoot = async (messageId: string): Promise<string | null> => {
+        const result = await model.findOne({
+            where: {
+                messageId,
+            },
+        });
+
+        if (result) {
+            // @ts-ignore
+            const json: PostModel = result.toJSON();
+            if (json.reference && json.subtype === 'REPLY') {
+                return findRoot(json.reference);
+            }
+
+            if (json.reference && json.subtype === 'M_REPLY') {
+                return findRoot(json.reference);
+            }
+
+            if (json.reference && json.subtype === 'REPOST') {
+                return findRoot(json.reference);
+            }
+
+            if (!json.reference) {
+                return json.messageId;
+            }
+        }
+
+        return null;
+    }
+
     const findOne = async (hash: string, context?: string): Promise<PostJSON|null> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
@@ -111,6 +141,37 @@ const posts = (sequelize: Sequelize) => {
         }
 
         return values[0];
+    }
+
+    const findThreadModeration = async (message_id: string): Promise<{
+        subtype: string;
+    } | null> => {
+        const result = await sequelize.query(`
+            SELECT 
+                m."messageId",
+                m.creator,
+                m.reference,
+                m.type,
+                m.subtype,
+                m.hash,
+                m."createdAt",
+                m."updatedAt"
+            FROM threads t
+            JOIN posts p ON p."messageId" = t.root_id
+            JOIN moderations m ON m.reference = t.message_id AND m.creator = p.creator AND m.subtype IN ('THREAD_HIDE_BLOCK', 'THREAD_ONLY_MENTION', 'THREAD_SHOW_FOLLOW')
+            WHERE t.message_id = :message_id
+        `, {
+            replacements: {
+                message_id,
+            },
+            type: QueryTypes.SELECT,
+        });
+
+        if (result) {
+            return result as any;
+        }
+
+        return null;
     }
 
     const findAllPosts = async (
@@ -220,7 +281,28 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE ((p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1 AND p.reference = :reference) OR (p.type = '@TWEET@' AND p.reference = '${tweetId}')) AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE (
+                (
+                    (p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1 AND p.reference = :reference) 
+                    OR (p.type = '@TWEET@' AND p.reference = '${tweetId}')
+                )
+                AND (
+                    (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) 
+                    AND p."creator" NOT IN (
+                        SELECT name FROM connections 
+                        WHERE name = p.creator 
+                        AND creator = '' 
+                        AND subtype = 'BLOCK'
+                    )
+                )
+                AND (
+                    (thrdmod.subtype = 'THREAD_HIDE_BLOCK' AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL)
+                    OR (thrdmod.subtype = 'THREAD_SHOW_FOLLOW' AND (modliked."messageId" IS NOT NULL OR modfolloweduser."messageId" IS NOT NULL))
+                    OR (thrdmod.subtype = 'THREAD_ONLY_MENTION' AND p.creator IN (select REPLACE(tag_name, '@', '') from tags WHERE message_id = root."messageId"))
+                    OR root.creator = p.creator
+                    OR thrdmod.subtype IS NULL
+                )
+            )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -377,6 +459,7 @@ const posts = (sequelize: Sequelize) => {
         model,
         remove,
         findOne,
+        findRoot,
         findAllPosts,
         findAllRepliesFromCreator,
         findAllLikedPostsByCreator,
@@ -402,6 +485,11 @@ export function inflateResultToPostJSON(r: any): PostJSON {
         blocked: json?.blocked,
         interepProvider: json?.interepProvider,
         interepGroup: json?.interepGroup,
+        moderation: json?.moderation || null,
+        modLikedPost: json?.modLikedPost || null,
+        modBlockedPost: json?.modBlockedPost || null,
+        modBlockedUser: json?.modBlockedUser || null,
+        modFollowerUser: json?.modFollowerUser || null,
     };
 
     if (json.subtype === PostMessageSubType.Repost) {
@@ -446,6 +534,11 @@ const selectJoinQuery = `
         p.attachment,
         m."messageId" as liked,
         rpm."messageId" as "rpLiked",
+        thrdmod."subtype" as "moderation",
+        modliked."messageId" as "modLikedPost",
+        modblocked."messageId" as "modBlockedPost",
+        modblockeduser."messageId" as "modBlockedUser",
+        modfolloweduser."messageId" as "modFollowerUser",
         blk."messageId" as blocked,
         rpblk."messageId" as "rpBlocked",
         rp."messageId" as reposted,
@@ -465,6 +558,13 @@ const selectJoinQuery = `
         LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where subtype = 'LIKE' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN moderations blk ON blk."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = :context LIMIT 1)
         LEFT JOIN moderations rpblk ON rpblk."messageId" = (select "messageId" from moderations where subtype = 'BLOCK' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN threads thrd ON thrd."message_id" = p."messageId"
+        LEFT JOIN posts root ON thrd.root_id = root."messageId"
+        LEFT JOIN moderations thrdmod ON thrdmod."messageId" = (select "messageId" from moderations where creator = root.creator AND subtype IN ('THREAD_HIDE_BLOCK', 'THREAD_SHOW_FOLLOW', 'THREAD_ONLY_MENTION') AND reference = root."messageId" LIMIT 1)
+        LEFT JOIN moderations modliked ON modliked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
+        LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modblockeduser ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modfolloweduser ON modfolloweduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = p."creator" AND creator = root.creator LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"
@@ -491,6 +591,11 @@ const selectLikedPostsQuery = `
         rpblk."messageId" as "rpBlocked",
         rp."messageId" as reposted,
         rprp."messageId" as "rpReposted",
+        thrdmod.subtype as "moderation",
+        modliked."messageId" as "modLikedPost",
+        modblocked."messageId" as "modBlockedPost",
+        modblockeduser."messageId" as "modBlockedUser",
+        modfolloweduser."messageId" as "modFollowerUser",
         mt."replyCount",
         mt."repostCount",
         mt."likeCount",
@@ -507,6 +612,13 @@ const selectLikedPostsQuery = `
         LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where subtyp = 'LIKE' AND reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN moderations blk ON blk."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = :context LIMIT 1)
         LEFT JOIN moderations rpblk ON rpblk."messageId" = (select "messageId" from moderations where subtype = 'BLOCK' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN threads thrd ON thrd."message_id" = p."messageId"
+        LEFT JOIN posts root ON thrd.root_id = root."messageId"
+        LEFT JOIN moderations thrdmod ON thrdmod."messageId" = (select "messageId" from moderations where creator = root.creator AND subtype IN ('THREAD_HIDE_BLOCK', 'THREAD_SHOW_FOLLOW', 'THREAD_ONLY_MENTION') AND reference = root."messageId" LIMIT 1)
+        LEFT JOIN moderations modliked ON modliked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
+        LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modblockeduser ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modfolloweduser ON modfolloweduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = p."creator" AND creator = root.creator LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"

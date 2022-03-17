@@ -18,6 +18,7 @@ import ens from "../../models/ens";
 import twitterAuth from "../../models/twitterAuth";
 import interepGroups from "../../models/interepGroups";
 import semaphoreCreators from "../../models/semaphore_creators";
+import threads from "../../models/thread";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
@@ -40,6 +41,7 @@ export default class DBService extends GenericService {
     twitterAuth?: ReturnType<typeof twitterAuth>;
     interepGroups?: ReturnType<typeof interepGroups>;
     semaphoreCreators?: ReturnType<typeof semaphoreCreators>;
+    threads?: ReturnType<typeof threads>;
 
     constructor() {
         super();
@@ -196,6 +198,13 @@ export default class DBService extends GenericService {
         return this.semaphoreCreators;
     }
 
+    async getThreads(): Promise<ReturnType<typeof threads>> {
+        if (!this.threads) {
+            return Promise.reject(new Error('threads is not initialized'));
+        }
+        return this.threads;
+    }
+
     async start() {
         this.app = await app(this.sqlite);
         this.records = await records(this.sqlite);
@@ -214,6 +223,7 @@ export default class DBService extends GenericService {
         this.twitterAuth = await twitterAuth(this.sequelize);
         this.interepGroups = await interepGroups(this.sequelize);
         this.semaphoreCreators = await semaphoreCreators(this.sequelize);
+        this.threads = await threads(this.sequelize);
 
         await this.app?.model.sync({ force: !!process.env.FORCE });
         await this.linkPreview?.model.sync({ force: !!process.env.FORCE });
@@ -235,14 +245,15 @@ export default class DBService extends GenericService {
         await this.twitterAuth?.model.sync({ force: !!process.env.FORCE });
         await this.interepGroups?.model.sync({ force: !!process.env.FORCE });
         await this.semaphoreCreators?.model.sync({ force: !!process.env.FORCE });
+        await this.threads?.model.sync({ force: !!process.env.FORCE });
 
         const appData = await this.app?.read();
 
         if (!appData) {
             await this.app?.updateLastENSBlock(12957300);
             await this.app?.updateLastInterrepBlock(28311377);
-            await this.app?.updateLastArbitrumBlock(2193241);
-            // await this.app?.updateLastArbitrumBlock(9317700);
+            // await this.app?.updateLastArbitrumBlock(2193241);
+            await this.app?.updateLastArbitrumBlock(9317700);
         }
 
         // await this.app?.updateLastArbitrumBlock(2193241);

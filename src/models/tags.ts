@@ -111,6 +111,11 @@ const selectTagPostsQuery = `
         rpblk."messageId" as "rpBlocked",
         rp."messageId" as "reposted",
         rprp."messageId" as "rpReposted",
+        thrdmod.subtype as "moderation",
+        modliked."messageId" as "modLikedPost",
+        modblocked."messageId" as "modBlockedPost",
+        modblockeduser."messageId" as "modBlockedUser",
+        modfolloweduser."messageId" as "modFollowerUser",
         mt."replyCount",
         mt."repostCount",
         mt."likeCount",
@@ -127,6 +132,13 @@ const selectTagPostsQuery = `
         LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN moderations blk ON blk."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = :context LIMIT 1)
         LEFT JOIN moderations rpblk ON rpblk."messageId" = (select "messageId" from moderations where subtype = 'BLOCK' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN threads thrd ON thrd."message_id" = p."messageId"
+        LEFT JOIN posts root ON thrd.root_id = root."messageId"
+        LEFT JOIN moderations thrdmod ON thrdmod."messageId" = (select "messageId" from moderations where creator = root.creator AND subtype IN ('THREAD_HIDE_BLOCK', 'THREAD_SHOW_FOLLOW', 'THREAD_ONLY_MENTION') AND reference = root."messageId" LIMIT 1)
+        LEFT JOIN moderations modliked ON modliked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
+        LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modblockeduser ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modfolloweduser ON modfolloweduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = p."creator" AND creator = root.creator LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"

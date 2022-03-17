@@ -437,7 +437,7 @@ export default class HttpService extends GenericService {
                 return;
             }
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${group.provider}/${group.name}/${identityCommitment}/proof`);
+            const resp = await fetch(`${config.interrepAPI}/api/groups/${group.provider}/${group.name}/${identityCommitment}/proof`);
             const json = await resp.json();
             res.send(makeResponse({
                 ...json,

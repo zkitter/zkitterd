@@ -122,7 +122,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.type = 'POST' AND p.subtype IN ('', 'M_POST', 'REPOST') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''} AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE p.type = 'POST' AND p.subtype IN ('', 'M_POST', 'REPOST') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''} AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -154,7 +154,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.type = 'POST' AND p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''} AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE p.type = 'POST' AND p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''} AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -188,7 +188,7 @@ const posts = (sequelize: Sequelize) => {
             WHERE p.subtype != 'REPLY' AND p."createdAt" != -1 AND (
                 p.creator IN (SELECT name FROM connections WHERE subtype = 'FOLLOW' AND creator = :context) OR
                 p.creator = :context
-            ) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            ) AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -220,7 +220,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE ((p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1 AND p.reference = :reference) OR (p.type = '@TWEET@' AND p.reference = '${tweetId}')) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE ((p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1 AND p.reference = :reference) OR (p.type = '@TWEET@' AND p.reference = '${tweetId}')) AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -251,7 +251,7 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectLikedPostsQuery}
-            WHERE p."createdAt" != -1${creator ? ' AND mod.creator = :creator' : ''} AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE p."createdAt" != -1${creator ? ' AND mod.creator = :creator' : ''} AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -394,20 +394,22 @@ export default posts;
 export function inflateResultToPostJSON(r: any): PostJSON {
     const json = r as any;
     const meta = {
-        replyCount: json?.replyCount || 0,
-        likeCount: json?.likeCount || 0,
-        repostCount: json?.repostCount || 0,
+        replyCount: +json?.replyCount || 0,
+        likeCount: +json?.likeCount || 0,
+        repostCount: +json?.repostCount || 0,
         liked: json?.liked,
         reposted: json?.reposted,
+        blocked: json?.blocked,
         interepProvider: json?.interepProvider,
         interepGroup: json?.interepGroup,
     };
 
     if (json.subtype === PostMessageSubType.Repost) {
-        meta.replyCount = json?.rpReplyCount || 0;
-        meta.likeCount = json?.rpLikeCount || 0;
-        meta.repostCount = json?.rpRepostCount || 0;
+        meta.replyCount = +json?.rpReplyCount || 0;
+        meta.likeCount = +json?.rpLikeCount || 0;
+        meta.repostCount = +json?.rpRepostCount || 0;
         meta.liked = json?.rpLiked || null;
+        meta.blocked = json?.rpBLocked || null;
         meta.reposted = json?.rpReposted || null;
         meta.interepProvider = json?.rpInterepProvider || null;
         meta.interepGroup = json?.rpInterepGroup || null;
@@ -444,6 +446,8 @@ const selectJoinQuery = `
         p.attachment,
         m."messageId" as liked,
         rpm."messageId" as "rpLiked",
+        blk."messageId" as blocked,
+        rpblk."messageId" as "rpBlocked",
         rp."messageId" as reposted,
         rprp."messageId" as "rpReposted",
         mt."replyCount",
@@ -457,8 +461,10 @@ const selectJoinQuery = `
         sc.provider as "interepProvider",
         sc.group as "interepGroup"
     FROM posts p
-        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = p."messageId" AND creator = :context LIMIT 1)
-        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = :context LIMIT 1)
+        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where subtype = 'LIKE' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN moderations blk ON blk."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = :context LIMIT 1)
+        LEFT JOIN moderations rpblk ON rpblk."messageId" = (select "messageId" from moderations where subtype = 'BLOCK' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"
@@ -481,6 +487,8 @@ const selectLikedPostsQuery = `
         p.attachment,
         m."messageId" as liked,
         rpm."messageId" as "rpLiked",
+        blk."messageId" as blocked,
+        rpblk."messageId" as "rpBlocked",
         rp."messageId" as reposted,
         rprp."messageId" as "rpReposted",
         mt."replyCount",
@@ -495,8 +503,10 @@ const selectLikedPostsQuery = `
         sc.group as "interepGroup"
     FROM moderations mod
         LEFT JOIN posts p ON p."messageId" = mod.reference
-        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = p."messageId" AND creator = :context LIMIT 1)
-        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE subtyp = 'LIKE' AND reference = p."messageId" AND creator = :context LIMIT 1)
+        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where subtyp = 'LIKE' AND reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN moderations blk ON blk."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = :context LIMIT 1)
+        LEFT JOIN moderations rpblk ON rpblk."messageId" = (select "messageId" from moderations where subtype = 'BLOCK' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"

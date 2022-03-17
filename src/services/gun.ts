@@ -9,7 +9,7 @@ import {
     ConnectionMessageSubType,
     Message,
     MessageType,
-    Moderation, parseMessageId,
+    Moderation, ModerationMessageSubType, parseMessageId,
     Post,
     PostMessageSubType,
     Profile, ProfileMessageSubType
@@ -416,7 +416,7 @@ export default class GunService extends GenericService {
                 reference: payload.reference,
             });
 
-            if (payload.reference) {
+            if (subtype === ModerationMessageSubType.Like && payload.reference) {
                 await metaDB.addLike(payload.reference);
             }
 

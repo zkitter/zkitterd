@@ -60,7 +60,7 @@ const tags = (sequelize: Sequelize) => {
     ) => {
         const result = await sequelize.query(`
             ${selectTagPostsQuery}
-            WHERE p."createdAt" != -1 AND t."tag_name" = :tagName AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE p."createdAt" != -1 AND t."tag_name" = :tagName AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -107,6 +107,8 @@ const selectTagPostsQuery = `
         p.attachment,
         m."messageId" as "liked",
         rpm."messageId" as "rpLiked",
+        blk."messageId" as blocked,
+        rpblk."messageId" as "rpBlocked",
         rp."messageId" as "reposted",
         rprp."messageId" as "rpReposted",
         mt."replyCount",
@@ -123,6 +125,8 @@ const selectTagPostsQuery = `
         LEFT JOIN posts p ON p."messageId" = t."message_id"
         LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = p."messageId" AND creator = :context LIMIT 1)
         LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN moderations blk ON blk."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = :context LIMIT 1)
+        LEFT JOIN moderations rpblk ON rpblk."messageId" = (select "messageId" from moderations where subtype = 'BLOCK' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"

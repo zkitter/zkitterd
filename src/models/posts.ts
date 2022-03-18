@@ -1,6 +1,8 @@
 import {BIGINT, Op, QueryTypes, Sequelize, STRING, where} from "sequelize";
 import {MessageType, PostJSON, PostMessageSubType} from "../util/message";
 import {Mutex} from "async-mutex";
+import bodyParser from "body-parser";
+import {notBlockedClause, replyModerationClause} from "../util/sql";
 
 const mutex = new Mutex();
 
@@ -283,6 +285,7 @@ const posts = (sequelize: Sequelize) => {
         limit = 20,
         order: 'DESC' | 'ASC' = 'ASC',
         tweetId = '',
+        unmoderated = false,
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
@@ -291,30 +294,8 @@ const posts = (sequelize: Sequelize) => {
                     (p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1 AND p.reference = :reference) 
                     OR (p.type = '@TWEET@' AND p.reference = '${tweetId}')
                 )
-                AND (
-                    (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) 
-                    AND p."creator" NOT IN (
-                        SELECT name FROM connections 
-                        WHERE name = p.creator 
-                        AND creator = '' 
-                        AND subtype = 'BLOCK'
-                    )
-                )
-                AND (
-                    (thrdmod.subtype = 'THREAD_HIDE_BLOCK' AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL)
-                    OR (
-                        (thrdmod.subtype = 'THREAD_SHOW_FOLLOW') 
-                        AND (modliked."messageId" IS NOT NULL OR modfolloweduser."messageId" IS NOT NULL)
-                        AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL
-                    )
-                    OR (
-                        (thrdmod.subtype = 'THREAD_ONLY_MENTION') 
-                        AND (p.creator IN (select REPLACE(tag_name, '@', '') from tags WHERE message_id = root."messageId"))
-                        AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL
-                    )
-                    OR root.creator = p.creator
-                    OR thrdmod.subtype IS NULL
-                )
+                ${unmoderated ? '' : `AND ${notBlockedClause}`}
+                ${unmoderated ? '' : `AND ${replyModerationClause}`}
             )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
@@ -636,8 +617,8 @@ const selectLikedPostsQuery = `
         sc.group as "interepGroup"
     FROM moderations mod
         LEFT JOIN posts p ON p."messageId" = mod.reference
-        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE subtyp = 'LIKE' AND reference = p."messageId" AND creator = :context LIMIT 1)
-        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where subtyp = 'LIKE' AND reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = :context LIMIT 1)
+        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where subtype = 'LIKE' AND reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN moderations blk ON blk."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = :context LIMIT 1)
         LEFT JOIN moderations rpblk ON rpblk."messageId" = (select "messageId" from moderations where subtype = 'BLOCK' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN threads thrd ON thrd."message_id" = p."messageId"

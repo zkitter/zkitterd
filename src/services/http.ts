@@ -302,6 +302,7 @@ export default class HttpService extends GenericService {
             const parent = req.query.parent;
             const {hash} = parseMessageId(parent as string);
             const context = req.header('x-contextual-name') || undefined;
+            const unmoderated = (req.header('x-unmoderated') || '') === 'true';
             const postDB = await this.call('db', 'getPosts');
             const parentPost = await postDB.findOne(hash, context);
 
@@ -318,7 +319,8 @@ export default class HttpService extends GenericService {
                 await postDB.createTwitterPosts(tweets);
             }
 
-            const posts = await postDB.findAllReplies(parent, context, offset, limit, 'ASC', tweetId);
+            console.log(unmoderated);
+            const posts = await postDB.findAllReplies(parent, context, offset, limit, 'ASC', tweetId, unmoderated);
             res.send(makeResponse(posts));
         }));
 

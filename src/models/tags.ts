@@ -60,7 +60,30 @@ const tags = (sequelize: Sequelize) => {
     ) => {
         const result = await sequelize.query(`
             ${selectTagPostsQuery}
-            WHERE p."createdAt" != -1 AND t."tag_name" = :tagName AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE (
+                (p."createdAt" != -1) 
+                AND (t."tag_name" = :tagName) 
+                AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) 
+                AND (p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK'))
+                AND (
+                    p.subtype NOT IN ('REPLY', 'M_REPLY')
+                    OR (
+                        (thrdmod.subtype = 'THREAD_HIDE_BLOCK' AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL)
+                        OR (
+                            (thrdmod.subtype = 'THREAD_SHOW_FOLLOW') 
+                            AND (modliked."messageId" IS NOT NULL OR modfolloweduser."messageId" IS NOT NULL)
+                            AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL
+                        )
+                        OR (
+                            (thrdmod.subtype = 'THREAD_ONLY_MENTION') 
+                            AND (p.creator IN (select REPLACE(tag_name, '@', '') from tags WHERE message_id = root."messageId"))
+                            AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL
+                        )
+                        OR root.creator = p.creator
+                        OR thrdmod.subtype IS NULL
+                    )
+                )
+            )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -112,10 +135,14 @@ const selectTagPostsQuery = `
         rp."messageId" as "reposted",
         rprp."messageId" as "rpReposted",
         thrdmod.subtype as "moderation",
+        root."messageId" as "rootId",
         modliked."messageId" as "modLikedPost",
         modblocked."messageId" as "modBlockedPost",
         modblockeduser."messageId" as "modBlockedUser",
         modfolloweduser."messageId" as "modFollowerUser",
+        modblockedctx."messageId" as "modblockedctx",
+        modfollowedctx."messageId" as "modfollowedctx",
+        modmentionedctx."message_id" as "modmentionedctx",
         mt."replyCount",
         mt."repostCount",
         mt."likeCount",
@@ -145,4 +172,7 @@ const selectTagPostsQuery = `
         LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."reference" = p.reference
         LEFT JOIN semaphore_creators sc on sc."message_id" = p."messageId"
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
+        LEFT JOIN connections modblockedctx  ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modfollowedctx  ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
+        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = CONCAT('@', :context)
 `;

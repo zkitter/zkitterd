@@ -183,7 +183,12 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.type = 'POST' AND p.subtype IN ('', 'M_POST', 'REPOST') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''} AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE (
+                (p.type = 'POST' AND p.subtype IN ('', 'M_POST', 'REPOST')) 
+                AND (p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}) 
+                AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) 
+                AND (p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK'))
+            )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -297,8 +302,16 @@ const posts = (sequelize: Sequelize) => {
                 )
                 AND (
                     (thrdmod.subtype = 'THREAD_HIDE_BLOCK' AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL)
-                    OR (thrdmod.subtype = 'THREAD_SHOW_FOLLOW' AND (modliked."messageId" IS NOT NULL OR modfolloweduser."messageId" IS NOT NULL))
-                    OR (thrdmod.subtype = 'THREAD_ONLY_MENTION' AND p.creator IN (select REPLACE(tag_name, '@', '') from tags WHERE message_id = root."messageId"))
+                    OR (
+                        (thrdmod.subtype = 'THREAD_SHOW_FOLLOW') 
+                        AND (modliked."messageId" IS NOT NULL OR modfolloweduser."messageId" IS NOT NULL)
+                        AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL
+                    )
+                    OR (
+                        (thrdmod.subtype = 'THREAD_ONLY_MENTION') 
+                        AND (p.creator IN (select REPLACE(tag_name, '@', '') from tags WHERE message_id = root."messageId"))
+                        AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL
+                    )
                     OR root.creator = p.creator
                     OR thrdmod.subtype IS NULL
                 )
@@ -485,7 +498,11 @@ export function inflateResultToPostJSON(r: any): PostJSON {
         blocked: json?.blocked,
         interepProvider: json?.interepProvider,
         interepGroup: json?.interepGroup,
+        rootId: json?.rootId,
         moderation: json?.moderation || null,
+        modblockedctx: json?.modblockedctx || null,
+        modfollowedctx: json?.modfollowedctx || null,
+        modmentionedctx: json?.modmentionedctx || null,
         modLikedPost: json?.modLikedPost || null,
         modBlockedPost: json?.modBlockedPost || null,
         modBlockedUser: json?.modBlockedUser || null,
@@ -535,10 +552,14 @@ const selectJoinQuery = `
         m."messageId" as liked,
         rpm."messageId" as "rpLiked",
         thrdmod."subtype" as "moderation",
+        root."messageId" as "rootId",
         modliked."messageId" as "modLikedPost",
         modblocked."messageId" as "modBlockedPost",
         modblockeduser."messageId" as "modBlockedUser",
         modfolloweduser."messageId" as "modFollowerUser",
+        modblockedctx."messageId" as "modblockedctx",
+        modfollowedctx."messageId" as "modfollowedctx",
+        modmentionedctx."message_id" as "modmentionedctx",
         blk."messageId" as blocked,
         rpblk."messageId" as "rpBlocked",
         rp."messageId" as reposted,
@@ -571,6 +592,9 @@ const selectJoinQuery = `
         LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."reference" = p.reference
         LEFT JOIN semaphore_creators sc on sc."message_id" = p."messageId"
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
+        LEFT JOIN connections modblockedctx  ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modfollowedctx  ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
+        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = CONCAT('@', :context)
 `;
 
 const selectLikedPostsQuery = `
@@ -592,10 +616,14 @@ const selectLikedPostsQuery = `
         rp."messageId" as reposted,
         rprp."messageId" as "rpReposted",
         thrdmod.subtype as "moderation",
+        root."messageId" as "rootId",
         modliked."messageId" as "modLikedPost",
         modblocked."messageId" as "modBlockedPost",
         modblockeduser."messageId" as "modBlockedUser",
         modfolloweduser."messageId" as "modFollowerUser",
+        modblockedctx."messageId" as "modblockedctx",
+        modfollowedctx."messageId" as "modfollowedctx",
+        modmentionedctx."message_id" as "modmentionedctx",
         mt."replyCount",
         mt."repostCount",
         mt."likeCount",
@@ -625,4 +653,7 @@ const selectLikedPostsQuery = `
         LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."reference" = p.reference
         LEFT JOIN semaphore_creators sc on sc."message_id" = mod.reference
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
+        LEFT JOIN connections modblockedctx  ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modfollowedctx  ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
+        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = CONCAT('@', :context)
 `;

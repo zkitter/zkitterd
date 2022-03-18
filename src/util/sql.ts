@@ -8,8 +8,11 @@ export const replyModerationClause = `
     )
     OR (
         (thrdmod.subtype = 'THREAD_ONLY_MENTION') 
-        AND (p.creator IN (select REPLACE(tag_name, '@', '') from tags WHERE message_id = root."messageId"))
-        AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL
+        AND modblocked."messageId" IS NULL
+        AND (
+            modliked."messageId" IS NOT NULL
+            OR p.creator IN (select REPLACE(tag_name, '@', '') from tags WHERE message_id = root."messageId")
+        )
     )
     OR root.creator = p.creator
     OR thrdmod.subtype IS NULL

@@ -319,7 +319,6 @@ export default class HttpService extends GenericService {
                 await postDB.createTwitterPosts(tweets);
             }
 
-            console.log(unmoderated);
             const posts = await postDB.findAllReplies(parent, context, offset, limit, 'ASC', tweetId, unmoderated);
             res.send(makeResponse(posts));
         }));

@@ -2,6 +2,7 @@ import {Sequelize, BIGINT, STRING, QueryTypes} from "sequelize";
 import {Mutex} from "async-mutex";
 import {PostJSON} from "../util/message";
 import {inflateResultToPostJSON} from "./posts";
+import {replyModerationClause} from "../util/sql";
 
 type TagModel = {
     tag_name: string;
@@ -67,21 +68,7 @@ const tags = (sequelize: Sequelize) => {
                 AND (p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK'))
                 AND (
                     p.subtype NOT IN ('REPLY', 'M_REPLY')
-                    OR (
-                        (thrdmod.subtype = 'THREAD_HIDE_BLOCK' AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL)
-                        OR (
-                            (thrdmod.subtype = 'THREAD_SHOW_FOLLOW') 
-                            AND (modliked."messageId" IS NOT NULL OR modfolloweduser."messageId" IS NOT NULL)
-                            AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL
-                        )
-                        OR (
-                            (thrdmod.subtype = 'THREAD_ONLY_MENTION') 
-                            AND (p.creator IN (select REPLACE(tag_name, '@', '') from tags WHERE message_id = root."messageId"))
-                            AND modblocked."messageId" IS NULL AND modblockeduser."messageId" IS NULL
-                        )
-                        OR root.creator = p.creator
-                        OR thrdmod.subtype IS NULL
-                    )
+                    OR ${replyModerationClause}
                 )
             )
             ORDER BY p."createdAt" ${order}

@@ -29,4 +29,10 @@ export const notBlockedClause = `
         AND subtype = 'BLOCK'
     )
 )
+`;
+
+export const globalModClause = `
+(
+    gmodblocked."messageId" IS NULL AND gmodblockeduser."messageId" IS NULL
+)
 `

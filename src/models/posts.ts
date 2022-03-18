@@ -2,7 +2,8 @@ import {BIGINT, Op, QueryTypes, Sequelize, STRING, where} from "sequelize";
 import {MessageType, PostJSON, PostMessageSubType} from "../util/message";
 import {Mutex} from "async-mutex";
 import bodyParser from "body-parser";
-import {notBlockedClause, replyModerationClause} from "../util/sql";
+import {globalModClause, notBlockedClause, replyModerationClause} from "../util/sql";
+import config from "../util/config";
 
 const mutex = new Mutex();
 
@@ -124,7 +125,11 @@ const posts = (sequelize: Sequelize) => {
     const findOne = async (hash: string, context?: string): Promise<PostJSON|null> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.hash = :hash AND p."createdAt" != -1 AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE (
+                p.hash = :hash 
+                AND p."createdAt" != -1 
+                AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            )
         `, {
             replacements: {
                 context: context || '',
@@ -190,6 +195,7 @@ const posts = (sequelize: Sequelize) => {
                 AND (p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''}) 
                 AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) 
                 AND (p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK'))
+                AND ${globalModClause}
             )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
@@ -222,7 +228,14 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.type = 'POST' AND p.subtype IN ('REPLY', 'M_REPLY') AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''} AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE (
+                p.type = 'POST' 
+                AND p.subtype IN ('REPLY', 'M_REPLY') 
+                AND p."createdAt" != -1${creator ? ' AND p.creator = :creator' : ''} 
+                AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) 
+                AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+                AND ${globalModClause}
+            )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -253,10 +266,16 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
-            WHERE p.subtype != 'REPLY' AND p."createdAt" != -1 AND (
-                p.creator IN (SELECT name FROM connections WHERE subtype = 'FOLLOW' AND creator = :context) OR
-                p.creator = :context
-            ) AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE (
+                p.subtype != 'REPLY' 
+                AND p."createdAt" != -1 
+                AND (
+                    p.creator IN (SELECT name FROM connections WHERE subtype = 'FOLLOW' AND creator = :context) OR
+                    p.creator = :context
+                ) 
+                AND ${notBlockedClause}
+                AND ${globalModClause}
+            )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -296,6 +315,7 @@ const posts = (sequelize: Sequelize) => {
                 )
                 ${unmoderated ? '' : `AND ${notBlockedClause}`}
                 ${unmoderated ? '' : `AND ${replyModerationClause}`}
+                AND ${globalModClause}
             )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
@@ -327,7 +347,12 @@ const posts = (sequelize: Sequelize) => {
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectLikedPostsQuery}
-            WHERE p."createdAt" != -1${creator ? ' AND mod.creator = :creator' : ''} AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+            WHERE (
+                p."createdAt" != -1${creator ? ' AND mod.creator = :creator' : ''} 
+                AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) 
+                AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
+                AND ${globalModClause}
+            )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `, {
@@ -567,6 +592,8 @@ const selectJoinQuery = `
         LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modblockeduser ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modfolloweduser ON modfolloweduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = p."creator" AND creator = root.creator LIMIT 1)
+        LEFT JOIN moderations gmodblocked ON gmodblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator IN (${config.moderators.map(d => `'${d}'`).join(',')}) LIMIT 1)
+        LEFT JOIN connections gmodblockeduser ON gmodblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator IN (${config.moderators.map(d => `'${d}'`).join(',')}) LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"
@@ -627,6 +654,8 @@ const selectLikedPostsQuery = `
         LEFT JOIN moderations modliked ON modliked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modblockeduser ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator = root.creator LIMIT 1)
+        LEFT JOIN moderations gmodblocked ON gmodblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator IN (${config.moderators.map(d => `'${d}'`).join(',')}) LIMIT 1)
+        LEFT JOIN connections gmodblockeduser ON gmodblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator IN (${config.moderators.map(d => `'${d}'`).join(',')}) LIMIT 1)
         LEFT JOIN connections modfolloweduser ON modfolloweduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = p."creator" AND creator = root.creator LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)

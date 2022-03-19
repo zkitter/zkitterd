@@ -2,7 +2,8 @@ import {Sequelize, BIGINT, STRING, QueryTypes} from "sequelize";
 import {Mutex} from "async-mutex";
 import {PostJSON} from "../util/message";
 import {inflateResultToPostJSON} from "./posts";
-import {replyModerationClause} from "../util/sql";
+import {globalModClause, replyModerationClause} from "../util/sql";
+import config from "../util/config";
 
 type TagModel = {
     tag_name: string;
@@ -70,6 +71,7 @@ const tags = (sequelize: Sequelize) => {
                     p.subtype NOT IN ('REPLY', 'M_REPLY')
                     OR ${replyModerationClause}
                 )
+                AND ${globalModClause}
             )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
@@ -151,6 +153,8 @@ const selectTagPostsQuery = `
         LEFT JOIN moderations thrdmod ON thrdmod."messageId" = (select "messageId" from moderations where creator = root.creator AND subtype IN ('THREAD_HIDE_BLOCK', 'THREAD_SHOW_FOLLOW', 'THREAD_ONLY_MENTION') AND reference = root."messageId" LIMIT 1)
         LEFT JOIN moderations modliked ON modliked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
+        LEFT JOIN moderations gmodblocked ON gmodblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator IN (${config.moderators.map(d => `'${d}'`).join(',')}) LIMIT 1)
+        LEFT JOIN connections gmodblockeduser ON gmodblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator IN (${config.moderators.map(d => `'${d}'`).join(',')}) LIMIT 1)
         LEFT JOIN connections modblockeduser ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modfolloweduser ON modfolloweduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = p."creator" AND creator = root.creator LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)

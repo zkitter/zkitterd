@@ -438,7 +438,7 @@ export default class HttpService extends GenericService {
                 return;
             }
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/groups/${group.provider}/${group.name}/${identityCommitment}/proof`);
+            const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${group.provider}/${group.name}/${identityCommitment}/proof`);
             const json = await resp.json();
             res.send(makeResponse({
                 ...json,
@@ -471,7 +471,7 @@ export default class HttpService extends GenericService {
                 contentType: preview.contentType || '',
                 title: preview.title || '',
                 description: preview.description || '',
-                image: preview.images[0] || '',
+                image: preview.images ? preview.images[0] : '',
                 favicon: preview.favicon || '',
             };
 

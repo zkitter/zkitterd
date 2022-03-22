@@ -2,7 +2,7 @@ import {Sequelize, BIGINT, STRING, QueryTypes} from "sequelize";
 import {Mutex} from "async-mutex";
 import {PostJSON} from "../util/message";
 import {inflateResultToPostJSON} from "./posts";
-import {globalModClause, replyModerationClause} from "../util/sql";
+import {globalModClause, globalVisibilityClause, replyModerationClause} from "../util/sql";
 import config from "../util/config";
 
 type TagModel = {
@@ -59,6 +59,7 @@ const tags = (sequelize: Sequelize) => {
         offset = 0,
         limit = 20,
         order: 'DESC' | 'ASC' = 'DESC',
+        showAll = false,
     ) => {
         const result = await sequelize.query(`
             ${selectTagPostsQuery}
@@ -124,6 +125,7 @@ const selectTagPostsQuery = `
         rp."messageId" as "reposted",
         rprp."messageId" as "rpReposted",
         thrdmod.subtype as "moderation",
+        global."messageId" as "global",
         root."messageId" as "rootId",
         modliked."messageId" as "modLikedPost",
         modblocked."messageId" as "modBlockedPost",
@@ -151,6 +153,7 @@ const selectTagPostsQuery = `
         LEFT JOIN threads thrd ON thrd."message_id" = p."messageId"
         LEFT JOIN posts root ON thrd.root_id = root."messageId"
         LEFT JOIN moderations thrdmod ON thrdmod."messageId" = (select "messageId" from moderations where creator = root.creator AND subtype IN ('THREAD_HIDE_BLOCK', 'THREAD_SHOW_FOLLOW', 'THREAD_ONLY_MENTION') AND reference = root."messageId" LIMIT 1)
+        LEFT JOIN moderations global ON global."messageId" = (select "messageId" from moderations where creator = p.creator AND subtype IN ('GLOBAL') AND reference = p."messageId" LIMIT 1)
         LEFT JOIN moderations modliked ON modliked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN moderations gmodblocked ON gmodblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator IN (${config.moderators.map(d => `'${d}'`).join(',')}) LIMIT 1)

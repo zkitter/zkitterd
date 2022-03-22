@@ -197,6 +197,7 @@ export enum ModerationMessageSubType {
     ThreadBlock = 'THREAD_HIDE_BLOCK',
     ThreadFollow = 'THREAD_SHOW_FOLLOW',
     ThreadMention = 'THREAD_ONLY_MENTION',
+    Global = 'GLOBAL',
     Default = '',
 }
 
@@ -261,6 +262,8 @@ export class Moderation extends Message {
                 return ModerationMessageSubType.ThreadFollow;
             case 'THREAD_ONLY_MENTION':
                 return ModerationMessageSubType.ThreadMention;
+            case 'GLOBAL':
+                return ModerationMessageSubType.Global;
             default:
                 return ModerationMessageSubType.Default;
         }

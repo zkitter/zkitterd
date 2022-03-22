@@ -329,7 +329,14 @@ export default class HttpService extends GenericService {
             const creator = req.query.creator;
             const context = req.header('x-contextual-name') || undefined;
             const postDB = await this.call('db', 'getPosts');
-            const posts = await postDB.findAllPosts(creator, context, offset, limit);
+            const posts = await postDB.findAllPosts(
+                creator,
+                context,
+                offset,
+                limit,
+                undefined,
+                !!creator,
+            );
             res.send(makeResponse(posts));
         }));
 

@@ -36,3 +36,9 @@ export const globalModClause = `
     gmodblocked."messageId" IS NULL AND gmodblockeduser."messageId" IS NULL
 )
 `
+
+export const globalVisibilityClause = `
+(
+    p.creator = '' OR global."messageId" IS NOT NULL
+)
+`

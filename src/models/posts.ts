@@ -2,7 +2,7 @@ import {BIGINT, Op, QueryTypes, Sequelize, STRING, where} from "sequelize";
 import {MessageType, PostJSON, PostMessageSubType} from "../util/message";
 import {Mutex} from "async-mutex";
 import bodyParser from "body-parser";
-import {globalModClause, notBlockedClause, replyModerationClause} from "../util/sql";
+import {globalModClause, globalVisibilityClause, notBlockedClause, replyModerationClause} from "../util/sql";
 import config from "../util/config";
 
 const mutex = new Mutex();
@@ -187,6 +187,7 @@ const posts = (sequelize: Sequelize) => {
         offset = 0,
         limit = 20,
         order: 'DESC' | 'ASC' = 'DESC',
+        showAll = false,
     ): Promise<PostJSON[]> => {
         const result = await sequelize.query(`
             ${selectJoinQuery}
@@ -196,6 +197,7 @@ const posts = (sequelize: Sequelize) => {
                 AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) 
                 AND (p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK'))
                 AND ${globalModClause}
+                ${!showAll ? `AND ${globalVisibilityClause}` : ''}
             )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
@@ -558,6 +560,7 @@ const selectJoinQuery = `
         m."messageId" as liked,
         rpm."messageId" as "rpLiked",
         thrdmod."subtype" as "moderation",
+        global."messageId" as "global",
         root."messageId" as "rootId",
         modliked."messageId" as "modLikedPost",
         modblocked."messageId" as "modBlockedPost",
@@ -588,6 +591,7 @@ const selectJoinQuery = `
         LEFT JOIN threads thrd ON thrd."message_id" = p."messageId"
         LEFT JOIN posts root ON thrd.root_id = root."messageId"
         LEFT JOIN moderations thrdmod ON thrdmod."messageId" = (select "messageId" from moderations where creator = root.creator AND subtype IN ('THREAD_HIDE_BLOCK', 'THREAD_SHOW_FOLLOW', 'THREAD_ONLY_MENTION') AND reference = root."messageId" LIMIT 1)
+        LEFT JOIN moderations global ON global."messageId" = (select "messageId" from moderations where creator = p.creator AND subtype IN ('GLOBAL') AND reference = p."messageId" LIMIT 1)
         LEFT JOIN moderations modliked ON modliked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modblockeduser ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator = root.creator LIMIT 1)
@@ -624,6 +628,7 @@ const selectLikedPostsQuery = `
         rp."messageId" as reposted,
         rprp."messageId" as "rpReposted",
         thrdmod.subtype as "moderation",
+        global."messageId" as "global",
         root."messageId" as "rootId",
         modliked."messageId" as "modLikedPost",
         modblocked."messageId" as "modBlockedPost",
@@ -651,6 +656,7 @@ const selectLikedPostsQuery = `
         LEFT JOIN threads thrd ON thrd."message_id" = p."messageId"
         LEFT JOIN posts root ON thrd.root_id = root."messageId"
         LEFT JOIN moderations thrdmod ON thrdmod."messageId" = (select "messageId" from moderations where creator = root.creator AND subtype IN ('THREAD_HIDE_BLOCK', 'THREAD_SHOW_FOLLOW', 'THREAD_ONLY_MENTION') AND reference = root."messageId" LIMIT 1)
+        LEFT JOIN moderations global ON global."messageId" = (select "messageId" from moderations where creator = p.creator AND subtype IN ('GLOBAL') AND reference = p."messageId" LIMIT 1)
         LEFT JOIN moderations modliked ON modliked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modblockeduser ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator = root.creator LIMIT 1)

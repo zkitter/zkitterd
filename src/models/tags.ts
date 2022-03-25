@@ -146,8 +146,8 @@ const selectTagPostsQuery = `
         sc.group as "interepGroup"
     FROM tags t
         LEFT JOIN posts p ON p."messageId" = t."message_id"
-        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = p."messageId" AND creator = :context LIMIT 1)
-        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
+        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = :context LIMIT 1)
+        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where subtype = 'LIKE' AND reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN moderations blk ON blk."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = :context LIMIT 1)
         LEFT JOIN moderations rpblk ON rpblk."messageId" = (select "messageId" from moderations where subtype = 'BLOCK' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN threads thrd ON thrd."message_id" = p."messageId"

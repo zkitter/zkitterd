@@ -350,7 +350,9 @@ const posts = (sequelize: Sequelize) => {
         const result = await sequelize.query(`
             ${selectLikedPostsQuery}
             WHERE (
-                p."createdAt" != -1${creator ? ' AND mod.creator = :creator' : ''} 
+                p."createdAt" != -1
+                ${creator ? ' AND mod.creator = :creator' : ''} 
+                AND mod.subtype = 'LIKE'
                 AND (blk."messageId" IS NULL AND rpblk."messageId" IS NULL) 
                 AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
                 AND ${globalModClause}

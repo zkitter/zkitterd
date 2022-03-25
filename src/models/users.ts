@@ -114,7 +114,11 @@ const users = (sequelize: Sequelize) => {
     const search = async (query: string, context = '', offset = 0, limit = 5): Promise<UserModel[]> => {
         const values = await sequelize.query(`
             ${userSelectQuery}
-            WHERE LOWER(u."name") LIKE :query OR LOWER(u."name") IN (SELECT LOWER(address) from ens WHERE LOWER(ens) LIKE :query)
+            WHERE (
+                LOWER(u."name") LIKE :query 
+                OR LOWER(u."name") IN (SELECT LOWER(address) from ens WHERE LOWER(ens) LIKE :query)
+                OR LOWER(u."name") IN (SELECT LOWER(creator) from profiles WHERE subtype = 'NAME' AND LOWER(value) LIKE :query)
+            )
             LIMIT :limit OFFSET :offset
         `, {
             type: QueryTypes.SELECT,

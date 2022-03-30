@@ -76,41 +76,6 @@ const meta = (sequelize: Sequelize) => {
         };
     }
 
-    const findMany = async (references: string[], context = ''): Promise<any|null> => {
-        const result = await sequelize.query(`
-            ${selectManyMetaQuery}
-        `, {
-            replacements: {
-                context: context || '',
-                references,
-            },
-            type: QueryTypes.SELECT,
-        });
-
-        const mapping = result.reduce((acc: any, row: any) => {
-            acc[row.reference] = row;
-            return acc;
-        }, {});
-
-        const values: any = {};
-
-        for (let i = 0; i < references.length; i++) {
-            const reference = references[i];
-            const row = mapping[reference] as any;
-            const meta = {
-                liked: row?.liked || null,
-                reposted: row?.reposted || null,
-                replyCount: row?.replyCount ? Number(row?.replyCount) : 0,
-                repostCount: row?.repostCount ? Number(row?.repostCount) : 0,
-                likeCount: row?.likeCount ? Number(row?.likeCount) : 0,
-                postCount: row?.postCount ? Number(row?.postCount) : 0,
-            };
-            values[reference] = meta;
-        }
-
-        return values;
-    }
-
     const findTags = async (
         offset = 0,
         limit = 20,
@@ -137,11 +102,15 @@ const meta = (sequelize: Sequelize) => {
         }));
     }
 
+    const update = async (record: MetaModel) => {
+        return model.create(record);
+    }
+
     return {
         model,
         findOne,
-        findMany,
         findTags,
+        update,
         addLike:  makeIncrementer('likeCount', 1),
         addReply: makeIncrementer('replyCount', 1),
         addRepost: makeIncrementer('repostCount', 1),

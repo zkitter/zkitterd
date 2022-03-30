@@ -150,37 +150,6 @@ const posts = (sequelize: Sequelize) => {
         return values[0];
     }
 
-    const findThreadModeration = async (message_id: string): Promise<{
-        subtype: string;
-    } | null> => {
-        const result = await sequelize.query(`
-            SELECT 
-                m."messageId",
-                m.creator,
-                m.reference,
-                m.type,
-                m.subtype,
-                m.hash,
-                m."createdAt",
-                m."updatedAt"
-            FROM threads t
-            JOIN posts p ON p."messageId" = t.root_id
-            JOIN moderations m ON m.reference = t.message_id AND m.creator = p.creator AND m.subtype IN ('THREAD_HIDE_BLOCK', 'THREAD_ONLY_MENTION', 'THREAD_SHOW_FOLLOW')
-            WHERE t.message_id = :message_id
-        `, {
-            replacements: {
-                message_id,
-            },
-            type: QueryTypes.SELECT,
-        });
-
-        if (result) {
-            return result as any;
-        }
-
-        return null;
-    }
-
     const findAllPosts = async (
         creator?: string,
         context?: string,
@@ -582,9 +551,9 @@ const selectJoinQuery = `
         rpmt."repostCount" as "rpRepostCount",
         rpmt."likeCount" as "rpLikeCount",
         rpsc.provider as "rpInterepProvider",
-        rpsc.group as "rpInterepGroup",
+        rpsc."group" as "rpInterepGroup",
         sc.provider as "interepProvider",
-        sc.group as "interepGroup"
+        sc."group" as "interepGroup"
     FROM posts p
         LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = :context LIMIT 1)
         LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where subtype = 'LIKE' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
@@ -608,7 +577,7 @@ const selectJoinQuery = `
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
         LEFT JOIN connections modblockedctx  ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modfollowedctx  ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
-        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = CONCAT('@', :context)
+        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = '@'||:context
 `;
 
 const selectLikedPostsQuery = `
@@ -646,9 +615,9 @@ const selectLikedPostsQuery = `
         rpmt."repostCount" as "rpRepostCount",
         rpmt."likeCount" as "rpLikeCount",
         rpsc.provider as "rpInterepProvider",
-        rpsc.group as "rpInterepGroup",
+        rpsc."group" as "rpInterepGroup",
         sc.provider as "interepProvider",
-        sc.group as "interepGroup"
+        sc."group" as "interepGroup"
     FROM moderations mod
         LEFT JOIN posts p ON p."messageId" = mod.reference
         LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = :context LIMIT 1)
@@ -673,5 +642,5 @@ const selectLikedPostsQuery = `
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
         LEFT JOIN connections modblockedctx  ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modfollowedctx  ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
-        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = CONCAT('@', :context)
+        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = '@'||:context
 `;

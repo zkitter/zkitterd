@@ -4,7 +4,7 @@ import config from "../util/config";
 export type InterepGroup = {
     provider: 'twitter' | 'github' | 'reddit';
     name: string;
-    rootHash: string;
+    root: string;
     size: number;
 }
 

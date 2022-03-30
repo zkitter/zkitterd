@@ -51,7 +51,11 @@ const linkPreview = (sequelize: Sequelize) => {
     }
 
     const update = async (linkPreview: LinkPreviewModel) => {
-        const result = await model.findOne();
+        const result = await model.findOne({
+            where: {
+                link: linkPreview.link,
+            },
+        });
 
         if (result) {
             return result.update(linkPreview);

@@ -71,7 +71,7 @@ export class MainService extends GenericService {
     constructor() {
         super();
         this.services = {};
-
+        this.main = this;
     }
 
     add(name: string, service: GenericService): MainService {

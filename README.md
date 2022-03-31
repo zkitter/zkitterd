@@ -1,6 +1,6 @@
-# Autism Node
+# autismd
 
-Official Node/Typescript implementation of [Autism](https://docs.auti.sm/)
+Official Node/Typescript implementation of the [Autism](https://docs.auti.sm/) full node.
 
 ## Requirements
 - Node 12.22+

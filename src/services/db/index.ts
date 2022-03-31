@@ -11,7 +11,6 @@ import profiles from "../../models/profiles";
 import userMeta from "../../models/userMeta";
 import connections from "../../models/connections";
 import semaphore from "../../models/semaphore";
-import proposalMeta from "../../models/proposalMeta";
 import tags from "../../models/tags";
 import linkPreview from "../../models/linkPreview";
 import ens from "../../models/ens";
@@ -37,7 +36,6 @@ export default class DBService extends GenericService {
     semaphore?: ReturnType<typeof semaphore>;
     meta?: ReturnType<typeof meta>;
     userMeta?: ReturnType<typeof userMeta>;
-    proposalMeta?: ReturnType<typeof proposalMeta>;
     twitterAuth?: ReturnType<typeof twitterAuth>;
     interepGroups?: ReturnType<typeof interepGroups>;
     semaphoreCreators?: ReturnType<typeof semaphoreCreators>;
@@ -48,7 +46,7 @@ export default class DBService extends GenericService {
 
         this.sqlite = new Sequelize({
             dialect: 'sqlite',
-            storage: './gun.db',
+            storage: process.env.NODE_ENV === 'test' ? './gun.test.db' : './gun.db',
             logging: false,
         });
 
@@ -140,14 +138,6 @@ export default class DBService extends GenericService {
         return this.userMeta;
     }
 
-    async getProposalMeta(): Promise<ReturnType<typeof proposalMeta>> {
-        if (!this.proposalMeta) {
-            return Promise.reject(new Error('proposalMeta is not initialized'));
-        }
-
-        return this.proposalMeta;
-    }
-
     async getTwitterAuth(): Promise<ReturnType<typeof twitterAuth>> {
         if (!this.twitterAuth) {
             return Promise.reject(new Error('twitterAuth is not initialized'));
@@ -211,7 +201,6 @@ export default class DBService extends GenericService {
         this.linkPreview = await linkPreview(this.sequelize);
         this.meta = await meta(this.sequelize);
         this.userMeta = await userMeta(this.sequelize);
-        this.proposalMeta = await proposalMeta(this.sequelize);
         this.moderations = await moderations(this.sequelize);
         this.connections = await connections(this.sequelize);
         this.users = await users(this.sequelize);
@@ -240,7 +229,6 @@ export default class DBService extends GenericService {
 
         await this.userMeta?.model.sync({ force: !!process.env.FORCE });
         await this.meta?.model.sync({ force: !!process.env.FORCE });
-        await this.proposalMeta?.model.sync({ force: !!process.env.FORCE });
         await this.ens?.model.sync({ force: !!process.env.FORCE });
         await this.twitterAuth?.model.sync({ force: !!process.env.FORCE });
         await this.interepGroups?.model.sync({ force: !!process.env.FORCE });

@@ -71,22 +71,6 @@ const profiles = (sequelize: Sequelize) => {
         });
     }
 
-    const findProfileMessage = async (name: string, subtype: ProfileMessageSubType): Promise<ProfileModel|null> => {
-        let result: any = await model.findOne({
-            where: {
-                creator: name,
-                subtype,
-            },
-            order: [['createdAt', 'DESC']],
-        });
-
-        if (!result) return null;
-
-        const json = result.toJSON() as ProfileModel;
-
-        return json;
-    }
-
     const findOne = async (hash: string): Promise<ProfileModel|null> => {
         let result: any = await model.findOne({
             where: {

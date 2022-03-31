@@ -65,8 +65,13 @@ const userMeta = (sequelize: Sequelize) => {
         };
     }
 
+    const update = async (record: UserMetaModel) => {
+        return model.create(record);
+    }
+
     return {
         model,
+        update,
         findOne,
         addFollower: makeKeyIncrementer('followerCount', 1),
         addFollowing: makeKeyIncrementer('followingCount', 1),

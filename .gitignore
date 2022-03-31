@@ -1,6 +1,8 @@
 .idea
-node_modules
-build*
+node_modules/
+build/
+build-test/
+coverage/
 *.db
 *.log
 *gun_data
@@ -8,6 +10,9 @@ build*
 proving_key.bin
 circuit.json
 .env
+.nyc_output
 config.dev.json
 config.prod.json
 config.json
+gun.test.db
+test.db

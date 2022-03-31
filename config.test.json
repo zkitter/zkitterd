@@ -1,0 +1,21 @@
+{
+  "web3HttpProvider": "https://mainnet.infura.io/v3/4ccf3cd743eb42b5a8cb1c8b0c0160ee",
+  "arbitrumHttpProvider": "https://arbitrum-rinkeby.infura.io/v3/28e5737b9034453d877f39dcf3f297b9",
+  "ensResolver": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+  "interrepContract": "0x220fBdB6F996827b1Cf12f0C181E8d5e6de3a36F",
+  "arbitrumRegistrar": "0x4e3f9c0374816C80B1f1c8D2D49b3cD68460330b",
+  "arbitrumPrivateKey": "0x833146fb506c161b3e0601ae2cafa652821f1777cde4f8013e37345b1dbcf4bc",
+  "arbitrumAddress": "0x860C68abeEE0ecBd97729C7d1E09dA1e7EaD3C50",
+  "dbDialect": "sqlite",
+  "dbStorage": "./test.db",
+  "port": 3000,
+  "gunPort": 8765,
+  "gunPeers": [],
+  "twCallbackUrl":  "http://127.0.0.1:3000/twitter/callback",
+  "twConsumerKey": "twConsumerKey",
+  "twConsumerSecret": "twConsumerSecret",
+  "twBearerToken": "twBearerToken",
+  "twAccessKey": "twAccessKey",
+  "twAccessSecret": "twAccessSecret",
+  "rapidAPIKey": "rapidAPIKey"
+}

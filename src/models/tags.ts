@@ -141,9 +141,9 @@ const selectTagPostsQuery = `
         rpmt."repostCount" as "rpRepostCount",
         rpmt."likeCount" as "rpLikeCount",
         rpsc.provider as "rpInterepProvider",
-        rpsc.group as "rpInterepGroup",
+        rpsc."group" as "rpInterepGroup",
         sc.provider as "interepProvider",
-        sc.group as "interepGroup"
+        sc."group" as "interepGroup"
     FROM tags t
         LEFT JOIN posts p ON p."messageId" = t."message_id"
         LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = :context LIMIT 1)
@@ -168,5 +168,5 @@ const selectTagPostsQuery = `
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
         LEFT JOIN connections modblockedctx  ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modfollowedctx  ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
-        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = CONCAT('@', :context)
+        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = '@'||:context
 `;

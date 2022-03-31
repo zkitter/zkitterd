@@ -1,5 +1,8 @@
 # autismd
 
+![Build](https://github.com/autism-org/autismd/actions/workflows/build-and-test.yml/badge.svg)
+![Discord](https://img.shields.io/discord/887573677959417889)
+
 Official Node/Typescript implementation of the [Autism](https://docs.auti.sm/) full node.
 
 ## Requirements

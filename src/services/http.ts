@@ -27,6 +27,12 @@ import {
 } from "../util/twitter";
 import {verifySignatureP256} from "../util/crypto";
 import {parseMessageId, PostMessageSubType} from "../util/message";
+import multer from 'multer';
+const upload = multer({
+    dest: './uploaded_files',
+});
+import fs from 'fs';
+import { getFilesFromPath } from 'web3.storage';
 
 const corsOptions: CorsOptions = {
     credentials: true,
@@ -538,6 +544,22 @@ export default class HttpService extends GenericService {
             // @ts-ignore
             if (req.session.twitterToken) delete req.session.twitterToken;
             res.send(makeResponse('ok'));
+        }));
+
+        this.app.post('/ipfs/upload', upload.any(), this.wrapHandler(async (req, res) => {
+            if (!req.files) throw new Error('file missing from formdata');
+            // @ts-ignore
+            const {path, filename} = req.files[0];
+            const filepath = `./${path}`;
+            const files = await getFilesFromPath(filepath);
+            const cid = await this.call('ipfs', 'store', files);
+            await fs.promises.unlink(filepath);
+
+            res.send(makeResponse({
+                cid,
+                filename,
+                url: `https://${cid}.ipfs.dweb.link/${filename}`,
+            }));
         }));
     }
 

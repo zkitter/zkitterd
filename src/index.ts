@@ -7,6 +7,7 @@ import HttpService from "./services/http";
 import GunService from "./services/gun";
 import InterrepService from "./services/interrep";
 import ArbitrumService from "./services/arbitrum";
+import IPFSService from "./services/ipfs";
 
 (async function initApp() {
     try {
@@ -16,6 +17,7 @@ import ArbitrumService from "./services/arbitrum";
         main.add('ens', new ENSService());
         main.add('arbitrum', new ArbitrumService());
         main.add('gun', new GunService());
+        main.add('ipfs', new IPFSService());
         main.add('http', new HttpService());
         await main.start();
     } catch (e) {

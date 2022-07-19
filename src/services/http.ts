@@ -42,6 +42,7 @@ const corsOptions: CorsOptions = {
 };
 
 const JWT_SECRET = config.jwtSecret;
+const maxFileSize = 5242880;
 
 function makeResponse(payload: any, error?: boolean) {
     return {
@@ -548,12 +549,28 @@ export default class HttpService extends GenericService {
 
         this.app.post('/ipfs/upload', upload.any(), this.wrapHandler(async (req, res) => {
             if (!req.files) throw new Error('file missing from formdata');
+
+            const signature = req.header('X-SIGNED-ADDRESS');
+            const userDB = await this.call('db', 'getUsers');
+
+            if (signature) {
+                const [sig, address] = signature.split('.');
+                const user = await userDB.findOneByName(address);
+                if (!user || !verifySignatureP256(user.pubkey, address, sig)) {
+                    throw new Error('user must be authenticated');
+                }
+            }
+
             // @ts-ignore
-            const {path, filename} = req.files[0];
-            const filepath = `./${path}`;
+            const {path: relPath, filename, size} = req.files[0];
+
+            if (size > maxFileSize) throw new Error('file must be less than 5MB');
+
+            const filepath = path.join(process.cwd(), relPath);
             const files = await getFilesFromPath(filepath);
+
             const cid = await this.call('ipfs', 'store', files);
-            await fs.promises.unlink(filepath);
+            fs.unlinkSync(filepath);
 
             res.send(makeResponse({
                 cid,

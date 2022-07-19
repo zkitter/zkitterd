@@ -14,7 +14,6 @@ export default class IPFSService extends GenericService {
     }
 
     store = (files: Iterable<Filelike>): Promise<CIDString> => {
-        console.log(files);
         return this.client.put(files);
     }
 

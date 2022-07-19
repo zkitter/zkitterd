@@ -33,6 +33,7 @@ const upload = multer({
 });
 import fs from 'fs';
 import { getFilesFromPath } from 'web3.storage';
+import {UploadModel} from "../models/uploads";
 
 const corsOptions: CorsOptions = {
     credentials: true,
@@ -552,17 +553,20 @@ export default class HttpService extends GenericService {
 
             const signature = req.header('X-SIGNED-ADDRESS');
             const userDB = await this.call('db', 'getUsers');
+            let address = '';
 
             if (signature) {
-                const [sig, address] = signature.split('.');
-                const user = await userDB.findOneByName(address);
-                if (!user || !verifySignatureP256(user.pubkey, address, sig)) {
+                const params = signature.split('.');
+                const user = await userDB.findOneByName(params[1]);
+                if (!user || !verifySignatureP256(user.pubkey, params[1], params[0])) {
                     throw new Error('user must be authenticated');
                 }
+                address = params[1];
             }
 
             // @ts-ignore
-            const {path: relPath, filename, size} = req.files[0];
+            const {path: relPath, filename, size, mimetype} = req.files[0];
+            const uploadDB = await this.call('db', 'getUploads');
 
             if (size > maxFileSize) throw new Error('file must be less than 5MB');
 
@@ -571,6 +575,14 @@ export default class HttpService extends GenericService {
 
             const cid = await this.call('ipfs', 'store', files);
             fs.unlinkSync(filepath);
+            const uploadData: UploadModel = {
+                cid,
+                mimetype,
+                size,
+                filename,
+                username: address,
+            };
+            await uploadDB.addUploadData(uploadData);
 
             res.send(makeResponse({
                 cid,

@@ -43,7 +43,9 @@ const corsOptions: CorsOptions = {
 };
 
 const JWT_SECRET = config.jwtSecret;
-const maxFileSize = 5242880;
+const ONE_MB = 1048576;
+const maxFileSize = ONE_MB * 5;
+const maxPerUserSize = ONE_MB * 100;
 
 function makeResponse(payload: any, error?: boolean) {
     return {
@@ -567,8 +569,10 @@ export default class HttpService extends GenericService {
             // @ts-ignore
             const {path: relPath, filename, size, mimetype} = req.files[0];
             const uploadDB = await this.call('db', 'getUploads');
+            const existingSize = await uploadDB.getTotalUploadByUser(address);
 
             if (size > maxFileSize) throw new Error('file must be less than 5MB');
+            if (existingSize + size > maxPerUserSize) throw new Error('account is out of space');
 
             const filepath = path.join(process.cwd(), relPath);
             const files = await getFilesFromPath(filepath);

@@ -60,10 +60,23 @@ const uploads = (sequelize: Sequelize) => {
         });
     }
 
+    const getTotalUploadByUser = async (username: string) => {
+        const res = await model.sum('size', {
+            where: {
+                username,
+            },
+        });
+
+        if (isNaN(res)) return 0;
+
+        return res;
+    }
+
     return {
         model,
         addUploadData,
         removeUploadData,
+        getTotalUploadByUser,
     };
 }
 

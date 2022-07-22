@@ -1,6 +1,8 @@
 import {GenericService} from "../utils/svc";
 import {Dialect, Sequelize} from "sequelize";
 import config from "../utils/config";
+import chats from "../models/chat.model";
+import users from "../models/user.model";
 
 /**
  * Encapsulates the core functionality for managing user credentials as well as viewing the banned users.
@@ -8,9 +10,12 @@ import config from "../utils/config";
 
 class DBService extends GenericService {
     sequelize: Sequelize;
+    chats?: ReturnType<typeof chats>;
+    users?: ReturnType<typeof users>;
 
     constructor() {
         super();
+
         if (!config.DB_DIALECT || config.DB_DIALECT === 'sqlite') {
             this.sequelize = new Sequelize({
                 dialect: 'sqlite',
@@ -33,7 +38,11 @@ class DBService extends GenericService {
     }
 
     async start() {
+        this.chats = await chats(this.sequelize);
+        this.users = await users(this.sequelize);
 
+        await this.chats.model.sync({ force: !!process.env.FORCE });
+        await this.users.model.sync({ force: !!process.env.FORCE });
     }
 }
 

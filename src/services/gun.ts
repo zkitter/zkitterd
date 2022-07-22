@@ -537,6 +537,10 @@ export default class GunService extends GenericService {
             return;
         }
 
+        if (subtype === ProfileMessageSubType.Custom && payload.key === 'ecdh_pubkey') {
+            await this.call('zkchat', 'registerUser', creator, payload.value);
+        }
+
         if (subtype === ProfileMessageSubType.TwitterVerification) {
             const { key, value } = payload;
 

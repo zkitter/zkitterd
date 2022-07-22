@@ -7,47 +7,36 @@ export enum ChatMessageType {
     PRIVATE_ROOM = 'PRIVATE_ROOM',
 }
 
-export enum SenderType {
-    KNOWN = 'KNOWN',
-    RLN = 'RLN',
-}
-
-export type KnownSender = {
-    pubkey: string;
-}
-
-export type RLNSender = {
-    ekey?: string;
-    rln: RLNFullProof & {
+export type DirectChatMessage = {
+    messageId: string;
+    timestamp: Date;
+    type: ChatMessageType.DIRECT;
+    sender: string;
+    pubkey?: string;
+    rln?: RLNFullProof & {
         epoch: number;
         x_share: string;
     };
-}
-
-type EncryptedContent = {
-    data: string;
-}
-
-type DecryptedContent = {
-    content: string;
-    reference: string;
-    attachment: string;
-}
-
-export type DirectChatMessage = {
-    messageId: string;
-    type: ChatMessageType.DIRECT;
-    sender: KnownSender | RLNSender;
     receiver: string;
-    payload:  EncryptedContent | DecryptedContent;
+    ciphertext: string;
+    content?: string;
+    reference?: string;
+    attachment?: string;
 }
 
 export type PublicRoomChatMessage = {
     messageId: string;
+    timestamp: Date;
     type: ChatMessageType.PUBLIC_ROOM;
-    sender: KnownSender | RLNSender;
+    sender: string;
+    rln?: RLNFullProof & {
+        epoch: number;
+        x_share: string;
+    };
     receiver: string;
-    payload:  DecryptedContent;
+    content: string;
+    reference: string;
+    attachment: string;
 }
 
 export type ChatMessage = DirectChatMessage | PublicRoomChatMessage;

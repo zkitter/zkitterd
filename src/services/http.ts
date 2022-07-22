@@ -63,7 +63,7 @@ export default class HttpService extends GenericService {
         this.app = express();
     }
 
-    wrapHandler(handler: (req: Request, res: Response) => Promise<void>) {
+    wrapHandler(handler: (req: Request, res: Response) => Promise<any>) {
         return async (req: Request, res: Response) => {
             logger.info('received request', {
                 url: req.url,
@@ -282,6 +282,59 @@ export default class HttpService extends GenericService {
         res.send(makeResponse(post));
     };
 
+    handleGetChatUsers = async (req: Request, res: Response) => {
+        const limit = req.query.limit && Number(req.query.limit);
+        const offset = req.query.offset && Number(req.query.offset);
+        const users = await this.call('zkchat', 'getAllUsers', offset, limit);
+        res.send(makeResponse(users));
+    };
+
+    handlePostChatMessage = async (req: Request, res: Response) => {
+        const {
+            messageId,
+            type,
+            timestamp,
+            sender,
+            receiver,
+            ciphertext,
+        } = req.body;
+        const signature = req.header('X-SIGNED-ADDRESS');
+        const userDB = await this.call('db', 'getUsers');
+
+        if (!signature) {
+            res.status(403).send(makeResponse('unauthorized', true));
+            return;
+        }
+
+        const [sig, address] = signature.split('.');
+        const user = await userDB.findOneByName(address);
+
+        if (user?.pubkey) {
+            if (!verifySignatureP256(user.pubkey, address, sig)) {
+                res.status(403).send(makeResponse('unauthorized', true));
+                return;
+            }
+        }
+
+        const data = await this.call('zkchat', 'addChatMessage', {
+            messageId,
+            type,
+            timestamp: new Date(timestamp),
+            sender,
+            receiver,
+            ciphertext,
+        });
+        res.send(makeResponse(data));
+    }
+
+    handleGetDirectMessage = async (req: Request, res: Response) => {
+        const {sender, receiver} = req.params;
+        const limit = req.query.limit && Number(req.query.limit);
+        const offset = req.query.offset && Number(req.query.offset);
+        const data = await this.call('zkchat', 'getDirectMessages', sender, receiver, offset, limit);
+        res.send(makeResponse(data));
+    }
+
     addRoutes() {
         this.app.get('/healthcheck', this.wrapHandler(async (req, res) => {
             res.send(makeResponse('ok'));
@@ -298,6 +351,10 @@ export default class HttpService extends GenericService {
         this.app.get('/v1/:creator/likes', this.wrapHandler(this.handleGetUserLikes));
         this.app.get('/v1/homefeed', this.wrapHandler(this.handleGetHomefeed));
         this.app.get('/v1/post/:hash', this.wrapHandler(this.handleGetPostByHash));
+
+        this.app.get('/v1/zkchat/users', this.wrapHandler(this.handleGetChatUsers));
+        this.app.post('/v1/zkchat/chat-messages', jsonParser, this.wrapHandler(this.handlePostChatMessage));
+        this.app.get('/v1/zkchat/chat-messages/dm/:sender/:receiver', this.wrapHandler(this.handleGetDirectMessage));
 
         this.app.post('/interrep/groups/:provider/:name/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;

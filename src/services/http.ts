@@ -331,6 +331,32 @@ export default class HttpService extends GenericService {
             res.send(makeResponse(json));
         }));
 
+        this.app.get('/dev/interep/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
+            const identityCommitment = req.params.identityCommitment;
+            // @ts-ignore
+            const resp = await fetch(`${config.interrepAPI}/api/v1/groups`);
+            const { data: groups } = await resp.json();
+            for (const group of groups) {
+                // @ts-ignore
+                const existResp = await fetch(`${config.interrepAPI}/api/v1/groups/${group.provider}/${group.name}/${identityCommitment}`);
+                const { data: exist } = await existResp.json();
+
+                if (exist) {
+                    // @ts-ignore
+                    const proofResp = await fetch(`${config.interrepAPI}/api/v1/groups/${group.provider}/${group.name}/${identityCommitment}/proof`);
+                    const json = await proofResp.json();
+                    res.send(makeResponse({
+                        ...json,
+                        provider: group.provider,
+                        name: group.name,
+                    }));
+                    return;
+                }
+            }
+
+            res.send(makeResponse(null));
+        }));
+
         this.app.get('/interrep/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;
             const semaphoreDB = await this.call('db', 'getSemaphore');

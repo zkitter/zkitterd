@@ -11,13 +11,20 @@ export type DirectChatMessage = {
     messageId: string;
     timestamp: Date;
     type: ChatMessageType.DIRECT;
-    sender: string;
-    pubkey?: string;
+    sender: {
+        address?: string;
+        ecdh?: string;
+        hash?: string;
+    };
     rln?: RLNFullProof & {
         epoch: number;
         x_share: string;
     };
-    receiver: string;
+    receiver: {
+        address?: string;
+        ecdh?: string;
+        roomId?: string;
+    };
     ciphertext: string;
     content?: string;
     reference?: string;
@@ -28,12 +35,20 @@ export type PublicRoomChatMessage = {
     messageId: string;
     timestamp: Date;
     type: ChatMessageType.PUBLIC_ROOM;
-    sender: string;
+    sender: {
+        address?: string;
+        ecdh?: string;
+        hash?: string;
+    };
     rln?: RLNFullProof & {
         epoch: number;
         x_share: string;
     };
-    receiver: string;
+    receiver: {
+        address?: string;
+        ecdh?: string;
+        roomId?: string;
+    };
     content: string;
     reference: string;
     attachment: string;
@@ -42,12 +57,5 @@ export type PublicRoomChatMessage = {
 export type ChatMessage = DirectChatMessage | PublicRoomChatMessage;
 
 export default class ChatService extends GenericService {
-    addNewMessage = async (chatMessage: ChatMessage) => {
-        switch (chatMessage.type) {
-            case ChatMessageType.DIRECT:
-                return;
-            case ChatMessageType.PUBLIC_ROOM:
-                return;
-        }
-    }
+
 }

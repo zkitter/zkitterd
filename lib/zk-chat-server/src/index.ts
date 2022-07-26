@@ -2,8 +2,6 @@ import {logger} from "./utils/svc";
 import Chat, {ChatMessage} from "./services/chat.service";
 import DB from "./services/db.service";
 
-
-
 export class ZKChat {
     DB: DB;
     Chat: Chat;
@@ -35,29 +33,39 @@ export class ZKChat {
         return this.DB.chats?.getDirectMessages(sender, receiver, offset, limit);
     }
 
-    addChatMessage = async (chatMessage: ChatMessage) => {
-        let data;
+    getDirectChatsForUser = async (address: string) => {
+        return this.DB.chats?.getDirectChatsForUser(address);
+    }
 
-        if (chatMessage.sender) {
-            const user = await this.DB.users?.getUserByAddress(chatMessage.sender);
-            if (!user) throw new Error(`${chatMessage.sender} is not registered`);
+    addChatMessage = async (chatMessage: ChatMessage) => {
+        let data, r_user, s_user;
+
+        if (chatMessage.sender.address) {
+            s_user = await this.DB.users?.getUserByAddress(chatMessage.sender.address);
+            if (!s_user) throw new Error(`${chatMessage.sender} is not registered`);
+        }
+
+        if (chatMessage.receiver.address) {
+            r_user = await this.DB.users?.getUserByAddress(chatMessage.receiver.address);
+            if (!r_user) throw new Error(`${chatMessage.receiver} is not registered`);
         }
 
         if (chatMessage.type === 'DIRECT') {
             data = {
                 message_id: chatMessage.messageId,
                 type: chatMessage.type,
-                sender_address: chatMessage.sender,
+                sender_address: chatMessage.sender.address,
+                sender_hash: chatMessage.sender.hash,
+                sender_pubkey: chatMessage.sender.ecdh || s_user?.pubkey,
                 timestamp: chatMessage.timestamp.getTime(),
-                // sender_pubkey?: string;
-                // rln_serialized_proof?: string;
-                // rln_root?: string;
-                receiver_address: chatMessage.receiver,
+                receiver_address: chatMessage.receiver.address,
+                receiver_pubkey: chatMessage.receiver.ecdh || r_user?.pubkey,
                 ciphertext: chatMessage.ciphertext,
+                rln_serialized_proof: chatMessage.rln ? JSON.stringify(chatMessage.rln) : undefined,
+                rln_root: chatMessage.rln?.publicSignals.merkleRoot.toString(16),
             };
 
             return this.DB.chats?.insertChatMessage(data);
         }
-
     }
 }

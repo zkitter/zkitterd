@@ -8,15 +8,30 @@ export type ChatMessageModel = {
     type: 'DIRECT' | 'PUBLIC_ROOM' | 'PRIVATE_ROOM';
     sender_address?: string;
     sender_pubkey?: string;
+    sender_hash?: string;
     timestamp: number;
     rln_serialized_proof?: string;
     rln_root?: string;
-    receiver_address: string;
+    receiver_address?: string;
+    receiver_pubkey?: string;
     ciphertext?: string;
     content?: string;
     reference?: string;
     attachment?: string;
 }
+
+export type Chat = {
+    type: 'DIRECT';
+    receiver: string;
+    receiverECDH: string;
+    senderECDH: string;
+    senderHash?: string;
+} | {
+    type: 'PUBLIC_ROOM';
+    receiver: string;
+}
+
+const REALLY_BIG_NUMBER = 999999999999999999;
 
 const chats = (sequelize: Sequelize) => {
     const model = sequelize.define('zkchat_chats', {
@@ -34,6 +49,9 @@ const chats = (sequelize: Sequelize) => {
         sender_pubkey: {
             type: STRING,
         },
+        sender_hash: {
+            type: STRING,
+        },
         timestamp: {
             type: BIGINT,
             allowNull: false,
@@ -46,7 +64,9 @@ const chats = (sequelize: Sequelize) => {
         },
         receiver_address: {
             type: STRING,
-            allowNull: false,
+        },
+        receiver_pubkey: {
+            type: STRING,
         },
         ciphertext: {
             type: STRING,
@@ -64,6 +84,7 @@ const chats = (sequelize: Sequelize) => {
         indexes: [
             { fields: ['message_id'] },
             { fields: ['receiver_address'] },
+            { fields: ['receiver_pubkey'] },
             { fields: ['sender_address'] },
             { fields: ['sender_pubkey'] },
             { fields: ['rln_root'] },
@@ -92,16 +113,18 @@ const chats = (sequelize: Sequelize) => {
         });
     }
 
-    const getDirectMessages = async (sender_address: string, receiver_address: string, offset = 0, limit = 20): Promise<ChatMessageModel[]> => {
+    const getDirectMessages = async (sender_address: string, receiver_address: string, offset = REALLY_BIG_NUMBER, limit = 20): Promise<ChatMessageModel[]> => {
         const values = await sequelize.query(`
             SELECT * FROM zkchat_chats zk
             WHERE (
                 (zk.sender_address = :sender_address AND zk.receiver_address = :receiver_address)
                 OR
                 (zk.sender_address = :receiver_address AND zk.receiver_address = :sender_address)
+            ) AND (
+                zk.timestamp < :offset
             )
             ORDER BY zk.timestamp DESC
-            LIMIT 20 OFFSET 0
+            LIMIT :limit
         `, {
             type: QueryTypes.SELECT,
             replacements: {
@@ -114,6 +137,29 @@ const chats = (sequelize: Sequelize) => {
 
         // @ts-ignore
         return values;
+    }
+
+    const getDirectChatsForUser = async (address: string): Promise<Chat[]> => {
+        const values = await sequelize.query(`
+            SELECT * from zkchat_users zku
+            WHERE zku.wallet_address IN (
+                SELECT distinct zk.receiver_address FROM zkchat_chats zk WHERE zk.sender_address = :address
+            ) OR zku.wallet_address IN (
+                SELECT distinct zk.sender_address FROM zkchat_chats zk WHERE zk.receiver_address = :address
+            )
+        `, {
+            type: QueryTypes.SELECT,
+            replacements: {
+                address,
+            },
+        });
+
+        return values.map((data: any) => ({
+            type: 'DIRECT',
+            receiver: data.wallet_address,
+            receiverECDH: data.pubkey,
+            senderECDH: '',
+        }));
     }
 
     const getMessagesByRoomId = async (roomId: string, offset = 0, limit = 20): Promise<ChatMessageModel[]> => {
@@ -138,6 +184,7 @@ const chats = (sequelize: Sequelize) => {
         removeChatMessage,
         getDirectMessages,
         getMessagesByRoomId,
+        getDirectChatsForUser,
     };
 }
 

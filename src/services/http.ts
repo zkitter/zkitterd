@@ -335,6 +335,19 @@ export default class HttpService extends GenericService {
         res.send(makeResponse(data));
     }
 
+    handleGetDirectChats = async (req: Request, res: Response) => {
+        const {address} = req.params;
+        const data = await this.call('zkchat', 'getDirectChatsForUser', address);
+        res.send(makeResponse(data));
+    }
+
+    handleSearchChats = async (req: Request, res: Response) => {
+        const {query} = req.params;
+        const {sender} = req.query;
+        const data = await this.call('zkchat', 'searchChats', query || '', sender);
+        res.send(makeResponse(data));
+    }
+
     addRoutes() {
         this.app.get('/healthcheck', this.wrapHandler(async (req, res) => {
             res.send(makeResponse('ok'));
@@ -355,6 +368,8 @@ export default class HttpService extends GenericService {
         this.app.get('/v1/zkchat/users', this.wrapHandler(this.handleGetChatUsers));
         this.app.post('/v1/zkchat/chat-messages', jsonParser, this.wrapHandler(this.handlePostChatMessage));
         this.app.get('/v1/zkchat/chat-messages/dm/:sender/:receiver', this.wrapHandler(this.handleGetDirectMessage));
+        this.app.get('/v1/zkchat/chats/dm/:address', this.wrapHandler(this.handleGetDirectChats));
+        this.app.get('/v1/zkchat/chats/search/:query?', this.wrapHandler(this.handleSearchChats));
 
         this.app.post('/interrep/groups/:provider/:name/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;

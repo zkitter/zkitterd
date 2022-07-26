@@ -3,6 +3,11 @@ import {BIGINT, ENUM, Op, QueryTypes, Sequelize, STRING} from "sequelize";
 
 const mutex = new Mutex();
 
+type ZKUserModel = {
+    wallet_address: string;
+    pubkey: string;
+}
+
 const users = (sequelize: Sequelize) => {
     const model = sequelize.define('zkchat_users', {
         wallet_address: {
@@ -43,13 +48,14 @@ const users = (sequelize: Sequelize) => {
         return res.map(data => data.toJSON());
     }
 
-    const getUserByAddress = async (wallet_address: string) => {
+    const getUserByAddress = async (wallet_address: string): Promise<ZKUserModel | undefined> => {
         const res = await model.findOne({
             where: {
                 wallet_address,
             },
         });
 
+        // @ts-ignore
         return res?.toJSON();
     }
 

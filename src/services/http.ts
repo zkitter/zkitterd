@@ -297,23 +297,59 @@ export default class HttpService extends GenericService {
             sender,
             receiver,
             ciphertext,
+            rln,
         } = req.body;
         const signature = req.header('X-SIGNED-ADDRESS');
         const userDB = await this.call('db', 'getUsers');
 
-        if (!signature) {
-            res.status(403).send(makeResponse('unauthorized', true));
-            return;
-        }
+        if (!sender.address && (!sender.hash && !sender.ecdh)) throw new Error('invalid sender');
+        if (!receiver.address && !receiver.ecdh) throw new Error('invalid receiver');
 
-        const [sig, address] = signature.split('.');
-        const user = await userDB.findOneByName(address);
+        if (rln) {
+            if (!sender.hash) throw new Error('invalid request object');
 
-        if (user?.pubkey) {
-            if (!verifySignatureP256(user.pubkey, address, sig)) {
-                res.status(403).send(makeResponse('unauthorized', true));
+            const isEpochCurrent = await this.call('zkchat', 'isEpochCurrent', rln.epoch)
+            const verified = await this.call('zkchat', 'verifyRLNProof', rln)
+
+            if (!isEpochCurrent) throw new Error('outdated message');
+            if (!verified) throw new Error('invalid rln proof');
+
+            const share = {
+                nullifier: rln.publicSignals.internalNullifier,
+                epoch: rln.publicSignals.epoch,
+                y_share: rln.publicSignals.yShare,
+                x_share: rln.x_share,
+            };
+
+            const {
+                shares,
+                isSpam,
+                isDuplicate,
+            } = await this.call('zkchat', 'checkShare', share);
+
+            if (isDuplicate) {
+                throw new Error('duplicate message');
+            }
+
+            if (isSpam) {
+                res.status(429).send('too many requests');
                 return;
             }
+
+            await this.call('zkchat', 'insertShare', share)
+        } else if (signature) {
+            const [sig, address] = signature.split('.');
+            const user = await userDB.findOneByName(address);
+
+            if (user?.pubkey) {
+                if (!verifySignatureP256(user.pubkey, address, sig)) {
+                    res.status(403).send(makeResponse('unauthorized', true));
+                    return;
+                }
+            }
+        } else {
+            res.status(403).send(makeResponse('unauthorized', true));
+            return;
         }
 
         const data = await this.call('zkchat', 'addChatMessage', {
@@ -323,6 +359,7 @@ export default class HttpService extends GenericService {
             sender,
             receiver,
             ciphertext,
+            rln,
         });
         res.send(makeResponse(data));
     }
@@ -331,13 +368,20 @@ export default class HttpService extends GenericService {
         const {sender, receiver} = req.params;
         const limit = req.query.limit && Number(req.query.limit);
         const offset = req.query.offset && Number(req.query.offset);
-        const data = await this.call('zkchat', 'getDirectMessages', sender, receiver, offset, limit);
+        const data = await this.call(
+            'zkchat',
+            'getDirectMessages',
+            sender,
+            receiver,
+            offset,
+            limit,
+        );
         res.send(makeResponse(data));
     }
 
     handleGetDirectChats = async (req: Request, res: Response) => {
-        const {address} = req.params;
-        const data = await this.call('zkchat', 'getDirectChatsForUser', address);
+        const {pubkey} = req.params;
+        const data = await this.call('zkchat', 'getDirectChatsForUser', pubkey);
         res.send(makeResponse(data));
     }
 
@@ -346,6 +390,18 @@ export default class HttpService extends GenericService {
         const {sender} = req.query;
         const data = await this.call('zkchat', 'searchChats', query || '', sender);
         res.send(makeResponse(data));
+    }
+
+    handleGetProofs = async (req: Request, res: Response) => {
+        const {proofType, idCommitment} = req.params;
+        const {group = ''} = req.query;
+
+        const proof = await this.call('merkle', 'findProof', proofType, group, idCommitment);
+
+        res.send(makeResponse({
+            data: proof,
+            group: group,
+        }));
     }
 
     addRoutes() {
@@ -368,8 +424,10 @@ export default class HttpService extends GenericService {
         this.app.get('/v1/zkchat/users', this.wrapHandler(this.handleGetChatUsers));
         this.app.post('/v1/zkchat/chat-messages', jsonParser, this.wrapHandler(this.handlePostChatMessage));
         this.app.get('/v1/zkchat/chat-messages/dm/:sender/:receiver', this.wrapHandler(this.handleGetDirectMessage));
-        this.app.get('/v1/zkchat/chats/dm/:address', this.wrapHandler(this.handleGetDirectChats));
+        this.app.get('/v1/zkchat/chats/dm/:pubkey', this.wrapHandler(this.handleGetDirectChats));
         this.app.get('/v1/zkchat/chats/search/:query?', this.wrapHandler(this.handleSearchChats));
+
+        this.app.get('/v1/proofs/:proofType/:idCommitment', this.wrapHandler(this.handleGetProofs));
 
         this.app.post('/interrep/groups/:provider/:name/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;
@@ -733,6 +791,13 @@ export default class HttpService extends GenericService {
         this.app.use('/dev/semaphore_wasm', express.static(path.join(process.cwd(), 'static', 'semaphore.wasm')));
         this.app.use('/dev/semaphore_final_zkey', express.static(path.join(process.cwd(), 'static', 'semaphore_final.zkey')));
         this.app.use('/dev/semaphore_vkey', express.static(path.join(process.cwd(), 'static', 'verification_key.json')));
+        this.app.use('/circuits/semaphore/wasm', express.static(path.join(process.cwd(), 'static', 'semaphore.wasm')));
+        this.app.use('/circuits/semaphore/zkey', express.static(path.join(process.cwd(), 'static', 'semaphore_final.zkey')));
+        this.app.use('/circuits/semaphore/vkey', express.static(path.join(process.cwd(), 'static', 'verification_key.json')));
+
+        this.app.use('/circuits/rln/wasm', express.static(path.join(process.cwd(), 'static', 'rln', 'rln.wasm')));
+        this.app.use('/circuits/rln/zkey', express.static(path.join(process.cwd(), 'static', 'rln', 'rln_final.zkey')));
+        this.app.use('/circuits/rln/vkey', express.static(path.join(process.cwd(), 'static', 'rln', 'verification_key.json')));
         this.addRoutes();
 
         this.httpServer = httpServer.listen(config.port);

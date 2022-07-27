@@ -3,6 +3,7 @@ import {Dialect, Sequelize} from "sequelize";
 import config from "../utils/config";
 import chats from "../models/chat.model";
 import users from "../models/user.model";
+import shares from "../models/shares.model";
 
 /**
  * Encapsulates the core functionality for managing user credentials as well as viewing the banned users.
@@ -12,6 +13,7 @@ class DBService extends GenericService {
     sequelize: Sequelize;
     chats?: ReturnType<typeof chats>;
     users?: ReturnType<typeof users>;
+    shares?: ReturnType<typeof shares>;
 
     constructor() {
         super();
@@ -40,9 +42,11 @@ class DBService extends GenericService {
     async start() {
         this.chats = await chats(this.sequelize);
         this.users = await users(this.sequelize);
+        this.shares = await shares(this.sequelize);
 
-        await this.chats.model.sync({ force: !!process.env.FORCE });
         await this.users.model.sync({ force: !!process.env.FORCE });
+        await this.chats.model.sync({ force: !!process.env.FORCE });
+        await this.shares.model.sync({ force: !!process.env.FORCE });
     }
 }
 

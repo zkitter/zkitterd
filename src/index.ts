@@ -9,11 +9,13 @@ import InterrepService from "./services/interrep";
 import ArbitrumService from "./services/arbitrum";
 import IPFSService from "./services/ipfs";
 import ZKChatService from "./services/zkchat";
+import MerkleService from "./services/merkle";
 
 (async function initApp() {
     try {
         const main = new MainService();
         main.add('db', new DBService());
+        main.add('merkle', new MerkleService());
         main.add('interrep', new InterrepService());
         main.add('zkchat', new ZKChatService());
         main.add('ens', new ENSService());

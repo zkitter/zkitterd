@@ -57,7 +57,7 @@ const chats = (sequelize: Sequelize) => {
             allowNull: false,
         },
         rln_serialized_proof: {
-            type: STRING,
+            type: STRING(65535),
         },
         rln_root: {
             type: STRING,
@@ -113,13 +113,13 @@ const chats = (sequelize: Sequelize) => {
         });
     }
 
-    const getDirectMessages = async (sender_address: string, receiver_address: string, offset = REALLY_BIG_NUMBER, limit = 20): Promise<ChatMessageModel[]> => {
+    const getDirectMessages = async (sender_pubkey: string, receiver_pubkey: string, offset = REALLY_BIG_NUMBER, limit = 20): Promise<ChatMessageModel[]> => {
         const values = await sequelize.query(`
             SELECT * FROM zkchat_chats zk
             WHERE (
-                (zk.sender_address = :sender_address AND zk.receiver_address = :receiver_address)
+                (zk.sender_pubkey = :sender_pubkey AND zk.receiver_pubkey = :receiver_pubkey)
                 OR
-                (zk.sender_address = :receiver_address AND zk.receiver_address = :sender_address)
+                (zk.sender_pubkey = :receiver_pubkey AND zk.receiver_pubkey = :sender_pubkey)
             ) AND (
                 zk.timestamp < :offset
             )
@@ -128,8 +128,8 @@ const chats = (sequelize: Sequelize) => {
         `, {
             type: QueryTypes.SELECT,
             replacements: {
-                sender_address,
-                receiver_address,
+                sender_pubkey,
+                receiver_pubkey,
                 limit,
                 offset,
             },
@@ -139,26 +139,29 @@ const chats = (sequelize: Sequelize) => {
         return values;
     }
 
-    const getDirectChatsForUser = async (address: string): Promise<Chat[]> => {
+    const getDirectChatsForUser = async (pubkey: string): Promise<Chat[]> => {
         const values = await sequelize.query(`
-            SELECT * from zkchat_users zku
-            WHERE zku.wallet_address IN (
-                SELECT distinct zk.receiver_address FROM zkchat_chats zk WHERE zk.sender_address = :address
-            ) OR zku.wallet_address IN (
-                SELECT distinct zk.sender_address FROM zkchat_chats zk WHERE zk.receiver_address = :address
+            SELECT distinct zkc.receiver_pubkey as pubkey, zkc.receiver_address as address FROM zkchat_chats zkc
+            WHERE zkc.receiver_pubkey IN (
+                SELECT distinct receiver_pubkey FROM zkchat_chats WHERE sender_pubkey = :pubkey
             )
+            UNION
+            SELECT distinct zkc.sender_pubkey as pubkey, zkc.sender_address as address FROM zkchat_chats zkc
+            WHERE zkc.sender_pubkey IN (
+                SELECT distinct sender_pubkey FROM zkchat_chats WHERE receiver_pubkey = :pubkey
+            );
         `, {
             type: QueryTypes.SELECT,
             replacements: {
-                address,
+                pubkey,
             },
         });
 
         return values.map((data: any) => ({
             type: 'DIRECT',
-            receiver: data.wallet_address,
+            receiver: data.address,
             receiverECDH: data.pubkey,
-            senderECDH: '',
+            senderECDH: pubkey,
         }));
     }
 

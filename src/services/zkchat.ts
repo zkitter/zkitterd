@@ -3,6 +3,7 @@ import {ZKChat} from "../../lib/zk-chat-server/src";
 import {ChatMessage} from "../../lib/zk-chat-server/src/services/chat.service";
 import {Dialect, QueryTypes, Sequelize} from "sequelize";
 import config from "../../lib/zk-chat-server/src/utils/config";
+import {RLN, RLNFullProof} from "@zk-kit/protocols";
 
 export default class ZKChatService extends GenericService {
     zkchat: ZKChat;
@@ -40,12 +41,38 @@ export default class ZKChatService extends GenericService {
         return this.zkchat.addChatMessage(chatMessage);
     }
 
-    getDirectMessages = async (sender: string, receiver: string, offset = 0, limit = 20) => {
-        return this.zkchat.getDirectMessages(sender, receiver, offset, limit);
+    getDirectMessages = async (senderPubkey: string, receiverPubkey: string, offset = 0, limit = 20) => {
+        return this.zkchat.getDirectMessages(senderPubkey, receiverPubkey, offset, limit);
     }
 
-    getDirectChatsForUser = async (address: string) => {
-        return this.zkchat.getDirectChatsForUser(address);
+    getDirectChatsForUser = async (pubkey: string) => {
+        return this.zkchat.getDirectChatsForUser(pubkey);
+    }
+
+    isEpochCurrent = async (epoch: string) => {
+        return this.zkchat.isEpochCurrent(epoch);
+    }
+
+    verifyRLNProof = async (proof: RLNFullProof) => {
+        return this.zkchat.verifyRLNProof(proof);
+    }
+
+    checkShare = async (share: {
+        nullifier: string;
+        epoch: string;
+        x_share: string;
+        y_share: string;
+    }) => {
+        return this.zkchat.checkShare(share);
+    }
+
+    insertShare = async (share: {
+        nullifier: string;
+        epoch: string;
+        x_share: string;
+        y_share: string;
+    }) => {
+        return this.zkchat.insertShare(share);
     }
 
     searchChats = async (query: string, sender?: string, offset = 0, limit = 20) => {

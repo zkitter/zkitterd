@@ -1,6 +1,10 @@
 import {logger} from "./utils/svc";
 import Chat, {ChatMessage} from "./services/chat.service";
 import DB from "./services/db.service";
+import config from "./utils/config";
+import {RLN, RLNFullProof} from "@zk-kit/protocols";
+import vkey from "../statics/circuitFiles/rln/verification_key.json";
+import {ShareModel} from "./models/shares.model";
 
 export class ZKChat {
     DB: DB;
@@ -37,6 +41,36 @@ export class ZKChat {
         return this.DB.chats?.getDirectChatsForUser(address);
     }
 
+    checkShare = async (share: ShareModel) => {
+        return this.DB.shares?.checkShare(share);
+    }
+
+    insertShare = async (share: ShareModel) => {
+        return this.DB.shares?.insertShare(share);
+    }
+
+    isEpochCurrent = async (epoch: string) => {
+        const serverTimestamp = new Date();
+        // serverTimestamp.setSeconds(Math.floor(serverTimestamp.getSeconds() / 10) * 10);
+        serverTimestamp.setMilliseconds(0);
+        const messageTimestamp = new Date(parseInt(epoch));
+
+        // Tolerate a difference of EPOCH_ALLOWED_DELAY_THRESHOLD seconds between client and server timestamp
+        const difference_in_seconds = Math.abs(serverTimestamp.getTime() - messageTimestamp.getTime()) / 1000;
+        if (difference_in_seconds >= config.EPOCH_ALLOWED_DELAY_THRESHOLD) {
+            return false;
+        }
+
+        return true;
+    }
+
+    verifyRLNProof = async (proof: RLNFullProof) => {
+        return RLN.verifyProof(
+            vkey as any,
+            proof,
+        );
+    }
+
     addChatMessage = async (chatMessage: ChatMessage) => {
         let data, r_user, s_user;
 
@@ -54,7 +88,9 @@ export class ZKChat {
             data = {
                 message_id: chatMessage.messageId,
                 type: chatMessage.type,
-                sender_address: chatMessage.sender.address,
+                sender_address: chatMessage.sender.hash
+                    ? undefined
+                    : chatMessage.sender.address,
                 sender_hash: chatMessage.sender.hash,
                 sender_pubkey: chatMessage.sender.ecdh || s_user?.pubkey,
                 timestamp: chatMessage.timestamp.getTime(),
@@ -62,7 +98,7 @@ export class ZKChat {
                 receiver_pubkey: chatMessage.receiver.ecdh || r_user?.pubkey,
                 ciphertext: chatMessage.ciphertext,
                 rln_serialized_proof: chatMessage.rln ? JSON.stringify(chatMessage.rln) : undefined,
-                rln_root: chatMessage.rln?.publicSignals.merkleRoot.toString(16),
+                rln_root: '0x' + chatMessage.rln?.publicSignals.merkleRoot.toString(16),
             };
 
             return this.DB.chats?.insertChatMessage(data);

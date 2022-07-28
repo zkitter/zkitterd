@@ -19,6 +19,7 @@ export type DirectChatMessage = {
     rln?: RLNFullProof & {
         epoch: number;
         x_share: string;
+        group_id: string;
     };
     receiver: {
         address?: string;
@@ -43,6 +44,7 @@ export type PublicRoomChatMessage = {
     rln?: RLNFullProof & {
         epoch: number;
         x_share: string;
+        group_id: string;
     };
     receiver: {
         address?: string;

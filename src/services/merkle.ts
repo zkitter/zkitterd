@@ -1,35 +1,20 @@
 import {GenericService} from "../util/svc";
 import config from "../util/config";
-import {BindOrReplacements, Dialect, QueryOptions, QueryTypes, Sequelize} from "sequelize";
+import {BindOrReplacements, Dialect, QueryTypes, Sequelize} from "sequelize";
 import {generateMerkleTree} from "@zk-kit/protocols";
+import {MerkleProof, IncrementalMerkleTree} from "@zk-kit/incremental-merkle-tree";
+import merkleRoot from "../models/merkle_root";
+import {sequelize} from "../util/sequelize";
 
 export default class MerkleService extends GenericService {
-    sequelize: Sequelize;
+    merkleRoot: ReturnType<typeof merkleRoot>;
 
     constructor() {
         super();
-        if (!config.dbDialect || config.dbDialect === 'sqlite') {
-            this.sequelize = new Sequelize({
-                dialect: 'sqlite',
-                storage: config.dbStorage,
-                logging: false,
-            });
-        } else {
-            this.sequelize = new Sequelize(
-                config.dbName as string,
-                config.dbUsername as string,
-                config.dbPassword,
-                {
-                    host: config.dbHost,
-                    port: Number(config.dbPort),
-                    dialect: config.dbDialect as Dialect,
-                    logging: false,
-                },
-            );
-        }
+        this.merkleRoot = merkleRoot(sequelize);
     }
 
-    findProof = async (proofType: 'rln' | 'semaphore', group: string, idCommitment: string) => {
+    makeTree = async (group: string): Promise<IncrementalMerkleTree> => {
         const [protocol, groupName, groupType = ''] = group.split('_');
         const protocolBucket = SQL[protocol] || {};
         const groupBucket = protocolBucket[groupName] || {};
@@ -42,19 +27,54 @@ export default class MerkleService extends GenericService {
             replacements: replacement || {},
         };
 
-        const leaves = await this.sequelize.query(sql, options);
+        const leaves = await sequelize.query(sql, options);
         const tree = generateMerkleTree(
             15,
             BigInt(0),
             2,
             leaves.map(({ id_commitment }: any) => '0x' + id_commitment),
         );
+
+        return tree;
+    }
+
+    getGroupByRoot = async (root: string): Promise<string | null> => {
+        const exist = await this.merkleRoot.getGroupByRoot(root);
+        return exist?.group_id || null;
+    }
+
+    verifyProof = async (proof: MerkleProof): Promise<string | null> => {
+        const groups = [
+            'zksocial_all',
+        ];
+
+        const existingGroup = await this.getGroupByRoot(proof.root);
+
+        if (existingGroup) {
+            const tree = await this.makeTree(existingGroup);
+            if (tree.verifyProof(proof)) return existingGroup;
+        }
+
+        for (const group of groups) {
+            const tree = await this.makeTree(group);
+            if (tree.verifyProof(proof)) return group;
+        }
+
+        return null;
+    }
+
+    findProof = async (group: string, idCommitment: string) => {
+        const tree = await this.makeTree(group);
         const proof = await tree.createProof(tree.indexOf(BigInt('0x' + idCommitment)));
 
         if (!proof) throw new Error(`${idCommitment} is not in ${group}`);
 
+        const root = '0x' + proof.root.toString(16);
+
+        await this.addRoot(root, group);
+
         return {
-            root: '0x' + proof.root.toString(16),
+            root,
             siblings: proof.siblings.map((siblings) =>
                 Array.isArray(siblings)
                     ? siblings.map((element) => '0x' + element.toString(16))
@@ -63,6 +83,15 @@ export default class MerkleService extends GenericService {
             pathIndices: proof.pathIndices,
             leaf: '0x' + proof.leaf.toString(16),
         };
+    }
+
+    addRoot = async (rootHash: string, group: string) => {
+        return this.merkleRoot.addRoot(rootHash, group);
+    }
+
+    findRoot = async (rootHash: string) => {
+        const cached = await this.merkleRoot.getGroupByRoot(rootHash);
+        return cached?.group_id;
     }
 }
 

@@ -310,9 +310,17 @@ export default class HttpService extends GenericService {
 
             const isEpochCurrent = await this.call('zkchat', 'isEpochCurrent', rln.epoch)
             const verified = await this.call('zkchat', 'verifyRLNProof', rln)
+            const group = await this.call(
+                'merkle',
+                'getGroupByRoot',
+                '0x' + BigInt(rln.publicSignals.merkleRoot).toString(16),
+            );
 
             if (!isEpochCurrent) throw new Error('outdated message');
             if (!verified) throw new Error('invalid rln proof');
+            if (!group) throw new Error('invalid merkle root');
+
+            rln.group_id = group;
 
             const share = {
                 nullifier: rln.publicSignals.internalNullifier,
@@ -393,10 +401,10 @@ export default class HttpService extends GenericService {
     }
 
     handleGetProofs = async (req: Request, res: Response) => {
-        const {proofType, idCommitment} = req.params;
+        const {idCommitment} = req.params;
         const {group = ''} = req.query;
 
-        const proof = await this.call('merkle', 'findProof', proofType, group, idCommitment);
+        const proof = await this.call('merkle', 'findProof', group, idCommitment);
 
         res.send(makeResponse({
             data: proof,
@@ -427,7 +435,7 @@ export default class HttpService extends GenericService {
         this.app.get('/v1/zkchat/chats/dm/:pubkey', this.wrapHandler(this.handleGetDirectChats));
         this.app.get('/v1/zkchat/chats/search/:query?', this.wrapHandler(this.handleSearchChats));
 
-        this.app.get('/v1/proofs/:proofType/:idCommitment', this.wrapHandler(this.handleGetProofs));
+        this.app.get('/v1/proofs/:idCommitment', this.wrapHandler(this.handleGetProofs));
 
         this.app.post('/interrep/groups/:provider/:name/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;

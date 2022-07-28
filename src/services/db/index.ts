@@ -19,6 +19,7 @@ import interepGroups from "../../models/interepGroups";
 import semaphoreCreators from "../../models/semaphore_creators";
 import threads from "../../models/thread";
 import uploads from "../../models/uploads";
+import merkleRoot from "../../models/merkle_root";
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
@@ -42,6 +43,7 @@ export default class DBService extends GenericService {
     semaphoreCreators?: ReturnType<typeof semaphoreCreators>;
     threads?: ReturnType<typeof threads>;
     uploads?: ReturnType<typeof uploads>;
+    merkleRoot?: ReturnType<typeof merkleRoot>;
 
     constructor() {
         super();
@@ -223,6 +225,7 @@ export default class DBService extends GenericService {
         this.semaphoreCreators = await semaphoreCreators(this.sequelize);
         this.threads = await threads(this.sequelize);
         this.uploads = await uploads(this.sequelize);
+        this.merkleRoot = await merkleRoot(this.sequelize);
 
         await this.app?.model.sync({ force: !!process.env.FORCE });
         await this.linkPreview?.model.sync({ force: !!process.env.FORCE });
@@ -245,6 +248,7 @@ export default class DBService extends GenericService {
         await this.semaphoreCreators?.model.sync({ force: !!process.env.FORCE });
         await this.threads?.model.sync({ force: !!process.env.FORCE });
         await this.uploads?.model.sync({ force: !!process.env.FORCE });
+        await this.merkleRoot?.model.sync({ force: !!process.env.FORCE });
 
         const appData = await this.app?.read();
 

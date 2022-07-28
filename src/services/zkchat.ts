@@ -76,7 +76,6 @@ export default class ZKChatService extends GenericService {
     }
 
     searchChats = async (query: string, sender?: string, offset = 0, limit = 20) => {
-        console.log(query, sender);
         const values = await this.sequelize.query(`
             SELECT 
               ecdh.value as receiver_ecdh,

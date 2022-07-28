@@ -98,7 +98,9 @@ export class ZKChat {
                 receiver_pubkey: chatMessage.receiver.ecdh || r_user?.pubkey,
                 ciphertext: chatMessage.ciphertext,
                 rln_serialized_proof: chatMessage.rln ? JSON.stringify(chatMessage.rln) : undefined,
-                rln_root: '0x' + chatMessage.rln?.publicSignals.merkleRoot.toString(16),
+                rln_root: chatMessage.rln
+                    ? '0x' + chatMessage.rln?.publicSignals.merkleRoot.toString(16)
+                    : undefined,
             };
 
             return this.DB.chats?.insertChatMessage(data);

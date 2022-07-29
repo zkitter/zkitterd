@@ -28,7 +28,7 @@ const getMutex = new Mutex();
 const putMutex = new Mutex();
 const insertMutex = new Mutex();
 
-import { Semaphore, genExternalNullifier, genSignalHash } from "@zk-kit/protocols";
+import { Semaphore, genExternalNullifier } from "@zk-kit/protocols";
 
 export default class GunService extends GenericService {
     gun?: IGunChainReference;
@@ -278,7 +278,7 @@ export default class GunService extends GenericService {
                 const parsedProof = JSON.parse(proof);
                 const parsedSignals = JSON.parse(signals);
                 const externalNullifier = await genExternalNullifier('POST');
-                const signalHash = await genSignalHash(hash);
+                const signalHash = await Semaphore.genSignalHash(hash.slice(0, 16));
 
                 if (BigInt(externalNullifier).toString() !== parsedSignals.externalNullifier) return;
                 if (signalHash.toString() !== parsedSignals.signalHash) return;

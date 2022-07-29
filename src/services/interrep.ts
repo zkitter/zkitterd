@@ -93,10 +93,12 @@ export default class InterrepService extends GenericService {
     }
 
     async getProofFromGroup(provider: string, name: string, id: string) {
+        console.log(provider, name, id);
         try {
             // @ts-ignore
             const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${provider}/${name}/${id}/proof`);
             const json = await resp.json();
+            console.log(json);
             return json;
         } catch (e) {
             return false;

@@ -500,6 +500,7 @@ export default class HttpService extends GenericService {
             const semaphoreDB = await this.call('db', 'getSemaphore');
             const exist = await semaphoreDB.findOneByCommitment(identityCommitment);
 
+            console.log(exist);
             if (!exist || exist?.updatedAt.getTime() + 15 * 60 * 1000 > Date.now()) {
                 await this.call('interrep', 'scanIDCommitment', identityCommitment);
             }

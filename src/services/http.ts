@@ -1,5 +1,5 @@
 import {GenericService} from "../util/svc";
-import express, {Express, Request, Response} from "express";
+import express, {Express, NextFunction, Request, Response} from "express";
 import bodyParser from "body-parser";
 import cors, {CorsOptions} from "cors";
 import http from 'http';
@@ -34,6 +34,8 @@ const upload = multer({
 import fs from 'fs';
 import { getFilesFromPath } from 'web3.storage';
 import {UploadModel} from "../models/uploads";
+import {genExternalNullifier, Semaphore, SemaphoreFullProof} from "@zk-kit/protocols";
+import vKey from "../../static/verification_key.json";
 
 const corsOptions: CorsOptions = {
     credentials: true,
@@ -61,6 +63,55 @@ export default class HttpService extends GenericService {
     constructor() {
         super();
         this.app = express();
+    }
+
+    verifyAuth = (
+        getExternalNullifer: (req: Request) => string | Promise<string>,
+        getSignal: (req: Request) => string | Promise<string>,
+        onError?: (req: Request) => void | Promise<void>,
+    ) => async (req: Request, res: Response, next: NextFunction) => {
+        const signature = req.header('X-SIGNED-ADDRESS');
+        const semaphoreProof = req.header('X-SEMAPHORE-PROOF');
+        const userDB = await this.call('db', 'getUsers');
+
+        if (signature) {
+            const params = signature.split('.');
+            const user = await userDB.findOneByName(params[1]);
+            if (!user || !verifySignatureP256(user.pubkey, params[1], params[0])) {
+                res.status(403).send(makeResponse('user must be authenticated', true));
+                if (onError) onError(req);
+                return;
+            }
+            // @ts-ignore
+            req.username = params[1];
+        } else if (semaphoreProof) {
+            const { proof, publicSignals } = JSON.parse(semaphoreProof) as SemaphoreFullProof;
+            const externalNullifier = await genExternalNullifier(await getExternalNullifer(req));
+            const signalHash = await Semaphore.genSignalHash(await getSignal(req));
+            const matchNullifier = BigInt(externalNullifier).toString() === publicSignals.externalNullifier;
+            const matchSignal = signalHash.toString() === publicSignals.signalHash;
+            const hashData = await this.call(
+                'interrep',
+                'getBatchFromRootHash',
+                publicSignals.merkleRoot
+            );
+            const verified = await Semaphore.verifyProof(
+                vKey as any,
+                {
+                    proof,
+                    publicSignals,
+                },
+            );
+
+            if (!matchNullifier || !matchSignal || !verified || !hashData) {
+                res.status(403).send(makeResponse('invalid semaphore proof', true));
+                if (onError) onError(req);
+                return;
+            }
+
+        }
+
+        next();
     }
 
     wrapHandler(handler: (req: Request, res: Response) => Promise<any>) {
@@ -500,7 +551,6 @@ export default class HttpService extends GenericService {
             const semaphoreDB = await this.call('db', 'getSemaphore');
             const exist = await semaphoreDB.findOneByCommitment(identityCommitment);
 
-            console.log(exist);
             if (!exist || exist?.updatedAt.getTime() + 15 * 60 * 1000 > Date.now()) {
                 await this.call('interrep', 'scanIDCommitment', identityCommitment);
             }
@@ -715,50 +765,67 @@ export default class HttpService extends GenericService {
             res.send(makeResponse('ok'));
         }));
 
-        this.app.post('/ipfs/upload', upload.any(), this.wrapHandler(async (req, res) => {
-            if (!req.files) throw new Error('file missing from formdata');
-
-            const signature = req.header('X-SIGNED-ADDRESS');
-            const userDB = await this.call('db', 'getUsers');
-            let address = '';
-
-            if (signature) {
-                const params = signature.split('.');
-                const user = await userDB.findOneByName(params[1]);
-                if (!user || !verifySignatureP256(user.pubkey, params[1], params[0])) {
-                    throw new Error('user must be authenticated');
+        this.app.post(
+            '/ipfs/upload',
+            upload.any(),
+            this.verifyAuth(
+                async () => 'FILE_UPLOAD',
+                // @ts-ignore
+                async req => req.files[0].originalname.slice(0, 16),
+                req => {
+                    // @ts-ignore
+                    const filepath = path.join(process.cwd(), req.files[0].path);
+                    fs.unlinkSync(filepath);
                 }
-                address = params[1];
-            }
+            ),
+            this.wrapHandler(async (req, res) => {
+                if (!req.files) throw new Error('file missing from formdata');
 
-            // @ts-ignore
-            const {path: relPath, filename, size, mimetype} = req.files[0];
-            const uploadDB = await this.call('db', 'getUploads');
-            const existingSize = await uploadDB.getTotalUploadByUser(address);
+                // @ts-ignore
+                const username = req.username;
 
-            if (size > maxFileSize) throw new Error('file must be less than 5MB');
-            if (existingSize + size > maxPerUserSize) throw new Error('account is out of space');
+                // @ts-ignore
+                const {path: relPath, filename, size, mimetype} = req.files[0];
+                const uploadDB = await this.call('db', 'getUploads');
+                const filepath = path.join(process.cwd(), relPath);
 
-            const filepath = path.join(process.cwd(), relPath);
-            const files = await getFilesFromPath(filepath);
+                if (size > maxFileSize) {
+                    fs.unlinkSync(filepath);
+                    throw new Error('file must be less than 5MB');
+                }
 
-            const cid = await this.call('ipfs', 'store', files);
-            fs.unlinkSync(filepath);
-            const uploadData: UploadModel = {
-                cid,
-                mimetype,
-                size,
-                filename,
-                username: address,
-            };
-            await uploadDB.addUploadData(uploadData);
+                if (username) {
+                    const existingSize = await uploadDB.getTotalUploadByUser(username);
+                    if (existingSize + size > maxPerUserSize) {
+                        fs.unlinkSync(filepath);
+                        throw new Error('account is out of space');
+                    }
+                }
 
-            res.send(makeResponse({
-                cid,
-                filename,
-                url: `https://${cid}.ipfs.dweb.link/${filename}`,
-            }));
-        }));
+
+                const files = await getFilesFromPath(filepath);
+
+                const cid = await this.call('ipfs', 'store', files);
+                fs.unlinkSync(filepath);
+
+                if (username) {
+                    const uploadData: UploadModel = {
+                        cid,
+                        mimetype,
+                        size,
+                        filename,
+                        username: username,
+                    };
+                    await uploadDB.addUploadData(uploadData);
+                }
+
+                res.send(makeResponse({
+                    cid,
+                    filename,
+                    url: `https://${cid}.ipfs.dweb.link/${filename}`,
+                }));
+            }),
+        );
     }
 
     async start() {

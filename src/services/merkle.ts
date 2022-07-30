@@ -31,7 +31,6 @@ export default class MerkleService extends GenericService {
         const tree = generateMerkleTree(
             15,
             BigInt(0),
-            2,
             leaves.map(({ id_commitment }: any) => '0x' + id_commitment),
         );
 

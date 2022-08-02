@@ -28,8 +28,6 @@ const getMutex = new Mutex();
 const putMutex = new Mutex();
 const insertMutex = new Mutex();
 
-import { Semaphore, genExternalNullifier } from "@zk-kit/protocols";
-
 export default class GunService extends GenericService {
     gun?: IGunChainReference;
 
@@ -114,7 +112,15 @@ export default class GunService extends GenericService {
                             attachment: payload.attachment,
                         },
                     });
-                    await this.insertPost(post, data.proof, data.publicSignals);
+                    await this.insertPost(
+                        post,
+                        !data.proof ? undefined : {
+                            proof: data.proof,
+                            publicSignals: data.publicSignals,
+                            x_share: data.x_share,
+                            epoch: data.epoch,
+                        },
+                    );
                     return;
                 case MessageType.Moderation:
                     const moderation = new Moderation({
@@ -236,7 +242,12 @@ export default class GunService extends GenericService {
 
     }
 
-    async insertPost(post: Post, proof?: string, signals?: string) {
+    async insertPost(post: Post, data?: {
+        proof: string;
+        publicSignals: string;
+        x_share: string;
+        epoch: string;
+    }) {
         const json = await post.toJSON();
         const {
             type,
@@ -269,46 +280,51 @@ export default class GunService extends GenericService {
             return;
         }
 
-        if (!creator && (!proof || !signals)) {
+        if (!creator && !data) {
             return;
         }
 
         try {
-            if (proof && signals) {
-                const parsedProof = JSON.parse(proof);
-                const parsedSignals = JSON.parse(signals);
-                const externalNullifier = await genExternalNullifier('POST');
-                const signalHash = await Semaphore.genSignalHash(hash.slice(0, 16));
+            if (data) {
+                const proof = JSON.parse(data.proof);
+                const publicSignals = JSON.parse(data.publicSignals);
+                const verified = await this.call('zkchat', 'verifyRLNProof', {
+                    proof,
+                    publicSignals,
+                    x_share: data.x_share,
+                    epoch: data.epoch,
+                });
 
-                if (BigInt(externalNullifier).toString() !== parsedSignals.externalNullifier) return;
-                if (signalHash.toString() !== parsedSignals.signalHash) return;
+                const share = {
+                    nullifier: publicSignals.internalNullifier,
+                    epoch: publicSignals.epoch,
+                    y_share: publicSignals.yShare,
+                    x_share: data.x_share,
+                };
 
-                const hashData = await this.call('interrep', 'getBatchFromRootHash', parsedSignals.merkleRoot);
+                const {
+                    shares,
+                    isSpam,
+                    isDuplicate,
+                } = await this.call('zkchat', 'checkShare', share);
 
-                if (!hashData) {
-                    return;
-                }
+                const group = await this.call(
+                    'merkle',
+                    'getGroupByRoot',
+                    '0x' + BigInt(publicSignals.merkleRoot).toString(16),
+                );
 
-                const res = await Semaphore.verifyProof(
-                    vKey as any,
-                    {
-                        proof: parsedProof,
-                        publicSignals: parsedSignals,
-                    });
+                if (isSpam || isDuplicate || !verified || !group) return;
 
-                if (!res) {
-                    return;
-                }
-
-                const { name, provider } = hashData;
-                await semaphoreCreatorsDB.addSemaphoreCreator(messageId, provider, name);
+                const [protocol, groupName, groupType] = group.split('_')
+                await semaphoreCreatorsDB.addSemaphoreCreator(messageId, groupName, groupType);
             }
 
             await postDB.createPost({
                 messageId: messageId,
                 hash: hash,
-                proof,
-                signals,
+                proof: data?.proof,
+                signals: data?.publicSignals,
                 type: type,
                 subtype: subtype,
                 creator: creator || '',

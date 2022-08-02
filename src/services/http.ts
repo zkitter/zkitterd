@@ -12,7 +12,7 @@ import { getLinkPreview } from "link-preview-js";
 import queryString from "querystring";
 import session from 'express-session';
 import jwt from "jsonwebtoken";
-import {Dialect, Sequelize} from "sequelize";
+import {Dialect, QueryTypes, Sequelize} from "sequelize";
 const SequelizeStore = require("connect-session-sequelize")(session.Store);
 import { calculateReputation, OAuthProvider } from "@interep/reputation";
 import {
@@ -36,6 +36,8 @@ import { getFilesFromPath } from 'web3.storage';
 import {UploadModel} from "../models/uploads";
 import {genExternalNullifier, Semaphore, SemaphoreFullProof} from "@zk-kit/protocols";
 import vKey from "../../static/verification_key.json";
+import merkleRoot from "../models/merkle_root";
+import {sequelize} from "../util/sequelize";
 
 const corsOptions: CorsOptions = {
     credentials: true,
@@ -59,6 +61,7 @@ function makeResponse(payload: any, error?: boolean) {
 export default class HttpService extends GenericService {
     app: Express;
     httpServer: any;
+    merkleRoot?: ReturnType<typeof merkleRoot>;
 
     constructor() {
         super();
@@ -360,12 +363,13 @@ export default class HttpService extends GenericService {
         if (rln) {
             if (!sender.hash) throw new Error('invalid request object');
 
-            const isEpochCurrent = await this.call('zkchat', 'isEpochCurrent', rln.epoch)
-            const verified = await this.call('zkchat', 'verifyRLNProof', rln)
+            const isEpochCurrent = await this.call('zkchat', 'isEpochCurrent', rln.epoch);
+            const verified = await this.call('zkchat', 'verifyRLNProof', rln);
+            const root = '0x' + BigInt(rln.publicSignals.merkleRoot).toString(16);
             const group = await this.call(
                 'merkle',
                 'getGroupByRoot',
-                '0x' + BigInt(rln.publicSignals.merkleRoot).toString(16),
+                root,
             );
 
             if (!isEpochCurrent) throw new Error('outdated message');
@@ -396,7 +400,8 @@ export default class HttpService extends GenericService {
                 return;
             }
 
-            await this.call('zkchat', 'insertShare', share)
+            await this.call('zkchat', 'insertShare', share);
+            await this.merkleRoot?.addRoot(root, group);
         } else if (signature) {
             const [sig, address] = signature.split('.');
             const user = await userDB.findOneByName(address);
@@ -441,7 +446,35 @@ export default class HttpService extends GenericService {
 
     handleGetDirectChats = async (req: Request, res: Response) => {
         const {pubkey} = req.params;
-        const data = await this.call('zkchat', 'getDirectChatsForUser', pubkey);
+
+        const values = await sequelize.query(`
+            SELECT distinct zkc.receiver_pubkey as pubkey, zkc.receiver_address as address, null as group_id 
+            FROM zkchat_chats zkc
+            WHERE zkc.receiver_pubkey IN (
+                SELECT distinct receiver_pubkey FROM zkchat_chats WHERE sender_pubkey = :pubkey
+            )
+            UNION
+            SELECT distinct zkc.sender_pubkey as pubkey, zkc.sender_address as address, mr.group_id 
+            FROM zkchat_chats zkc
+            LEFT JOIN merkle_roots mr on mr.root_hash = zkc.rln_root
+            WHERE zkc.sender_pubkey IN (
+                SELECT distinct sender_pubkey FROM zkchat_chats WHERE receiver_pubkey = :pubkey
+            );
+        `, {
+            type: QueryTypes.SELECT,
+            replacements: {
+                pubkey,
+            },
+        });
+
+        const data = values.map((val: any) => ({
+            type: 'DIRECT',
+            receiver: val.address,
+            receiverECDH: val.pubkey,
+            senderECDH: pubkey,
+            group: val.group_id,
+        }));
+
         res.send(makeResponse(data));
     }
 
@@ -830,22 +863,11 @@ export default class HttpService extends GenericService {
     }
 
     async start() {
+        this.merkleRoot = await merkleRoot(sequelize);
         const httpServer = http.createServer(this.app);
 
         this.app.set('trust proxy', 1);
         this.app.use(cors(corsOptions));
-
-        const sequelize = new Sequelize(
-            config.dbName as string,
-            config.dbUsername as string,
-            config.dbPassword,
-            {
-                host: config.dbHost,
-                port: Number(config.dbPort),
-                dialect: config.dbDialect as Dialect,
-                logging: false,
-            },
-        );
 
         const sessionStore = new SequelizeStore({
             db: sequelize,
@@ -868,10 +890,10 @@ export default class HttpService extends GenericService {
         this.app.use('/dev/semaphore_wasm', express.static(path.join(process.cwd(), 'static', 'semaphore.wasm')));
         this.app.use('/dev/semaphore_final_zkey', express.static(path.join(process.cwd(), 'static', 'semaphore_final.zkey')));
         this.app.use('/dev/semaphore_vkey', express.static(path.join(process.cwd(), 'static', 'verification_key.json')));
-        this.app.use('/circuits/semaphore/wasm', express.static(path.join(process.cwd(), 'static', 'semaphore.wasm')));
-        this.app.use('/circuits/semaphore/zkey', express.static(path.join(process.cwd(), 'static', 'semaphore_final.zkey')));
-        this.app.use('/circuits/semaphore/vkey', express.static(path.join(process.cwd(), 'static', 'verification_key.json')));
 
+        this.app.use('/circuits/semaphore/wasm', express.static(path.join(process.cwd(), 'static', 'semaphore', 'semaphore.wasm')));
+        this.app.use('/circuits/semaphore/zkey', express.static(path.join(process.cwd(), 'static', 'semaphore', 'semaphore_final.zkey')));
+        this.app.use('/circuits/semaphore/vkey', express.static(path.join(process.cwd(), 'static', 'semaphore', 'verification_key.json')));
         this.app.use('/circuits/rln/wasm', express.static(path.join(process.cwd(), 'static', 'rln', 'rln.wasm')));
         this.app.use('/circuits/rln/zkey', express.static(path.join(process.cwd(), 'static', 'rln', 'rln_final.zkey')));
         this.app.use('/circuits/rln/vkey', express.static(path.join(process.cwd(), 'static', 'rln', 'verification_key.json')));

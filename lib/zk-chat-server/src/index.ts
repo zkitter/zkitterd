@@ -99,7 +99,7 @@ export class ZKChat {
                 ciphertext: chatMessage.ciphertext,
                 rln_serialized_proof: chatMessage.rln ? JSON.stringify(chatMessage.rln) : undefined,
                 rln_root: chatMessage.rln
-                    ? '0x' + chatMessage.rln?.publicSignals.merkleRoot.toString(16)
+                    ? '0x' + BigInt(chatMessage.rln?.publicSignals.merkleRoot).toString(16)
                     : undefined,
             };
 

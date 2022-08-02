@@ -13,7 +13,7 @@ export default class MerkleService extends GenericService {
         this.merkleRoot = merkleRoot(sequelize);
     }
 
-    makeTree = async (group: string): Promise<IncrementalMerkleTree> => {
+    makeTree = async (group: string, zkType: 'rln' | 'semaphore' = 'rln'): Promise<IncrementalMerkleTree> => {
         const [protocol, groupName, groupType = ''] = group.split('_');
         const protocolBucket = SQL[protocol] || {};
         const groupBucket = protocolBucket[groupName] || {};
@@ -30,7 +30,7 @@ export default class MerkleService extends GenericService {
 
         const leaves = await sequelize.query(sql, options);
         const tree = generateMerkleTree(
-            15,
+            zkType === 'rln' ? 15 : 20,
             BigInt(0),
             leaves.map(({ id_commitment }: any) => '0x' + id_commitment),
         );

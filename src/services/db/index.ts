@@ -231,7 +231,7 @@ export default class DBService extends GenericService {
         await this.linkPreview?.model.sync({ force: !!process.env.FORCE });
         await this.records?.model.sync({ force: !!process.env.FORCE });
 
-        await this.semaphore?.model.sync({ force: true || !!process.env.FORCE });
+        await this.semaphore?.model.sync({ force: !!process.env.FORCE });
 
         await this.users?.model.sync({ force: !!process.env.FORCE });
         await this.moderations?.model.sync({ force: !!process.env.FORCE });
@@ -244,8 +244,8 @@ export default class DBService extends GenericService {
         await this.meta?.model.sync({ force: !!process.env.FORCE });
         await this.ens?.model.sync({ force: !!process.env.FORCE });
         await this.twitterAuth?.model.sync({ force: !!process.env.FORCE });
-        await this.interepGroups?.model.sync({ force: true || !!process.env.FORCE });
-        await this.semaphoreCreators?.model.sync({ force: true || !!process.env.FORCE });
+        await this.interepGroups?.model.sync({ force: !!process.env.FORCE });
+        await this.semaphoreCreators?.model.sync({ force: !!process.env.FORCE });
         await this.threads?.model.sync({ force: !!process.env.FORCE });
         await this.uploads?.model.sync({ force: !!process.env.FORCE });
         await this.merkleRoot?.model.sync({ force: !!process.env.FORCE });

@@ -103,6 +103,7 @@ export default class HttpService extends GenericService {
                 },
             );
 
+            console.log(signalHash.toString(), publicSignals.signalHash);
             if (!matchNullifier || !matchSignal || !verified || !hashData) {
                 res.status(403).send(makeResponse('invalid semaphore proof', true));
                 if (onError) onError(req);
@@ -549,11 +550,11 @@ export default class HttpService extends GenericService {
         this.app.get('/interrep/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;
             const semaphoreDB = await this.call('db', 'getSemaphore');
-            const exist = await semaphoreDB.findOneByCommitment(identityCommitment);
+            // const exist = await semaphoreDB.findOneByCommitment(identityCommitment);
 
-            if (!exist || exist?.updatedAt.getTime() + 15 * 60 * 1000 > Date.now()) {
-                await this.call('interrep', 'scanIDCommitment', identityCommitment);
-            }
+            // if (!exist || exist?.updatedAt.getTime() + 15 * 60 * 1000 > Date.now()) {
+            //     await this.call('interrep', 'scanIDCommitment', identityCommitment);
+            // }
 
             const sem = await semaphoreDB.findAllByCommitment(identityCommitment);
             const [group] = sem;

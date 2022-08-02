@@ -1,5 +1,4 @@
 import {GenericService} from "../util/svc";
-import config from "../util/config";
 import {BindOrReplacements, Dialect, QueryTypes, Sequelize} from "sequelize";
 import {generateMerkleTree} from "@zk-kit/protocols";
 import {MerkleProof, IncrementalMerkleTree} from "@zk-kit/incremental-merkle-tree";
@@ -24,7 +23,9 @@ export default class MerkleService extends GenericService {
 
         const options = {
             type: QueryTypes.SELECT,
-            replacements: replacement || {},
+            replacements: replacement || {
+                group_id: group,
+            },
         };
 
         const leaves = await sequelize.query(sql, options);
@@ -45,6 +46,10 @@ export default class MerkleService extends GenericService {
     verifyProof = async (proof: MerkleProof): Promise<string | null> => {
         const groups = [
             'zksocial_all',
+            'interrep_twitter_unrated',
+            'interrep_twitter_bronze',
+            'interrep_twitter_silver',
+            'interrep_twitter_gold',
         ];
 
         const existingGroup = await this.getGroupByRoot(proof.root);
@@ -120,4 +125,24 @@ const SQL: {
             },
         },
     },
+    'interrep': {
+        'twitter': {
+            'unrated': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+            'bronze': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+            'silver': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+            'gold': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+        },
+        'github': {
+            'unrated': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+            'bronze': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+            'silver': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+            'gold': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+        },
+        'reddit': {
+            'unrated': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+            'bronze': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+            'silver': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+            'gold': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+        },
+    }
 };

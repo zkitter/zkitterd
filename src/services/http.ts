@@ -34,7 +34,7 @@ const upload = multer({
 import fs from 'fs';
 import { getFilesFromPath } from 'web3.storage';
 import {UploadModel} from "../models/uploads";
-import {genExternalNullifier, Semaphore, SemaphoreFullProof} from "@zk-kit/protocols";
+import {genExternalNullifier, RLNFullProof, Semaphore, SemaphoreFullProof} from "@zk-kit/protocols";
 import vKey from "../../static/verification_key.json";
 import merkleRoot from "../models/merkle_root";
 import {sequelize} from "../util/sequelize";
@@ -75,6 +75,7 @@ export default class HttpService extends GenericService {
     ) => async (req: Request, res: Response, next: NextFunction) => {
         const signature = req.header('X-SIGNED-ADDRESS');
         const semaphoreProof = req.header('X-SEMAPHORE-PROOF');
+        const rlnProof = req.header('X-RLN-PROOF');
         const userDB = await this.call('db', 'getUsers');
 
         if (signature) {
@@ -106,13 +107,40 @@ export default class HttpService extends GenericService {
                 },
             );
 
-            console.log(signalHash.toString(), publicSignals.signalHash);
             if (!matchNullifier || !matchSignal || !verified || !hashData) {
                 res.status(403).send(makeResponse('invalid semaphore proof', true));
                 if (onError) onError(req);
                 return;
             }
 
+        } else if (rlnProof) {
+            const { proof, publicSignals, x_share, epoch } = JSON.parse(rlnProof);
+            const verified = await this.call('zkchat', 'verifyRLNProof', {
+                proof,
+                publicSignals,
+                x_share: x_share,
+                epoch: epoch,
+            });
+            const share = {
+                nullifier: publicSignals.internalNullifier,
+                epoch: publicSignals.epoch,
+                y_share: publicSignals.yShare,
+                x_share: x_share,
+            };
+
+            const {
+                shares,
+                isSpam,
+                isDuplicate,
+            } = await this.call('zkchat', 'checkShare', share);
+
+            const group = await this.call(
+                'merkle',
+                'getGroupByRoot',
+                '0x' + BigInt(publicSignals.merkleRoot).toString(16),
+            );
+
+            if (isSpam || isDuplicate || !verified || !group) return;
         }
 
         next();

@@ -323,13 +323,13 @@ tape('DBService', async t => {
         'should return all records',
     );
 
-    // @ts-ignore
-    const sema1 = await db.semaphore!.findOneByCommitment('11478604443530795445406842905228486956674818902660313591870165575138495663261');
-    t.deepEqual(
-        sema1!.provider,
-        'twitter',
-        'should return one semaphore row',
-    );
+    // // @ts-ignore
+    // const sema1 = await db.semaphore!.findOneByCommitment('11478604443530795445406842905228486956674818902660313591870165575138495663261');
+    // t.deepEqual(
+    //     sema1!.provider,
+    //     'twitter',
+    //     'should return one semaphore row',
+    // );
 
     // @ts-ignore
     const sema2 = await db.semaphore!.findAllByCommitment('11478604443530795445406842905228486956674818902660313591870165575138495663261');
@@ -407,7 +407,7 @@ tape('DBService', async t => {
     const user4 = await db.users!.search('yaga', '0x3F425586D68616A113C29c303766DAD444167EE8', 0, 2);
     t.deepEqual(
         user4,
-        [ { username: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c', address: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c', joinedTx: '0x9e532171096cf4f4fe68cd384addf3baaf31644c48506cb4550efb586a165c5a', type: 'arbitrum', pubkey: 'dBgXJATrP4KeE6zfuR4_arauMIeT_86MrQg6JbbnuxM.yJXykCW6qjB54B29by8vIWoMwk8T5NG_3awHdKC9Bgc', joinedAt: 1644251733000, name: 'yagamilight', bio: '', profileImage: 'https://i1.sndcdn.com/artworks-000452560338-e3uzc2-t500x500.jpg', coverImage: 'https://s3.amazonaws.com/99Covers-Facebook-Covers/watermark/14238.jpg', twitterVerification: 'https://twitter.com/0xTsukino/status/1465332814937690114', website: '', meta: { blockedCount: 0, blockingCount: 0, followerCount: 4, followingCount: 4, postingCount: 22, mentionedCount: 2, followed: '0x3F425586D68616A113C29c303766DAD444167EE8/6cb3a3eea1355ead9cbcb0907e282eac3d1f606d7a8d77252445404a09d58584', blocked: null } } ],
+        [ { username: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c', address: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c', joinedTx: '0x9e532171096cf4f4fe68cd384addf3baaf31644c48506cb4550efb586a165c5a', type: 'arbitrum', pubkey: 'dBgXJATrP4KeE6zfuR4_arauMIeT_86MrQg6JbbnuxM.yJXykCW6qjB54B29by8vIWoMwk8T5NG_3awHdKC9Bgc', joinedAt: 1644251733000, name: 'yagamilight', bio: '', profileImage: 'https://i1.sndcdn.com/artworks-000452560338-e3uzc2-t500x500.jpg', coverImage: 'https://s3.amazonaws.com/99Covers-Facebook-Covers/watermark/14238.jpg', twitterVerification: 'https://twitter.com/0xTsukino/status/1465332814937690114', website: '', ecdh: '', idcommitment: '', meta: { blockedCount: 0, blockingCount: 0, followerCount: 4, followingCount: 4, postingCount: 22, mentionedCount: 2, followed: '0x3F425586D68616A113C29c303766DAD444167EE8/6cb3a3eea1355ead9cbcb0907e282eac3d1f606d7a8d77252445404a09d58584', blocked: null } } ],
         'should search user by name',
     );
 
@@ -415,7 +415,7 @@ tape('DBService', async t => {
     const user5 = await db.users!.search('oh', '0x3F425586D68616A113C29c303766DAD444167EE8', 0, 2);
     t.deepEqual(
         user5,
-        [ { username: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb', address: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb', joinedTx: '0xfde1d05921ccb073f71b747fd323fa313d51c77db82311993555692881ff9387', type: 'arbitrum', pubkey: 'MNw7njaTh0k835aq0JKtmpq33izkGwFxdldqf3txB64.a-yzwTFi1hNP-4lrpHB5NAw7p100oAOUefpYwfLPer8', joinedAt: 1644254074000, name: 'Ohwee', bio: '', profileImage: '', coverImage: '', twitterVerification: '', website: '', meta: { blockedCount: 0, blockingCount: 0, followerCount: 2, followingCount: 3, postingCount: 7, mentionedCount: 2, followed: null, blocked: null } } ],
+        [ { username: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb', address: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb', joinedTx: '0xfde1d05921ccb073f71b747fd323fa313d51c77db82311993555692881ff9387', type: 'arbitrum', pubkey: 'MNw7njaTh0k835aq0JKtmpq33izkGwFxdldqf3txB64.a-yzwTFi1hNP-4lrpHB5NAw7p100oAOUefpYwfLPer8', joinedAt: 1644254074000, name: 'Ohwee', bio: '', profileImage: '', coverImage: '', twitterVerification: '', website: '', ecdh: '', idcommitment: '', meta: { blockedCount: 0, blockingCount: 0, followerCount: 2, followingCount: 3, postingCount: 7, mentionedCount: 2, followed: null, blocked: null } } ],
         'should search user by name',
     );
 

@@ -20,9 +20,9 @@ import {HASHTAG_REGEX, MENTION_REGEX} from "../util/regex";
 import vKey from "../../static/verification_key.json";
 import {showStatus} from "../util/twitter";
 
-const Graph = require("gun/src/graph");
-const State = require("gun/src/state");
-const Val = require("gun/src/val");
+const Graph = require("../../node_modules/gun/src/graph");
+const State = require("../../node_modules/gun/src/state");
+const Val = require("../../node_modules/gun/src/val");
 
 const getMutex = new Mutex();
 const putMutex = new Mutex();

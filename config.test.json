@@ -17,5 +17,6 @@
   "twBearerToken": "twBearerToken",
   "twAccessKey": "twAccessKey",
   "twAccessSecret": "twAccessSecret",
-  "rapidAPIKey": "rapidAPIKey"
+  "rapidAPIKey": "rapidAPIKey",
+  "web3StorageAPIKey": "asdfasdf"
 }

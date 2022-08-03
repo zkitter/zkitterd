@@ -74,30 +74,30 @@ tape('InterepService.start', async (t: any) => {
     t.end();
 });
 
-tape('InterepService.addId', async t => {
-    await interrep.addID('0x123456', 'autism', 'gold');
-
-    t.same(
-        sempahore.addID.args[0],
-        ['0x123456', 'autism', 'gold'],
-        'should add new id to semaphore database',
-    );
-
-    sempahore.addID.reset();
-    t.end();
-});
-
-tape('InterepService.removeID', async t => {
-    await interrep.removeID('0x123456', 'autism', 'gold');
-
-    t.same(
-        sempahore.removeID.args[0],
-        ['0x123456', 'autism', 'gold'],
-        'should remove id from semaphore database',
-    );
-    sempahore.removeID.reset();
-    t.end();
-});
+// tape('InterepService.addId', async t => {
+//     await interrep.addID('0x123456', 'autism', 'gold');
+//
+//     t.same(
+//         sempahore.addID.args[0],
+//         ['0x123456', 'autism', 'gold'],
+//         'should add new id to semaphore database',
+//     );
+//
+//     sempahore.addID.reset();
+//     t.end();
+// });
+//
+// tape('InterepService.removeID', async t => {
+//     await interrep.removeID('0x123456', 'autism', 'gold');
+//
+//     t.same(
+//         sempahore.removeID.args[0],
+//         ['0x123456', 'autism', 'gold'],
+//         'should remove id from semaphore database',
+//     );
+//     sempahore.removeID.reset();
+//     t.end();
+// });
 
 tape('InterepService.getBatchFromRootHash', async t => {
     fetchStub.returns(Promise.resolve({
@@ -187,60 +187,60 @@ tape('InterepService.inProvider', async t => {
     t.end();
 });
 
-tape('InterepService.scanIDCommitment', async t => {
-    fetchStub.returns(Promise.resolve({
-        json: async () => ({ data: true }),
-    }));
-
-    await interrep.scanIDCommitment('0x123456');
-
-    t.same(
-        fetchStub.args,
-        [
-            [ 'https://kovan.interep.link/api/v1/providers/twitter/0x123456' ],
-            [ 'https://kovan.interep.link/api/v1/groups/twitter/gold/0x123456/proof' ],
-            [ 'https://kovan.interep.link/api/v1/providers/github/0x123456' ],
-            [ 'https://kovan.interep.link/api/v1/providers/reddit/0x123456' ]
-        ],
-    );
-
-    t.same(
-        sempahore.addID.args[0],
-        [ '0x123456', 'twitter', 'gold' ] ,
-    );
-
-    t.notOk(sempahore.removeID.args[0]);
-
-    fetchStub.reset();
-    sempahore.addID.reset();
-
-    let i = true;
-    fetchStub.returns(Promise.resolve({
-        json: async () => {
-            i = !i;
-            return !i ? { data: true }: false;
-        },
-    }));
-
-    await interrep.scanIDCommitment('0x3456789');
-
-    t.same(
-        fetchStub.args,
-        [
-            [ 'https://kovan.interep.link/api/v1/providers/twitter/0x3456789' ],
-            [ 'https://kovan.interep.link/api/v1/groups/twitter/gold/0x3456789/proof' ],
-            [ 'https://kovan.interep.link/api/v1/providers/github/0x3456789' ],
-            [ 'https://kovan.interep.link/api/v1/providers/reddit/0x3456789' ]
-        ],
-    );
-
-    t.notOk(sempahore.addID.args[0]);
-    t.same(
-        sempahore.removeID.args[0],
-        [ '0x3456789', 'twitter', 'gold' ] ,
-    );
-
-    fetchStub.reset();
-
-    t.end();
-});
+// tape('InterepService.scanIDCommitment', async t => {
+//     fetchStub.returns(Promise.resolve({
+//         json: async () => ({ data: true }),
+//     }));
+//
+//     await interrep.scanIDCommitment('0x123456');
+//
+//     t.same(
+//         fetchStub.args,
+//         [
+//             [ 'https://kovan.interep.link/api/v1/providers/twitter/0x123456' ],
+//             [ 'https://kovan.interep.link/api/v1/groups/twitter/gold/0x123456/proof' ],
+//             [ 'https://kovan.interep.link/api/v1/providers/github/0x123456' ],
+//             [ 'https://kovan.interep.link/api/v1/providers/reddit/0x123456' ]
+//         ],
+//     );
+//
+//     t.same(
+//         sempahore.addID.args[0],
+//         [ '0x123456', 'twitter', 'gold' ] ,
+//     );
+//
+//     t.notOk(sempahore.removeID.args[0]);
+//
+//     fetchStub.reset();
+//     sempahore.addID.reset();
+//
+//     let i = true;
+//     fetchStub.returns(Promise.resolve({
+//         json: async () => {
+//             i = !i;
+//             return !i ? { data: true }: false;
+//         },
+//     }));
+//
+//     await interrep.scanIDCommitment('0x3456789');
+//
+//     t.same(
+//         fetchStub.args,
+//         [
+//             [ 'https://kovan.interep.link/api/v1/providers/twitter/0x3456789' ],
+//             [ 'https://kovan.interep.link/api/v1/groups/twitter/gold/0x3456789/proof' ],
+//             [ 'https://kovan.interep.link/api/v1/providers/github/0x3456789' ],
+//             [ 'https://kovan.interep.link/api/v1/providers/reddit/0x3456789' ]
+//         ],
+//     );
+//
+//     t.notOk(sempahore.addID.args[0]);
+//     t.same(
+//         sempahore.removeID.args[0],
+//         [ '0x3456789', 'twitter', 'gold' ] ,
+//     );
+//
+//     fetchStub.reset();
+//
+//     t.end();
+// });

@@ -4,13 +4,16 @@ import {generateMerkleTree} from "@zk-kit/protocols";
 import {MerkleProof, IncrementalMerkleTree} from "@zk-kit/incremental-merkle-tree";
 import merkleRoot from "../models/merkle_root";
 import {sequelize} from "../util/sequelize";
+import semaphore from "../models/semaphore";
 
 export default class MerkleService extends GenericService {
     merkleRoot: ReturnType<typeof merkleRoot>;
+    semaphore: ReturnType<typeof semaphore>;
 
     constructor() {
         super();
         this.merkleRoot = merkleRoot(sequelize);
+        this.semaphore = semaphore(sequelize);
     }
 
     makeTree = async (group: string, zkType: 'rln' | 'semaphore' = 'rln'): Promise<IncrementalMerkleTree> => {
@@ -67,7 +70,12 @@ export default class MerkleService extends GenericService {
         return null;
     }
 
-    findProof = async (group: string, idCommitment: string) => {
+    findProof = async (idCommitment: string, group?: string) => {
+        if (!group) {
+            const row = await this.semaphore.findOneByCommitment(idCommitment);
+            if (!row) throw new Error(`${idCommitment} is not in any groups`);
+            group = row.group_id;
+        }
         const tree = await this.makeTree(group);
         const proof = await tree.createProof(tree.indexOf(BigInt('0x' + idCommitment)));
 
@@ -77,7 +85,7 @@ export default class MerkleService extends GenericService {
 
         await this.addRoot(root, group);
 
-        return {
+        const retProof = {
             root,
             siblings: proof.siblings.map((siblings) =>
                 Array.isArray(siblings)
@@ -86,7 +94,10 @@ export default class MerkleService extends GenericService {
             ),
             pathIndices: proof.pathIndices,
             leaf: '0x' + proof.leaf.toString(16),
-        };
+            group: group,
+        }
+
+        return retProof;
     }
 
     addRoot = async (rootHash: string, group: string) => {

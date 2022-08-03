@@ -532,11 +532,10 @@ export default class HttpService extends GenericService {
         const {idCommitment} = req.params;
         const {group = ''} = req.query;
 
-        const proof = await this.call('merkle', 'findProof', group, idCommitment);
+        const proof = await this.call('merkle', 'findProof', idCommitment, group);
 
         res.send(makeResponse({
             data: proof,
-            group: group,
         }));
     }
 

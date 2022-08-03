@@ -38,6 +38,8 @@ import {genExternalNullifier, RLNFullProof, Semaphore, SemaphoreFullProof} from 
 import vKey from "../../static/verification_key.json";
 import merkleRoot from "../models/merkle_root";
 import {sequelize} from "../util/sequelize";
+import crypto from 'crypto';
+import {addConnection, addTopic, keepAlive, publishTopic, removeConnection, SSEType} from "../util/sse";
 
 const corsOptions: CorsOptions = {
     credentials: true,
@@ -140,7 +142,11 @@ export default class HttpService extends GenericService {
                 '0x' + BigInt(publicSignals.merkleRoot).toString(16),
             );
 
-            if (isSpam || isDuplicate || !verified || !group) return;
+            if (isSpam || isDuplicate || !verified || !group) {
+                res.status(403).send(makeResponse('invalid semaphore proof', true));
+                if (onError) onError(req);
+                return;
+            };
         }
 
         next();
@@ -454,6 +460,15 @@ export default class HttpService extends GenericService {
             ciphertext,
             rln,
         });
+
+        publishTopic(`ecdh:${data.sender_pubkey}`, {
+            type: SSEType.NEW_CHAT_MESSAGE,
+            message: data,
+        });
+        publishTopic(`ecdh:${data.receiver_pubkey}`, {
+            type: SSEType.NEW_CHAT_MESSAGE,
+            message: data,
+        });
         res.send(makeResponse(data));
     }
 
@@ -525,6 +540,45 @@ export default class HttpService extends GenericService {
         }));
     }
 
+    handleGetEvents = async (req: Request, res: Response) => {
+        const headers = {
+            'Content-Type': 'text/event-stream',
+            'Connection': 'keep-alive',
+            'Cache-Control': 'no-cache',
+        };
+
+        res.writeHead(200, headers);
+
+        const clientId = crypto.randomBytes(16).toString('hex');
+
+        addConnection(clientId, res);
+    }
+
+    handleUpdateSSEClient = async (req: Request, res: Response) => {
+        const {clientId} = req.params;
+        const { topics } = req.body;
+
+        for (const topic of topics) {
+            addTopic(clientId, topic);
+        }
+
+        res.send(makeResponse('ok'));
+
+    }
+
+    handleSSEKeepAlive = async (req: Request, res: Response) => {
+        const {clientId} = req.params;
+        keepAlive(clientId);
+        res.send(makeResponse('ok'));
+    }
+
+    handleSSETerminate = async (req: Request, res: Response) => {
+        const {clientId} = req.params;
+        console.log(clientId);
+        removeConnection(clientId);
+        res.send(makeResponse('ok'));
+    }
+
     addRoutes() {
         this.app.get('/healthcheck', this.wrapHandler(async (req, res) => {
             res.send(makeResponse('ok'));
@@ -549,6 +603,10 @@ export default class HttpService extends GenericService {
         this.app.get('/v1/zkchat/chats/search/:query?', this.wrapHandler(this.handleSearchChats));
 
         this.app.get('/v1/proofs/:idCommitment', this.wrapHandler(this.handleGetProofs));
+        this.app.get('/v1/events', this.wrapHandler(this.handleGetEvents));
+        this.app.post('/v1/events/:clientId', jsonParser, this.wrapHandler(this.handleUpdateSSEClient));
+        this.app.get('/v1/events/:clientId/alive', jsonParser, this.wrapHandler(this.handleSSEKeepAlive));
+        this.app.get('/v1/events/:clientId/terminate', jsonParser, this.wrapHandler(this.handleSSETerminate));
 
         this.app.post('/interrep/groups/:provider/:name/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;

@@ -103,7 +103,9 @@ export class ZKChat {
                     : undefined,
             };
 
-            return this.DB.chats?.insertChatMessage(data);
+            await this.DB.chats?.insertChatMessage(data);
         }
+
+        return data;
     }
 }

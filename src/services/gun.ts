@@ -545,10 +545,6 @@ export default class GunService extends GenericService {
 
         const result = await profileDB.findOne(hash);
 
-        if (subtype === ProfileMessageSubType.Custom && payload.key === 'ecdh_pubkey') {
-            await this.call('zkchat', 'registerUser', creator, payload.value);
-        }
-
         if (result) {
             logger.debug('profile already exist', {
                 origin: 'gun',

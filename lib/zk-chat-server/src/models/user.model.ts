@@ -27,11 +27,22 @@ const users = (sequelize: Sequelize) => {
 
     const insertUser = async (wallet_address: string, pubkey: string) => {
         return mutex.runExclusive(async () => {
-            const res = await model.create({
-                wallet_address,
-                pubkey,
+            const res = await model.findOne({
+                where: {
+                    wallet_address,
+                },
             });
-            return res;
+
+            if (res) {
+                return res.update({
+                    pubkey,
+                });
+            } else {
+                return model.create({
+                    wallet_address,
+                    pubkey,
+                });
+            }
         });
     }
 

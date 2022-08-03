@@ -86,7 +86,8 @@ export default class ZKChatService extends GenericService {
             LEFT JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = zku.wallet_address AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
             LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = zku.wallet_address AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
             WHERE (
-                LOWER(name.value) LIKE :query
+                LOWER(zku.wallet_address) LIKE :query
+                OR LOWER(name.value) LIKE :query
                 OR LOWER(name.creator) LIKE :query
                 OR LOWER(name.creator) IN (SELECT LOWER(address) from ens WHERE LOWER(ens) LIKE :query)
                 OR LOWER(name.creator) IN (SELECT LOWER(creator) from profiles WHERE subtype = 'NAME' AND LOWER(value) LIKE :query ORDER BY "createdAt" DESC LIMIT 1)

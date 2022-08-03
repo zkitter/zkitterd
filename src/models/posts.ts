@@ -642,5 +642,5 @@ const selectLikedPostsQuery = `
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
         LEFT JOIN connections modblockedctx  ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modfollowedctx  ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
-        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = '@'||:context
+        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = CONCAT('@', :context)
 `;

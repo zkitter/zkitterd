@@ -2,7 +2,7 @@ import winston from "winston";
 const format = winston.format;
 const { combine, timestamp, prettyPrint } = format;
 
-const logger = winston.createLogger({
+export const logger = winston.createLogger({
     level: 'info',
     format: combine(
         timestamp(),
@@ -21,10 +21,18 @@ const logger = winston.createLogger({
 });
 
 if (process.env.NODE_ENV !== 'production') {
-    // logger.add(new winston.transports.Console({
-    //     level: 'info',
-    //     format: winston.format.simple(),
-    // }));
+    logger.add(new winston.transports.Console({
+        level: 'info',
+        format: winston.format.simple(),
+    }));
 }
 
-export default logger;
+export class GenericService {
+    async start() {
+
+    }
+
+    async stop() {
+
+    }
+}

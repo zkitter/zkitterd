@@ -214,7 +214,9 @@ const userSelectQuery = `
         "coverImage".value as "coverImage",
         "twitterVerification".value as "tweetId",
         "twitterVerification".key as "twitterHandle",
-        website.value as website
+        website.value as website,
+        ecdh.value as ecdh,
+        idcommitment.value as idcommitment
     FROM users u
     LEFT JOIN usermeta umt ON umt.name = u.name
     LEFT JOIN connections f ON f.subtype = 'FOLLOW' AND f.creator = :context AND f.name = u.name
@@ -225,6 +227,8 @@ const userSelectQuery = `
     LEFT JOIN profiles "coverImage" ON "coverImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'COVER_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles "twitterVerification" ON "twitterVerification"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'TWT_VERIFICATION' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles website ON website."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'WEBSITE' ORDER BY "createdAt" DESC LIMIT 1)
+    LEFT JOIN profiles ecdh ON ecdh."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='ecdh_pubkey' ORDER BY "createdAt" DESC LIMIT 1)
+    LEFT JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
 `;
 
 function inflateValuesToUserJSON(values: any[]): UserModel[] {
@@ -249,6 +253,8 @@ function inflateValuesToUserJSON(values: any[]): UserModel[] {
             coverImage: value.coverImage || '',
             twitterVerification: twitterVerification,
             website: value.website || '',
+            ecdh: value.ecdh || '',
+            idcommitment: value.idcommitment || '',
             meta: {
                 blockedCount: value.blockedCount ? Number(value.blockedCount) : 0,
                 blockingCount: value.blockingCount ? Number(value.blockingCount) : 0,

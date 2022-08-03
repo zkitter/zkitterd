@@ -1,5 +1,5 @@
 import {GenericService} from "../util/svc";
-import express, {Express, Request, Response} from "express";
+import express, {Express, NextFunction, Request, Response} from "express";
 import bodyParser from "body-parser";
 import cors, {CorsOptions} from "cors";
 import http from 'http';
@@ -12,7 +12,7 @@ import { getLinkPreview } from "link-preview-js";
 import queryString from "querystring";
 import session from 'express-session';
 import jwt from "jsonwebtoken";
-import {Dialect, Sequelize} from "sequelize";
+import {Dialect, QueryTypes, Sequelize} from "sequelize";
 const SequelizeStore = require("connect-session-sequelize")(session.Store);
 import { calculateReputation, OAuthProvider } from "@interep/reputation";
 import {
@@ -27,6 +27,19 @@ import {
 } from "../util/twitter";
 import {verifySignatureP256} from "../util/crypto";
 import {parseMessageId, PostMessageSubType} from "../util/message";
+import multer from 'multer';
+const upload = multer({
+    dest: './uploaded_files',
+});
+import fs from 'fs';
+import { getFilesFromPath } from 'web3.storage';
+import {UploadModel} from "../models/uploads";
+import {genExternalNullifier, RLNFullProof, Semaphore, SemaphoreFullProof} from "@zk-kit/protocols";
+import vKey from "../../static/verification_key.json";
+import merkleRoot from "../models/merkle_root";
+import {sequelize} from "../util/sequelize";
+import crypto from 'crypto';
+import {addConnection, addTopic, keepAlive, publishTopic, removeConnection, SSEType} from "../util/sse";
 
 const corsOptions: CorsOptions = {
     credentials: true,
@@ -36,6 +49,9 @@ const corsOptions: CorsOptions = {
 };
 
 const JWT_SECRET = config.jwtSecret;
+const ONE_MB = 1048576;
+const maxFileSize = ONE_MB * 5;
+const maxPerUserSize = ONE_MB * 100;
 
 function makeResponse(payload: any, error?: boolean) {
     return {
@@ -47,13 +63,96 @@ function makeResponse(payload: any, error?: boolean) {
 export default class HttpService extends GenericService {
     app: Express;
     httpServer: any;
+    merkleRoot?: ReturnType<typeof merkleRoot>;
 
     constructor() {
         super();
         this.app = express();
     }
 
-    wrapHandler(handler: (req: Request, res: Response) => Promise<void>) {
+    verifyAuth = (
+        getExternalNullifer: (req: Request) => string | Promise<string>,
+        getSignal: (req: Request) => string | Promise<string>,
+        onError?: (req: Request) => void | Promise<void>,
+    ) => async (req: Request, res: Response, next: NextFunction) => {
+        const signature = req.header('X-SIGNED-ADDRESS');
+        const semaphoreProof = req.header('X-SEMAPHORE-PROOF');
+        const rlnProof = req.header('X-RLN-PROOF');
+        const userDB = await this.call('db', 'getUsers');
+
+        if (signature) {
+            const params = signature.split('.');
+            const user = await userDB.findOneByName(params[1]);
+            if (!user || !verifySignatureP256(user.pubkey, params[1], params[0])) {
+                res.status(403).send(makeResponse('user must be authenticated', true));
+                if (onError) onError(req);
+                return;
+            }
+            // @ts-ignore
+            req.username = params[1];
+        } else if (semaphoreProof) {
+            const { proof, publicSignals } = JSON.parse(semaphoreProof) as SemaphoreFullProof;
+            const externalNullifier = await genExternalNullifier(await getExternalNullifer(req));
+            const signalHash = await Semaphore.genSignalHash(await getSignal(req));
+            const matchNullifier = BigInt(externalNullifier).toString() === publicSignals.externalNullifier;
+            const matchSignal = signalHash.toString() === publicSignals.signalHash;
+            const hashData = await this.call(
+                'interrep',
+                'getBatchFromRootHash',
+                publicSignals.merkleRoot
+            );
+            const verified = await Semaphore.verifyProof(
+                vKey as any,
+                {
+                    proof,
+                    publicSignals,
+                },
+            );
+
+            if (!matchNullifier || !matchSignal || !verified || !hashData) {
+                res.status(403).send(makeResponse('invalid semaphore proof', true));
+                if (onError) onError(req);
+                return;
+            }
+
+        } else if (rlnProof) {
+            const { proof, publicSignals, x_share, epoch } = JSON.parse(rlnProof);
+            const verified = await this.call('zkchat', 'verifyRLNProof', {
+                proof,
+                publicSignals,
+                x_share: x_share,
+                epoch: epoch,
+            });
+            const share = {
+                nullifier: publicSignals.internalNullifier,
+                epoch: publicSignals.epoch,
+                y_share: publicSignals.yShare,
+                x_share: x_share,
+            };
+
+            const {
+                shares,
+                isSpam,
+                isDuplicate,
+            } = await this.call('zkchat', 'checkShare', share);
+
+            const group = await this.call(
+                'merkle',
+                'getGroupByRoot',
+                '0x' + BigInt(publicSignals.merkleRoot).toString(16),
+            );
+
+            if (isSpam || isDuplicate || !verified || !group) {
+                res.status(403).send(makeResponse('invalid semaphore proof', true));
+                if (onError) onError(req);
+                return;
+            };
+        }
+
+        next();
+    }
+
+    wrapHandler(handler: (req: Request, res: Response) => Promise<any>) {
         return async (req: Request, res: Response) => {
             logger.info('received request', {
                 url: req.url,
@@ -272,6 +371,214 @@ export default class HttpService extends GenericService {
         res.send(makeResponse(post));
     };
 
+    handleGetChatUsers = async (req: Request, res: Response) => {
+        const limit = req.query.limit && Number(req.query.limit);
+        const offset = req.query.offset && Number(req.query.offset);
+        const users = await this.call('zkchat', 'getAllUsers', offset, limit);
+        res.send(makeResponse(users));
+    };
+
+    handlePostChatMessage = async (req: Request, res: Response) => {
+        const {
+            messageId,
+            type,
+            timestamp,
+            sender,
+            receiver,
+            ciphertext,
+            rln,
+        } = req.body;
+        const signature = req.header('X-SIGNED-ADDRESS');
+        const userDB = await this.call('db', 'getUsers');
+
+        if (!sender.address && (!sender.hash && !sender.ecdh)) throw new Error('invalid sender');
+        if (!receiver.address && !receiver.ecdh) throw new Error('invalid receiver');
+
+        if (rln) {
+            if (!sender.hash) throw new Error('invalid request object');
+
+            const isEpochCurrent = await this.call('zkchat', 'isEpochCurrent', rln.epoch);
+            const verified = await this.call('zkchat', 'verifyRLNProof', rln);
+            const root = '0x' + BigInt(rln.publicSignals.merkleRoot).toString(16);
+            const group = await this.call(
+                'merkle',
+                'getGroupByRoot',
+                root,
+            );
+
+            if (!isEpochCurrent) throw new Error('outdated message');
+            if (!verified) throw new Error('invalid rln proof');
+            if (!group) throw new Error('invalid merkle root');
+
+            rln.group_id = group;
+
+            const share = {
+                nullifier: rln.publicSignals.internalNullifier,
+                epoch: rln.publicSignals.epoch,
+                y_share: rln.publicSignals.yShare,
+                x_share: rln.x_share,
+            };
+
+            const {
+                shares,
+                isSpam,
+                isDuplicate,
+            } = await this.call('zkchat', 'checkShare', share);
+
+            if (isDuplicate) {
+                throw new Error('duplicate message');
+            }
+
+            if (isSpam) {
+                res.status(429).send('too many requests');
+                return;
+            }
+
+            await this.call('zkchat', 'insertShare', share);
+            await this.merkleRoot?.addRoot(root, group);
+        } else if (signature) {
+            const [sig, address] = signature.split('.');
+            const user = await userDB.findOneByName(address);
+
+            if (user?.pubkey) {
+                if (!verifySignatureP256(user.pubkey, address, sig)) {
+                    res.status(403).send(makeResponse('unauthorized', true));
+                    return;
+                }
+            }
+        } else {
+            res.status(403).send(makeResponse('unauthorized', true));
+            return;
+        }
+
+        const data = await this.call('zkchat', 'addChatMessage', {
+            messageId,
+            type,
+            timestamp: new Date(timestamp),
+            sender,
+            receiver,
+            ciphertext,
+            rln,
+        });
+
+        publishTopic(`ecdh:${data.sender_pubkey}`, {
+            type: SSEType.NEW_CHAT_MESSAGE,
+            message: data,
+        });
+        publishTopic(`ecdh:${data.receiver_pubkey}`, {
+            type: SSEType.NEW_CHAT_MESSAGE,
+            message: data,
+        });
+        res.send(makeResponse(data));
+    }
+
+    handleGetDirectMessage = async (req: Request, res: Response) => {
+        const {sender, receiver} = req.params;
+        const limit = req.query.limit && Number(req.query.limit);
+        const offset = req.query.offset && Number(req.query.offset);
+        const data = await this.call(
+            'zkchat',
+            'getDirectMessages',
+            sender,
+            receiver,
+            offset,
+            limit,
+        );
+        res.send(makeResponse(data));
+    }
+
+    handleGetDirectChats = async (req: Request, res: Response) => {
+        const {pubkey} = req.params;
+
+        const values = await sequelize.query(`
+            SELECT distinct zkc.receiver_pubkey as pubkey, zkc.receiver_address as address, null as group_id 
+            FROM zkchat_chats zkc
+            WHERE zkc.receiver_pubkey IN (
+                SELECT distinct receiver_pubkey FROM zkchat_chats WHERE sender_pubkey = :pubkey
+            )
+            UNION
+            SELECT distinct zkc.sender_pubkey as pubkey, zkc.sender_address as address, mr.group_id 
+            FROM zkchat_chats zkc
+            LEFT JOIN merkle_roots mr on mr.root_hash = zkc.rln_root
+            WHERE zkc.sender_pubkey IN (
+                SELECT distinct sender_pubkey FROM zkchat_chats WHERE receiver_pubkey = :pubkey
+            );
+        `, {
+            type: QueryTypes.SELECT,
+            replacements: {
+                pubkey,
+            },
+        });
+
+        const data = values.map((val: any) => ({
+            type: 'DIRECT',
+            receiver: val.address,
+            receiverECDH: val.pubkey,
+            senderECDH: pubkey,
+            group: val.group_id,
+        }));
+
+        res.send(makeResponse(data));
+    }
+
+    handleSearchChats = async (req: Request, res: Response) => {
+        const {query} = req.params;
+        const {sender} = req.query;
+        const data = await this.call('zkchat', 'searchChats', query || '', sender);
+        res.send(makeResponse(data));
+    }
+
+    handleGetProofs = async (req: Request, res: Response) => {
+        const {idCommitment} = req.params;
+        const {group = ''} = req.query;
+
+        const proof = await this.call('merkle', 'findProof', group, idCommitment);
+
+        res.send(makeResponse({
+            data: proof,
+            group: group,
+        }));
+    }
+
+    handleGetEvents = async (req: Request, res: Response) => {
+        const headers = {
+            'Content-Type': 'text/event-stream',
+            'Connection': 'keep-alive',
+            'Cache-Control': 'no-cache',
+        };
+
+        res.writeHead(200, headers);
+
+        const clientId = crypto.randomBytes(16).toString('hex');
+
+        addConnection(clientId, res);
+    }
+
+    handleUpdateSSEClient = async (req: Request, res: Response) => {
+        const {clientId} = req.params;
+        const { topics } = req.body;
+
+        for (const topic of topics) {
+            addTopic(clientId, topic);
+        }
+
+        res.send(makeResponse('ok'));
+
+    }
+
+    handleSSEKeepAlive = async (req: Request, res: Response) => {
+        const {clientId} = req.params;
+        keepAlive(clientId);
+        res.send(makeResponse('ok'));
+    }
+
+    handleSSETerminate = async (req: Request, res: Response) => {
+        const {clientId} = req.params;
+        console.log(clientId);
+        removeConnection(clientId);
+        res.send(makeResponse('ok'));
+    }
+
     addRoutes() {
         this.app.get('/healthcheck', this.wrapHandler(async (req, res) => {
             res.send(makeResponse('ok'));
@@ -288,6 +595,18 @@ export default class HttpService extends GenericService {
         this.app.get('/v1/:creator/likes', this.wrapHandler(this.handleGetUserLikes));
         this.app.get('/v1/homefeed', this.wrapHandler(this.handleGetHomefeed));
         this.app.get('/v1/post/:hash', this.wrapHandler(this.handleGetPostByHash));
+
+        this.app.get('/v1/zkchat/users', this.wrapHandler(this.handleGetChatUsers));
+        this.app.post('/v1/zkchat/chat-messages', jsonParser, this.wrapHandler(this.handlePostChatMessage));
+        this.app.get('/v1/zkchat/chat-messages/dm/:sender/:receiver', this.wrapHandler(this.handleGetDirectMessage));
+        this.app.get('/v1/zkchat/chats/dm/:pubkey', this.wrapHandler(this.handleGetDirectChats));
+        this.app.get('/v1/zkchat/chats/search/:query?', this.wrapHandler(this.handleSearchChats));
+
+        this.app.get('/v1/proofs/:idCommitment', this.wrapHandler(this.handleGetProofs));
+        this.app.get('/v1/events', this.wrapHandler(this.handleGetEvents));
+        this.app.post('/v1/events/:clientId', jsonParser, this.wrapHandler(this.handleUpdateSSEClient));
+        this.app.get('/v1/events/:clientId/alive', jsonParser, this.wrapHandler(this.handleSSEKeepAlive));
+        this.app.get('/v1/events/:clientId/terminate', jsonParser, this.wrapHandler(this.handleSSETerminate));
 
         this.app.post('/interrep/groups/:provider/:name/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;
@@ -321,14 +640,40 @@ export default class HttpService extends GenericService {
             res.send(makeResponse(json));
         }));
 
+        this.app.get('/dev/interep/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
+            const identityCommitment = req.params.identityCommitment;
+            // @ts-ignore
+            const resp = await fetch(`${config.interrepAPI}/api/v1/groups`);
+            const { data: groups } = await resp.json();
+            for (const group of groups) {
+                // @ts-ignore
+                const existResp = await fetch(`${config.interrepAPI}/api/v1/groups/${group.provider}/${group.name}/${identityCommitment}`);
+                const { data: exist } = await existResp.json();
+
+                if (exist) {
+                    // @ts-ignore
+                    const proofResp = await fetch(`${config.interrepAPI}/api/v1/groups/${group.provider}/${group.name}/${identityCommitment}/proof`);
+                    const json = await proofResp.json();
+                    res.send(makeResponse({
+                        ...json,
+                        provider: group.provider,
+                        name: group.name,
+                    }));
+                    return;
+                }
+            }
+
+            res.send(makeResponse(null));
+        }));
+
         this.app.get('/interrep/:identityCommitment', jsonParser, this.wrapHandler(async (req, res) => {
             const identityCommitment = req.params.identityCommitment;
             const semaphoreDB = await this.call('db', 'getSemaphore');
-            const exist = await semaphoreDB.findOneByCommitment(identityCommitment);
+            // const exist = await semaphoreDB.findOneByCommitment(identityCommitment);
 
-            if (!exist || exist?.updatedAt.getTime() + 15 * 60 * 1000 > Date.now()) {
-                await this.call('interrep', 'scanIDCommitment', identityCommitment);
-            }
+            // if (!exist || exist?.updatedAt.getTime() + 15 * 60 * 1000 > Date.now()) {
+            //     await this.call('interrep', 'scanIDCommitment', identityCommitment);
+            // }
 
             const sem = await semaphoreDB.findAllByCommitment(identityCommitment);
             const [group] = sem;
@@ -539,25 +884,76 @@ export default class HttpService extends GenericService {
             if (req.session.twitterToken) delete req.session.twitterToken;
             res.send(makeResponse('ok'));
         }));
+
+        this.app.post(
+            '/ipfs/upload',
+            upload.any(),
+            this.verifyAuth(
+                async () => 'FILE_UPLOAD',
+                // @ts-ignore
+                async req => req.files[0].originalname.slice(0, 16),
+                req => {
+                    // @ts-ignore
+                    const filepath = path.join(process.cwd(), req.files[0].path);
+                    fs.unlinkSync(filepath);
+                }
+            ),
+            this.wrapHandler(async (req, res) => {
+                if (!req.files) throw new Error('file missing from formdata');
+
+                // @ts-ignore
+                const username = req.username;
+
+                // @ts-ignore
+                const {path: relPath, filename, size, mimetype} = req.files[0];
+                const uploadDB = await this.call('db', 'getUploads');
+                const filepath = path.join(process.cwd(), relPath);
+
+                if (size > maxFileSize) {
+                    fs.unlinkSync(filepath);
+                    throw new Error('file must be less than 5MB');
+                }
+
+                if (username) {
+                    const existingSize = await uploadDB.getTotalUploadByUser(username);
+                    if (existingSize + size > maxPerUserSize) {
+                        fs.unlinkSync(filepath);
+                        throw new Error('account is out of space');
+                    }
+                }
+
+
+                const files = await getFilesFromPath(filepath);
+
+                const cid = await this.call('ipfs', 'store', files);
+                fs.unlinkSync(filepath);
+
+                if (username) {
+                    const uploadData: UploadModel = {
+                        cid,
+                        mimetype,
+                        size,
+                        filename,
+                        username: username,
+                    };
+                    await uploadDB.addUploadData(uploadData);
+                }
+
+                res.send(makeResponse({
+                    cid,
+                    filename,
+                    url: `https://${cid}.ipfs.dweb.link/${filename}`,
+                }));
+            }),
+        );
     }
 
     async start() {
+        this.merkleRoot = await merkleRoot(sequelize);
         const httpServer = http.createServer(this.app);
 
         this.app.set('trust proxy', 1);
         this.app.use(cors(corsOptions));
-
-        const sequelize = new Sequelize(
-            config.dbName as string,
-            config.dbUsername as string,
-            config.dbPassword,
-            {
-                host: config.dbHost,
-                port: Number(config.dbPort),
-                dialect: config.dbDialect as Dialect,
-                logging: false,
-            },
-        );
 
         const sessionStore = new SequelizeStore({
             db: sequelize,
@@ -580,6 +976,13 @@ export default class HttpService extends GenericService {
         this.app.use('/dev/semaphore_wasm', express.static(path.join(process.cwd(), 'static', 'semaphore.wasm')));
         this.app.use('/dev/semaphore_final_zkey', express.static(path.join(process.cwd(), 'static', 'semaphore_final.zkey')));
         this.app.use('/dev/semaphore_vkey', express.static(path.join(process.cwd(), 'static', 'verification_key.json')));
+
+        this.app.use('/circuits/semaphore/wasm', express.static(path.join(process.cwd(), 'static', 'semaphore', 'semaphore.wasm')));
+        this.app.use('/circuits/semaphore/zkey', express.static(path.join(process.cwd(), 'static', 'semaphore', 'semaphore_final.zkey')));
+        this.app.use('/circuits/semaphore/vkey', express.static(path.join(process.cwd(), 'static', 'semaphore', 'verification_key.json')));
+        this.app.use('/circuits/rln/wasm', express.static(path.join(process.cwd(), 'static', 'rln', 'rln.wasm')));
+        this.app.use('/circuits/rln/zkey', express.static(path.join(process.cwd(), 'static', 'rln', 'rln_final.zkey')));
+        this.app.use('/circuits/rln/vkey', express.static(path.join(process.cwd(), 'static', 'rln', 'verification_key.json')));
         this.addRoutes();
 
         this.httpServer = httpServer.listen(config.port);

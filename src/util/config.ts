@@ -29,6 +29,7 @@ let json: {
     twAccessKey?: string;
     twAccessSecret?: string;
     rapidAPIKey?: string;
+    web3StorageAPIKey?: string;
 } = {};
 
 try {
@@ -71,6 +72,7 @@ const moderators = json.moderators || process.env?.MODERATORS?.split(' ') || [
 const interrepAPI = json.interrepAPI || process.env.INTERREP_API || 'https://kovan.interep.link';
 const interrepContract = json.interrepContract || process.env.INTERREP_CONTRACT || '';
 const jwtSecret = json.jwtSecret || process.env.JWT_SECRET || 'topjwtsecret';
+const web3StorageAPIKey = json.web3StorageAPIKey || process.env.WEB3_STORAGE_API_KEY;
 
 if (!web3HttpProvider) throw new Error('WEB3_HTTP_PROVIDER is not valid');
 if (!ensResolver) throw new Error('ENS_RESOLVER is not valid');
@@ -86,6 +88,7 @@ if (!twBearerToken) throw new Error(`twBearerToken is not valid`);
 if (!twAccessKey) throw new Error(`twAccessKey is not valid`);
 if (!twAccessSecret) throw new Error(`twAccessSecret is not valid`);
 if (!rapidAPIKey) throw new Error(`rapidAPIKey is not valid`);
+if (!web3StorageAPIKey) throw new Error(`web3StorageAPIKey is not valid`);
 
 const config = {
     interrepAPI,
@@ -115,6 +118,7 @@ const config = {
     twAccessSecret,
     rapidAPIKey,
     moderators,
+    web3StorageAPIKey,
 };
 
 export default config;

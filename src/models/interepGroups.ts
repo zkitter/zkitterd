@@ -25,9 +25,10 @@ const interepGroups = (sequelize: Sequelize) => {
         },
     }, {
         indexes: [
-            { fields: ['root_hash'], unique: true },
+            { fields: ['root_hash'] },
             { fields: ['provider'] },
             { fields: ['name'] },
+            { fields: ['provider', 'name'], unique: true },
         ],
     });
 
@@ -45,7 +46,6 @@ const interepGroups = (sequelize: Sequelize) => {
         return mutex.runExclusive(async () => {
             const result = await model.findOne({
                 where: {
-                    root_hash,
                     provider,
                     name,
                 },
@@ -57,7 +57,24 @@ const interepGroups = (sequelize: Sequelize) => {
                     provider,
                     name,
                 });
+            } else {
+                return result.update({
+                    root_hash,
+                });
             }
+        });
+    }
+
+    const getGroup = async (provider: string, name: string): Promise<InterepGroupModel> => {
+        return mutex.runExclusive(async () => {
+            const result = await  model.findOne({
+                where: {
+                    provider,
+                    name,
+                },
+            });
+
+            return result?.toJSON() as InterepGroupModel;
         });
     }
 
@@ -65,6 +82,7 @@ const interepGroups = (sequelize: Sequelize) => {
         model,
         findOneByHash,
         addHash,
+        getGroup,
     };
 }
 

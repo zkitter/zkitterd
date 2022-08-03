@@ -3,8 +3,8 @@ import {Mutex} from "async-mutex";
 
 type SemaphoreModel = {
     id_commitment: string;
-    provider: string;
-    name: string;
+    group_id: string;
+    root_hash: string;
 };
 
 const mutex = new Mutex();
@@ -15,19 +15,19 @@ const semaphore = (sequelize: Sequelize) => {
             type: STRING,
             allowNull: false,
         },
-        provider: {
+        group_id: {
             type: STRING,
             allowNull: false,
         },
-        name: {
+        root_hash: {
             type: STRING,
             allowNull: false,
         },
     }, {
         indexes: [
             { fields: ['id_commitment'] },
-            { fields: ['provider'] },
-            { fields: ['name'] },
+            { fields: ['group_id'] },
+            { fields: ['root_hash'] },
         ],
     });
 
@@ -54,33 +54,34 @@ const semaphore = (sequelize: Sequelize) => {
         return result.map(r => r.toJSON()) as SemaphoreModel[];
     }
 
-    const addID = async (id_commitment: string, provider: string, name: string) => {
+    const addID = async (id_commitment: string, group_id: string, root_hash: string) => {
         return mutex.runExclusive(async () => {
             const result = await model.findOne({
                 where: {
                     id_commitment,
-                    provider,
-                    name,
+                    group_id,
                 },
             });
 
             if (!result) {
                 return model.create({
                     id_commitment,
-                    provider,
-                    name,
+                    group_id,
+                    root_hash,
                 });
+            } else {
+                return result.update({ root_hash });
             }
         });
     }
 
-    const removeID = async (id_commitment: string, provider: string, name: string) => {
+    const removeID = async (id_commitment: string, group_id: string, root_hash: string) => {
         return mutex.runExclusive(async () => {
             return model.destroy({
                 where: {
                     id_commitment,
-                    provider,
-                    name,
+                    group_id,
+                    root_hash,
                 },
             });
         });

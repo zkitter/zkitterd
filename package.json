@@ -32,7 +32,7 @@
     "express": "^4.17.1",
     "express-fileupload": "^1.4.0",
     "express-session": "^1.17.2",
-    "gun": "^0.2020.1232",
+    "gun": "0.2020.1232",
     "http-terminator": "^3.2.0",
     "ipfs-http-client": "56.x",
     "isomorphic-fetch": "^3.0.0",

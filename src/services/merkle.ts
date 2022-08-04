@@ -78,9 +78,11 @@ export default class MerkleService extends GenericService {
         }
 
         const exist = await this.semaphore.findOne(idCommitment, group);
+        const [protocol] = group.split('_');
 
-        if (!exist) {
-            await this.call('interrep', 'syncOne', group);
+        if (!exist && protocol === 'interrep') {
+            await this.call('interrep', 'syncOne', group)
+                .catch(() => null);
         }
 
         const tree = await this.makeTree(group);

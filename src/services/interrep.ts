@@ -31,6 +31,19 @@ export default class InterrepService extends GenericService {
         this.groups = {};
     }
 
+    syncOne = async (group: string) => {
+        const [protocol, groupType, groupName] = group.split('_');
+        // @ts-ignore
+        const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${groupType}/${groupName}`);
+        const json = await resp.json();
+        const data = json.data;
+        const existing = await this.interepGroups!.getGroup(groupType, groupName);
+        if (existing?.root_hash !== data.root) {
+            await this.fetchMembersFromGroup(data.root, groupType, groupName);
+            await this.interepGroups?.addHash(data.root, groupType, groupName);
+        }
+    }
+
     sync = async () => {
         try {
             if (this.timeout) {

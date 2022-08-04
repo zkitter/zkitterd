@@ -44,6 +44,20 @@ const semaphore = (sequelize: Sequelize) => {
         return result?.toJSON() as SemaphoreModel;
     }
 
+    const findOne = async (id_commitment: string, group_id: string): Promise<SemaphoreModel|null> => {
+        let result = await model.findOne({
+            where: {
+                id_commitment,
+                group_id,
+            },
+            order: [
+                ['createdAt', 'DESC'],
+            ],
+        });
+
+        return result?.toJSON() as SemaphoreModel;
+    }
+
     const findAllByCommitment = async (id_commitment: string): Promise<SemaphoreModel[]> => {
         let result = await model.findAll({
             where: {
@@ -89,6 +103,7 @@ const semaphore = (sequelize: Sequelize) => {
 
     return {
         model,
+        findOne,
         findOneByCommitment,
         findAllByCommitment,
         addID,

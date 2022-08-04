@@ -76,10 +76,19 @@ export default class MerkleService extends GenericService {
             if (!row) throw new Error(`${idCommitment} is not in any groups`);
             group = row.group_id;
         }
+
+        const exist = await this.semaphore.findOne(idCommitment, group);
+
+        if (!exist) {
+            await this.call('interrep', 'syncOne', group);
+        }
+
         const tree = await this.makeTree(group);
         const proof = await tree.createProof(tree.indexOf(BigInt('0x' + idCommitment)));
 
-        if (!proof) throw new Error(`${idCommitment} is not in ${group}`);
+        if (!proof) {
+            throw new Error(`${idCommitment} is not in ${group}`);
+        }
 
         const root = '0x' + proof.root.toString(16);
 

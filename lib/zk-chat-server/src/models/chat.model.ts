@@ -69,10 +69,10 @@ const chats = (sequelize: Sequelize) => {
             type: STRING,
         },
         ciphertext: {
-            type: STRING,
+            type: STRING(65535),
         },
         content: {
-            type: STRING,
+            type: STRING(65535),
         },
         reference: {
             type: STRING,

@@ -2,9 +2,12 @@ import "isomorphic-fetch";
 import tape from "tape";
 import InterrepService from "./interrep";
 import {stubCall, stubFetch} from "../util/testUtils";
+import {getMockDB} from "../util/test";
 const fetchStub = stubFetch();
 
+getMockDB();
 const interrep = new InterrepService();
+
 const [
     callStub,
     {
@@ -13,44 +16,48 @@ const [
     },
 ] = stubCall(interrep);
 
+
 tape('InterepService.start', async (t: any) => {
+    const datas = [
+        [
+            {
+                "provider": "twitter",
+                "name": "gold",
+                "depth": 20,
+                "root": "19217088683336594659449020493828377907203207941212636669271704950158751593251",
+                "numberOfLeaves": 0,
+                "size": 0
+            },
+            {
+                "provider": "poap",
+                "name": "devcon5",
+                "depth": 20,
+                "root": "19217088683336594659449020493828377907203207941212636669271704950158751593251",
+                "numberOfLeaves": 0,
+                "size": 0
+            },
+            {
+                "provider": "telegram",
+                "name": "-1001396261340",
+                "depth": 20,
+                "root": "19217088683336594659449020493828377907203207941212636669271704950158751593251",
+                "numberOfLeaves": 0,
+                "size": 0
+            },
+            {
+                "provider": "email",
+                "name": "hotmail",
+                "depth": 20,
+                "root": "19217088683336594659449020493828377907203207941212636669271704950158751593251",
+                "numberOfLeaves": 0,
+                "size": 0
+            },
+        ],
+    ];
     fetchStub.returns(Promise.resolve({
         json: async () => {
             return {
-                "data": [
-                    {
-                        "provider": "twitter",
-                        "name": "gold",
-                        "depth": 20,
-                        "root": "19217088683336594659449020493828377907203207941212636669271704950158751593251",
-                        "numberOfLeaves": 0,
-                        "size": 0
-                    },
-                    {
-                        "provider": "poap",
-                        "name": "devcon5",
-                        "depth": 20,
-                        "root": "19217088683336594659449020493828377907203207941212636669271704950158751593251",
-                        "numberOfLeaves": 0,
-                        "size": 0
-                    },
-                    {
-                        "provider": "telegram",
-                        "name": "-1001396261340",
-                        "depth": 20,
-                        "root": "19217088683336594659449020493828377907203207941212636669271704950158751593251",
-                        "numberOfLeaves": 0,
-                        "size": 0
-                    },
-                    {
-                        "provider": "email",
-                        "name": "hotmail",
-                        "depth": 20,
-                        "root": "19217088683336594659449020493828377907203207941212636669271704950158751593251",
-                        "numberOfLeaves": 0,
-                        "size": 0
-                    },
-                ],
+                "data": datas.shift() || [],
             }
         }
     }));
@@ -64,10 +71,10 @@ tape('InterepService.start', async (t: any) => {
     );
 
     t.equal(
-        interrep.groups.twitter[0].root,
-        '19217088683336594659449020493828377907203207941212636669271704950158751593251',
-        'should store group data correct on start',
-    )
+        fetchStub.args[1][0],
+        'https://kovan.interep.link/api/v1/groups/twitter/gold/members?limit=1000&offset=0',
+        'should fetch groups membership data from interep API on start',
+    );
 
     fetchStub.reset();
 
@@ -118,6 +125,7 @@ tape('InterepService.getBatchFromRootHash', async t => {
         ['0x123456'],
     );
 
+    console.log(fetchStub.args[1])
     t.same(
         fetchStub.args[0][0],
         'https://kovan.interep.link/api/v1/batches/0x123456',

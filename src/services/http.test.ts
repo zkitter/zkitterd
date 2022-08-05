@@ -512,7 +512,7 @@ tape('HTTPService - Interep Signup', async t => {
 
     http.addRoutes();
 
-    const interepSignupParams = postStub.args[1];
+    const interepSignupParams = postStub.args[3];
     // @ts-ignore
     const signupHandler: any = interepSignupParams[2];
     const signupRequest = newRequest({
@@ -535,7 +535,12 @@ tape('HTTPService - Interep Signup', async t => {
 
     await signupHandler(signupRequest, res);
 
-    t.equal(interepSignupParams[0], '/interrep/groups/:provider/:name/:identityCommitment', 'should listen to correct path');
+    t.equal(
+        interepSignupParams[0],
+        '/interrep/groups/:provider/:name/:identityCommitment',
+        'should listen to correct path'
+    );
+
     t.deepEqual(
         fetchStub.args[0][0],
         'https://kovan.interep.link/api/v1/groups/myspace/diamond/0xidcommitment',
@@ -562,7 +567,7 @@ tape('HTTPService - get interep ID commitment', async t => {
 
     http.addRoutes();
 
-    const interepGetIdParams = getStub.args[12];
+    const interepGetIdParams = getStub.args[21];
     // @ts-ignore
     const getIdHandler: any = interepGetIdParams[2];
     const getIdRequest = newRequest({
@@ -622,7 +627,7 @@ tape('HTTPService - get preview', async t => {
 
     http.addRoutes();
 
-    const getPreviewParams = getStub.args[13];
+    const getPreviewParams = getStub.args[22];
     // @ts-ignore
     const getPreviewHandler: any = getPreviewParams[1];
     const getPreviewRequest = newRequest(null, null, { link: 'https://auti.sm' });

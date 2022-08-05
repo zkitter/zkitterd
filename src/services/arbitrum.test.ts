@@ -9,7 +9,7 @@ tape('ArbitrumService', async t => {
 
     t.equal(
         await arb.getNonce('0x5741cc1bDb03738Eaed6F227E435fc08e6bE157B'),
-        '0',
+        '1',
         'get correct nonce',
     );
 

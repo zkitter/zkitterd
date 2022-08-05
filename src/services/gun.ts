@@ -249,6 +249,7 @@ export default class GunService extends GenericService {
         epoch: string;
     }) {
         const json = await post.toJSON();
+
         const {
             type,
             subtype,

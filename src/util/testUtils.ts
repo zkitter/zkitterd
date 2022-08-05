@@ -108,6 +108,13 @@ export const stubCall = (service: any): [
         link: {
             read: SinonStub;
             update: SinonStub;
+        };
+        merkle: {
+            getGroupByRoot: SinonStub;
+        };
+        zkchat: {
+            verifyRLNProof: SinonStub;
+            checkShare: SinonStub;
         }
     }
 ] => {
@@ -227,6 +234,15 @@ export const stubCall = (service: any): [
         update: sinon.stub(),
     };
 
+    const merkle = {
+        getGroupByRoot: sinon.stub(),
+    };
+
+    const zkchat = {
+        verifyRLNProof: sinon.stub(),
+        checkShare: sinon.stub(),
+    };
+
     callStub
         .withArgs('db', 'getSemaphore')
         .returns(Promise.resolve(sempahore))
@@ -259,7 +275,11 @@ export const stubCall = (service: any): [
         .withArgs('db', 'getApp')
         .returns(Promise.resolve(app))
         .withArgs('db', 'getLinkPreview')
-        .returns(Promise.resolve(link));
+        .returns(Promise.resolve(link))
+        .withArgs('db', 'getMerkle')
+        .returns(Promise.resolve(merkle))
+        .withArgs('db', 'getZKChat')
+        .returns(Promise.resolve(zkchat));
 
     return [
         callStub,
@@ -280,6 +300,8 @@ export const stubCall = (service: any): [
             profiles,
             twitterAuths,
             link,
+            merkle,
+            zkchat,
         },
     ];
 }

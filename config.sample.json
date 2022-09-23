@@ -22,5 +22,6 @@
   "twBearerToken": "obtain from twitter dev dashboard",
   "twAccessKey": "obtain from twitter dev dashboard",
   "twAccessSecret": "obtain from twitter dev dashboard",
-  "rapidAPIKey": "obtain from rapid api dashboard"
+  "rapidAPIKey": "obtain from rapid api dashboard",
+  "web3StorageAPIKey": "obtain from https://web3.storage/"
 }

@@ -40,7 +40,7 @@ const rules = [
     {
         test: /\.tsx?$/,
         exclude: /(node_modules|.webpack)/,
-        loaders: [{
+        rules: [{
             loader: 'ts-loader',
             options: {
                 transpileOnly: true,

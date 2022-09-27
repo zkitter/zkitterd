@@ -78,14 +78,14 @@ export default class MerkleService extends GenericService {
         }
 
         const exist = await this.semaphore.findOne(idCommitment, group);
-        const [protocol] = group.split('_');
+        const [protocol, service] = group.split('_');
 
         if (!exist && protocol === 'interrep') {
             await this.call('interrep', 'syncOne', group)
                 .catch(() => null);
         }
 
-        const tree = await this.makeTree(group);
+        const tree = await this.makeTree(group, service === 'taz' ? 'semaphore' : 'rln');
         const proof = await tree.createProof(tree.indexOf(BigInt('0x' + idCommitment)));
 
         if (!proof) {
@@ -166,5 +166,10 @@ const SQL: {
             'silver': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
             'gold': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
         },
-    }
+    },
+    'semaphore': {
+        'taz': {
+            'members': { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+        },
+    },
 };

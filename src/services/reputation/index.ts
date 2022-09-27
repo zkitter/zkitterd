@@ -1,0 +1,24 @@
+import {GenericService} from "../../util/svc";
+import Group42 from "./group42";
+
+export class ReputationService extends GenericService {
+    group42?: Group42;
+
+    constructor() {
+        super();
+    }
+
+    async start() {
+        const app = await this.call('db', 'getApp');
+        this.group42 = new Group42({
+            app,
+        });
+        await this.group42.start();
+        this.sync();
+    }
+
+    sync = async () => {
+        await this.group42!.sync();
+        setTimeout(this.sync, 30000);
+    }
+}

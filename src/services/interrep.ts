@@ -3,7 +3,6 @@ import config from "../util/config";
 import interepGroups from "../models/interepGroups";
 import {sequelize} from "../util/sequelize";
 import semaphore from "../models/semaphore";
-import {clear} from "winston";
 
 export type InterepGroup = {
     provider: 'twitter' | 'github' | 'reddit';

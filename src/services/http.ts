@@ -387,6 +387,7 @@ export default class HttpService extends GenericService {
             receiver,
             ciphertext,
             rln,
+            semaphore,
         } = req.body;
         const signature = req.header('X-SIGNED-ADDRESS');
         const userDB = await this.call('db', 'getUsers');
@@ -436,6 +437,18 @@ export default class HttpService extends GenericService {
 
             await this.call('zkchat', 'insertShare', share);
             await this.merkleRoot?.addRoot(root, group);
+        } else if (semaphore) {
+            const verified = await this.call('zkchat', 'verifySemaphoreProof', semaphore);
+            const root = '0x' + BigInt(semaphore.publicSignals.merkleRoot).toString(16);
+            const group = await this.call(
+                'merkle',
+                'getGroupByRoot',
+                root,
+            );
+            if (!verified) throw new Error('invalid proof');
+            if (!group) throw new Error('invalid merkle root');
+            await this.merkleRoot?.addRoot(root, group);
+
         } else if (signature) {
             const [sig, address] = signature.split('.');
             const user = await userDB.findOneByName(address);

@@ -2,8 +2,9 @@ import {logger} from "./utils/svc";
 import Chat, {ChatMessage} from "./services/chat.service";
 import DB from "./services/db.service";
 import config from "./utils/config";
-import {RLN, RLNFullProof} from "@zk-kit/protocols";
+import {RLN, RLNFullProof, Semaphore, SemaphoreFullProof} from "@zk-kit/protocols";
 import vkey from "../statics/circuitFiles/rln/verification_key.json";
+import semaphoreVkey from "../statics/circuitFiles/semaphore/verification_key.json";
 import {ShareModel} from "./models/shares.model";
 
 export class ZKChat {
@@ -67,6 +68,13 @@ export class ZKChat {
     verifyRLNProof = async (proof: RLNFullProof) => {
         return RLN.verifyProof(
             vkey as any,
+            proof,
+        );
+    }
+
+    verifySemaphoreProof = async (proof: SemaphoreFullProof) => {
+        return Semaphore.verifyProof(
+            semaphoreVkey as any,
             proof,
         );
     }

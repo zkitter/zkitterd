@@ -3,7 +3,7 @@ import {ZKChat} from "../../lib/zk-chat-server/src";
 import {ChatMessage} from "../../lib/zk-chat-server/src/services/chat.service";
 import {Dialect, QueryTypes, Sequelize} from "sequelize";
 import config from "../../lib/zk-chat-server/src/utils/config";
-import {RLN, RLNFullProof} from "@zk-kit/protocols";
+import {RLN, RLNFullProof, SemaphoreFullProof} from "@zk-kit/protocols";
 
 export default class ZKChatService extends GenericService {
     zkchat: ZKChat;
@@ -55,6 +55,10 @@ export default class ZKChatService extends GenericService {
 
     verifyRLNProof = async (proof: RLNFullProof) => {
         return this.zkchat.verifyRLNProof(proof);
+    }
+
+    verifySemaphoreProof = async (proof: SemaphoreFullProof) => {
+        return this.zkchat.verifySemaphoreProof(proof);
     }
 
     checkShare = async (share: {

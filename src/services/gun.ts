@@ -295,7 +295,6 @@ export default class GunService extends GenericService {
 
                 let verified = false;
 
-                console.log(data);
                 if (!data.x_share) {
                     verified = await Semaphore.verifyProof(
                         vKey as any,

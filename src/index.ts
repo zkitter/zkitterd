@@ -10,6 +10,7 @@ import ArbitrumService from "./services/arbitrum";
 import IPFSService from "./services/ipfs";
 import ZKChatService from "./services/zkchat";
 import MerkleService from "./services/merkle";
+import {ReputationService} from "./services/reputation";
 
 (async function initApp() {
     try {
@@ -23,6 +24,7 @@ import MerkleService from "./services/merkle";
         main.add('gun', new GunService());
         main.add('ipfs', new IPFSService());
         main.add('http', new HttpService());
+        main.add('reputation', new ReputationService());
         await main.start();
     } catch (e) {
         logger.error(e.message, {stack: e.stack});

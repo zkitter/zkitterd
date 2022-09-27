@@ -19,6 +19,7 @@ import {UserModel} from "../models/users";
 import {HASHTAG_REGEX, MENTION_REGEX} from "../util/regex";
 import vKey from "../../static/verification_key.json";
 import {showStatus} from "../util/twitter";
+import {Semaphore} from "@zk-kit/protocols";
 
 const Graph = require("../../lib/gun/graph.js");
 const State = require("../../lib/gun/state.js");
@@ -119,6 +120,7 @@ export default class GunService extends GenericService {
                             publicSignals: data.publicSignals,
                             x_share: data.x_share,
                             epoch: data.epoch,
+                            group: data.group,
                         },
                     );
                     return;
@@ -247,6 +249,7 @@ export default class GunService extends GenericService {
         publicSignals: string;
         x_share: string;
         epoch: string;
+        group?: string;
     }) {
         const json = await post.toJSON();
 
@@ -289,25 +292,43 @@ export default class GunService extends GenericService {
             if (data) {
                 const proof = JSON.parse(data.proof);
                 const publicSignals = JSON.parse(data.publicSignals);
-                const verified = await this.call('zkchat', 'verifyRLNProof', {
-                    proof,
-                    publicSignals,
-                    x_share: data.x_share,
-                    epoch: data.epoch,
-                });
 
-                const share = {
-                    nullifier: publicSignals.internalNullifier,
-                    epoch: publicSignals.epoch,
-                    y_share: publicSignals.yShare,
-                    x_share: data.x_share,
-                };
+                let verified = false;
 
-                const {
-                    shares,
-                    isSpam,
-                    isDuplicate,
-                } = await this.call('zkchat', 'checkShare', share);
+                console.log(data);
+                if (!data.x_share) {
+                    verified = await Semaphore.verifyProof(
+                        vKey as any,
+                        {
+                            proof,
+                            publicSignals,
+                        },
+                    );
+
+                    if (!verified) return;
+                } else {
+                    verified = await this.call('zkchat', 'verifyRLNProof', {
+                        proof,
+                        publicSignals,
+                        x_share: data.x_share,
+                        epoch: data.epoch,
+                    });
+
+                    const share = {
+                        nullifier: publicSignals.internalNullifier,
+                        epoch: publicSignals.epoch,
+                        y_share: publicSignals.yShare,
+                        x_share: data.x_share,
+                    };
+
+                    const {
+                        shares,
+                        isSpam,
+                        isDuplicate,
+                    } = await this.call('zkchat', 'checkShare', share);
+
+                    if (isSpam || isDuplicate || !verified) return;
+                }
 
                 const group = await this.call(
                     'merkle',
@@ -315,7 +336,7 @@ export default class GunService extends GenericService {
                     '0x' + BigInt(publicSignals.merkleRoot).toString(16),
                 );
 
-                if (isSpam || isDuplicate || !verified || !group) return;
+                if (!group) return;
 
                 const [protocol, groupName, groupType] = group.split('_')
                 await semaphoreCreatorsDB.addSemaphoreCreator(messageId, groupName, groupType);
@@ -760,9 +781,9 @@ export default class GunService extends GenericService {
         const userDB = await this.call('db', 'getUsers');
         const users = await userDB.readAll('', 0, 100);
 
-        for (const user of users) {
-            await this.watch(user.pubkey);
-        }
+        // for (const user of users) {
+        //     await this.watch(user.pubkey);
+        // }
 
         await this.watchGlobal();
 

@@ -5,6 +5,7 @@ let json: {
     interrepAPI?: string;
     web3HttpProvider?: string;
     arbitrumHttpProvider?: string;
+    goerliHttpProvider?: string;
     arbitrumRegistrar?: string;
     arbitrumPrivateKey?: string;
     arbitrumAddress?: string;
@@ -52,6 +53,7 @@ const twAccessSecret = json.twAccessSecret || process.env.TW_ACCESS_SECRET;
 const web3HttpProvider = json.web3HttpProvider || process.env.WEB3_HTTP_PROVIDER;
 const ensResolver = json.ensResolver || process.env.ENS_RESOLVER;
 const arbitrumHttpProvider = json.arbitrumHttpProvider || process.env.ARB_HTTP_PROVIDER;
+const goerliHttpProvider = json.goerliHttpProvider || process.env.GOERLI_HTTP_PROVIDER;
 const arbitrumRegistrar = json.arbitrumRegistrar || process.env.ARB_REGISTRAR;
 const arbitrumPrivateKey = json.arbitrumPrivateKey || process.env.ARB_PRIVATE_KEY;
 const arbitrumAddress = json.arbitrumAddress || process.env.ARB_ADDRESS;
@@ -77,6 +79,7 @@ const web3StorageAPIKey = json.web3StorageAPIKey || process.env.WEB3_STORAGE_API
 if (!web3HttpProvider) throw new Error('WEB3_HTTP_PROVIDER is not valid');
 if (!ensResolver) throw new Error('ENS_RESOLVER is not valid');
 if (!arbitrumHttpProvider) throw new Error('ARC_HTTP_PROVIDER is not valid');
+if (!goerliHttpProvider) throw new Error('GOERLI_HTTP_PROVIDER is not valid');
 if (!arbitrumRegistrar) throw new Error('ARB_REGISTRAR is not valid');
 if (!arbitrumPrivateKey) throw new Error('ARB_PRIVATE_KEY is not valid');
 if (!arbitrumAddress) throw new Error('ARB_ADDRESS is not valid');
@@ -94,6 +97,7 @@ const config = {
     interrepAPI,
     web3HttpProvider,
     arbitrumHttpProvider,
+    goerliHttpProvider,
     arbitrumRegistrar,
     arbitrumPrivateKey,
     arbitrumAddress,

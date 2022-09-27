@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev-server": "nodemon ./build/server.js",
-    "watch-server": "webpack --config webpack.server.config.js --inline --watch",
+    "watch-server": "webpack --config webpack.server.config.js --watch",
     "build-server": "webpack --config webpack.server.config.js",
     "dev": "NODE_ENV=development concurrently --kill-others-on-fail npm:watch-server npm:dev-server",
     "build": "NODE_ENV=production npm run build-server",

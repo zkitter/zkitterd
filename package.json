@@ -11,7 +11,9 @@
     "build": "NODE_ENV=production npm run build-server",
     "start": "NODE_ENV=production npm run build && node ./build/server.js",
     "test": "NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' tape -r ts-node/register ./src/**/*.test.ts ./src/**/**/*.test.ts | tap-spec",
-    "test:coverage": "nyc npm run test"
+    "test:coverage": "nyc npm run test",
+    "format:check": "prettier --check 'src/**/*.ts'",
+    "format:write": "prettier --write 'src/**/*.ts'"
   },
   "author": "",
   "license": "ISC",
@@ -68,6 +70,7 @@
     "node-loader": "^2.0.0",
     "nodemon": "^2.0.12",
     "nyc": "^15.1.0",
+    "prettier": "^2.7.1",
     "sinon": "^13.0.1",
     "source-map-support": "^0.5.21",
     "tap-diff": "^0.1.1",

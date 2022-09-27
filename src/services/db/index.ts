@@ -207,25 +207,25 @@ export default class DBService extends GenericService {
     }
 
     async start() {
-        this.app = await app(this.sqlite);
-        this.records = await records(this.sqlite);
-        this.linkPreview = await linkPreview(this.sequelize);
-        this.meta = await meta(this.sequelize);
-        this.userMeta = await userMeta(this.sequelize);
-        this.moderations = await moderations(this.sequelize);
-        this.connections = await connections(this.sequelize);
-        this.users = await users(this.sequelize);
-        this.posts = await posts(this.sequelize);
-        this.tags = await tags(this.sequelize);
-        this.profiles = await profiles(this.sequelize);
-        this.semaphore = await semaphore(this.sequelize);
-        this.ens = await ens(this.sequelize);
-        this.twitterAuth = await twitterAuth(this.sequelize);
-        this.interepGroups = await interepGroups(this.sequelize);
-        this.semaphoreCreators = await semaphoreCreators(this.sequelize);
-        this.threads = await threads(this.sequelize);
-        this.uploads = await uploads(this.sequelize);
-        this.merkleRoot = await merkleRoot(this.sequelize);
+        this.app = app(this.sqlite);
+        this.records = records(this.sqlite);
+        this.linkPreview = linkPreview(this.sequelize);
+        this.meta = meta(this.sequelize);
+        this.userMeta = userMeta(this.sequelize);
+        this.moderations = moderations(this.sequelize);
+        this.connections = connections(this.sequelize);
+        this.users = users(this.sequelize);
+        this.posts = posts(this.sequelize);
+        this.tags = tags(this.sequelize);
+        this.profiles = profiles(this.sequelize);
+        this.semaphore = semaphore(this.sequelize);
+        this.ens = ens(this.sequelize);
+        this.twitterAuth = twitterAuth(this.sequelize);
+        this.interepGroups = interepGroups(this.sequelize);
+        this.semaphoreCreators = semaphoreCreators(this.sequelize);
+        this.threads = threads(this.sequelize);
+        this.uploads = uploads(this.sequelize);
+        this.merkleRoot = merkleRoot(this.sequelize);
 
         await this.app?.model.sync({ force: !!process.env.FORCE });
         await this.linkPreview?.model.sync({ force: !!process.env.FORCE });

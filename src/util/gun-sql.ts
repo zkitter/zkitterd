@@ -1,2 +1,1 @@
-import Gun from "gun";
-
+import Gun from 'gun';

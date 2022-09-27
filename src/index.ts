@@ -1,16 +1,16 @@
-import "isomorphic-fetch";
-import {MainService} from "./util/svc";
-import ENSService from "./services/ens";
-import logger from "./util/logger";
-import DBService from "./services/db";
-import HttpService from "./services/http";
-import GunService from "./services/gun";
-import InterrepService from "./services/interrep";
-import ArbitrumService from "./services/arbitrum";
-import IPFSService from "./services/ipfs";
-import ZKChatService from "./services/zkchat";
-import MerkleService from "./services/merkle";
-import {ReputationService} from "./services/reputation";
+import 'isomorphic-fetch';
+import { MainService } from './util/svc';
+import ENSService from './services/ens';
+import logger from './util/logger';
+import DBService from './services/db';
+import HttpService from './services/http';
+import GunService from './services/gun';
+import InterrepService from './services/interrep';
+import ArbitrumService from './services/arbitrum';
+import IPFSService from './services/ipfs';
+import ZKChatService from './services/zkchat';
+import MerkleService from './services/merkle';
+import { ReputationService } from './services/reputation';
 
 (async function initApp() {
     try {
@@ -27,7 +27,7 @@ import {ReputationService} from "./services/reputation";
         main.add('reputation', new ReputationService());
         await main.start();
     } catch (e) {
-        logger.error(e.message, {stack: e.stack});
+        logger.error(e.message, { stack: e.stack });
         throw e;
     }
 })();

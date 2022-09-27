@@ -1,4 +1,4 @@
-import {BIGINT, Sequelize, STRING} from "sequelize";
+import { BIGINT, Sequelize, STRING } from 'sequelize';
 
 type RecordModel = {
     soul: string;
@@ -9,35 +9,39 @@ type RecordModel = {
 };
 
 const records = (sequelize: Sequelize) => {
-    const model = sequelize.define('records', {
-        soul: {
-            type: STRING(4095),
-        },
-        field: {
-            type: STRING(4095),
-        },
-        value: {
-            type: STRING(65535),
-        },
-        relation: {
-            type: STRING(65535),
-        },
-        state: {
-            type: BIGINT,
-        },
-    }, {
-        indexes: [
-            {
-                fields: ['soul'],
+    const model = sequelize.define(
+        'records',
+        {
+            soul: {
+                type: STRING(4095),
             },
-            {
-                unique: true,
-                fields: ['soul', 'field'],
-            }
-        ],
-    });
+            field: {
+                type: STRING(4095),
+            },
+            value: {
+                type: STRING(65535),
+            },
+            relation: {
+                type: STRING(65535),
+            },
+            state: {
+                type: BIGINT,
+            },
+        },
+        {
+            indexes: [
+                {
+                    fields: ['soul'],
+                },
+                {
+                    unique: true,
+                    fields: ['soul', 'field'],
+                },
+            ],
+        }
+    );
 
-    const findOne = async (soul: string, field: string): Promise<RecordModel|null> => {
+    const findOne = async (soul: string, field: string): Promise<RecordModel | null> => {
         let result = await model.findOne({
             where: {
                 soul,
@@ -45,8 +49,8 @@ const records = (sequelize: Sequelize) => {
             },
         });
 
-        return result?.toJSON() as RecordModel || null;
-    }
+        return (result?.toJSON() as RecordModel) || null;
+    };
 
     const findAll = async (soul: string): Promise<RecordModel[]> => {
         let result = await model.findAll({
@@ -56,7 +60,7 @@ const records = (sequelize: Sequelize) => {
         });
 
         return result.map(r => r.toJSON() as RecordModel);
-    }
+    };
 
     const readAll = async (offset = 0, limit = 20): Promise<RecordModel[]> => {
         let result = await model.findAll({
@@ -65,14 +69,14 @@ const records = (sequelize: Sequelize) => {
         });
 
         return result.map(r => r.toJSON() as RecordModel);
-    }
+    };
 
     const updateOrCreateRecord = async (record: RecordModel) => {
         const result = await model.findOne({
             where: {
                 soul: record.soul,
                 field: record.field,
-            }
+            },
         });
 
         const json = result?.toJSON() as RecordModel;
@@ -86,7 +90,7 @@ const records = (sequelize: Sequelize) => {
         }
 
         return model.create(record);
-    }
+    };
 
     return {
         model,
@@ -95,6 +99,6 @@ const records = (sequelize: Sequelize) => {
         readAll,
         updateOrCreateRecord,
     };
-}
+};
 
 export default records;

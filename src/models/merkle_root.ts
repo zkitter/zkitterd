@@ -1,4 +1,4 @@
-import {Sequelize, BIGINT, STRING} from "sequelize";
+import { Sequelize, BIGINT, STRING } from 'sequelize';
 
 type MerkleRootModel = {
     root_hash: string;
@@ -6,19 +6,20 @@ type MerkleRootModel = {
 };
 
 const merkleRoot = (sequelize: Sequelize) => {
-    const model = sequelize.define('merkle_root', {
-        root_hash: {
-            type: STRING,
+    const model = sequelize.define(
+        'merkle_root',
+        {
+            root_hash: {
+                type: STRING,
+            },
+            group_id: {
+                type: STRING,
+            },
         },
-        group_id: {
-            type: STRING,
-        },
-    }, {
-        indexes: [
-            { fields: ['root_hash'], unique: true },
-            { fields: ['group_id'] },
-        ],
-    });
+        {
+            indexes: [{ fields: ['root_hash'], unique: true }, { fields: ['group_id'] }],
+        }
+    );
 
     const getGroupByRoot = async (root_hash: string): Promise<MerkleRootModel> => {
         let result = await model.findOne({
@@ -28,7 +29,7 @@ const merkleRoot = (sequelize: Sequelize) => {
         });
 
         return result?.toJSON() as MerkleRootModel;
-    }
+    };
 
     const addRoot = async (root_hash: string, group_id: string) => {
         const exist = await model.findOne({
@@ -43,8 +44,7 @@ const merkleRoot = (sequelize: Sequelize) => {
                 group_id,
             });
         }
-
-    }
+    };
 
     return {
         model,
@@ -53,4 +53,4 @@ const merkleRoot = (sequelize: Sequelize) => {
     };
 };
 
-export default merkleRoot
+export default merkleRoot;

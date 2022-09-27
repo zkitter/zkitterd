@@ -1,5 +1,5 @@
-import {Sequelize, STRING} from "sequelize";
-import {Mutex} from "async-mutex";
+import { Sequelize, STRING } from 'sequelize';
+import { Mutex } from 'async-mutex';
 const mutex = new Mutex();
 
 type TwitterAuthModel = {
@@ -10,44 +10,48 @@ type TwitterAuthModel = {
 };
 
 const twitterAuth = (sequelize: Sequelize) => {
-    const model = sequelize.define('twitter_auth', {
-        user_token: {
-            type: STRING,
-        },
-        user_token_secret: {
-            type: STRING,
-        },
-        username: {
-            type: STRING,
-        },
-        user_id: {
-            type: STRING,
-        },
-        account: {
-            type: STRING,
-        },
-    }, {
-        indexes: [
-            {
-                unique: true,
-                fields: ['user_token'],
+    const model = sequelize.define(
+        'twitter_auth',
+        {
+            user_token: {
+                type: STRING,
             },
-            {
-                unique: true,
-                fields: ['username'],
+            user_token_secret: {
+                type: STRING,
             },
-            {
-                unique: true,
-                fields: ['user_id'],
+            username: {
+                type: STRING,
             },
-            {
-                unique: true,
-                fields: ['account'],
+            user_id: {
+                type: STRING,
             },
-        ],
-    });
+            account: {
+                type: STRING,
+            },
+        },
+        {
+            indexes: [
+                {
+                    unique: true,
+                    fields: ['user_token'],
+                },
+                {
+                    unique: true,
+                    fields: ['username'],
+                },
+                {
+                    unique: true,
+                    fields: ['user_id'],
+                },
+                {
+                    unique: true,
+                    fields: ['account'],
+                },
+            ],
+        }
+    );
 
-    const findUserByToken = async (token?: string | null): Promise<TwitterAuthModel|null> => {
+    const findUserByToken = async (token?: string | null): Promise<TwitterAuthModel | null> => {
         if (!token) return null;
 
         const result = await model.findOne({
@@ -57,9 +61,9 @@ const twitterAuth = (sequelize: Sequelize) => {
         });
 
         return result?.toJSON() as TwitterAuthModel;
-    }
+    };
 
-    const findUserByUsername = async (username: string): Promise<TwitterAuthModel|null> => {
+    const findUserByUsername = async (username: string): Promise<TwitterAuthModel | null> => {
         if (!username) return null;
 
         const result = await model.findOne({
@@ -69,9 +73,9 @@ const twitterAuth = (sequelize: Sequelize) => {
         });
 
         return result?.toJSON() as TwitterAuthModel;
-    }
+    };
 
-    const findUserByAccount = async (account: string): Promise<TwitterAuthModel|null> => {
+    const findUserByAccount = async (account: string): Promise<TwitterAuthModel | null> => {
         if (!account) return null;
 
         const result = await model.findOne({
@@ -81,7 +85,7 @@ const twitterAuth = (sequelize: Sequelize) => {
         });
 
         return result?.toJSON() as TwitterAuthModel;
-    }
+    };
 
     const addAccount = async (username: string, account: string) => {
         return mutex.runExclusive(async () => {
@@ -106,7 +110,7 @@ const twitterAuth = (sequelize: Sequelize) => {
                 username,
             });
         });
-    }
+    };
 
     const updateUserToken = async (data: TwitterAuthModel) => {
         return mutex.runExclusive(async () => {
@@ -132,7 +136,7 @@ const twitterAuth = (sequelize: Sequelize) => {
                 user_id: data.userId,
             });
         });
-    }
+    };
 
     return {
         model,
@@ -142,6 +146,6 @@ const twitterAuth = (sequelize: Sequelize) => {
         findUserByUsername,
         updateUserToken,
     };
-}
+};
 
 export default twitterAuth;

@@ -1,15 +1,15 @@
-import {GenericService} from "../util/svc";
-import config from "../util/config";
-import interepGroups from "../models/interepGroups";
-import {sequelize} from "../util/sequelize";
-import semaphore from "../models/semaphore";
+import { GenericService } from '../util/svc';
+import config from '../util/config';
+import interepGroups from '../models/interepGroups';
+import { sequelize } from '../util/sequelize';
+import semaphore from '../models/semaphore';
 
 export type InterepGroup = {
     provider: 'twitter' | 'github' | 'reddit';
     name: string;
     root: string;
     size: number;
-}
+};
 
 const INTEREP_SYNC_INTERVAL = 15 * 60 * 1000;
 
@@ -18,7 +18,7 @@ export default class InterrepService extends GenericService {
     semaphore?: ReturnType<typeof semaphore>;
 
     groups: {
-        [providerName: string]: InterepGroup[],
+        [providerName: string]: InterepGroup[];
     };
 
     providers = ['twitter', 'github', 'reddit'];
@@ -41,7 +41,7 @@ export default class InterrepService extends GenericService {
             await this.fetchMembersFromGroup(data.root, groupType, groupName);
             await this.interepGroups?.addHash(data.root, groupType, groupName);
         }
-    }
+    };
 
     sync = async () => {
         try {
@@ -68,12 +68,20 @@ export default class InterrepService extends GenericService {
         } finally {
             this.timeout = setTimeout(this.sync, INTEREP_SYNC_INTERVAL);
         }
-    }
+    };
 
-    async fetchMembersFromGroup(root: string, provider: string, name: string, limit = 1000, offset = 0): Promise<void> {
+    async fetchMembersFromGroup(
+        root: string,
+        provider: string,
+        name: string,
+        limit = 1000,
+        offset = 0
+    ): Promise<void> {
         const groupId = `interrep_${provider}_${name}`;
         // @ts-ignore
-        const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${provider}/${name}/members?limit=${limit}&offset=${offset}`);
+        const resp = await fetch(
+            `${config.interrepAPI}/api/v1/groups/${provider}/${name}/members?limit=${limit}&offset=${offset}`
+        );
         const json = await resp.json();
         const members: string[] = json.data;
         if (members.length) {
@@ -117,7 +125,9 @@ export default class InterrepService extends GenericService {
     async getProofFromGroup(provider: string, name: string, id: string) {
         try {
             // @ts-ignore
-            const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${provider}/${name}/${id}/proof`);
+            const resp = await fetch(
+                `${config.interrepAPI}/api/v1/groups/${provider}/${name}/${id}/proof`
+            );
             const json = await resp.json();
             return json;
         } catch (e) {

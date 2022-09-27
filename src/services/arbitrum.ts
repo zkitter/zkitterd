@@ -1,10 +1,10 @@
-import {GenericService} from "../util/svc";
-import {Contract} from "web3-eth-contract";
-import Web3 from "web3";
-import config from "../util/config";
-import logger from "../util/logger";
+import { GenericService } from '../util/svc';
+import { Contract } from 'web3-eth-contract';
+import Web3 from 'web3';
+import config from '../util/config';
+import logger from '../util/logger';
 import Timeout = NodeJS.Timeout;
-import {arbRegistrarABI} from "../util/abi";
+import { arbRegistrarABI } from '../util/abi';
 
 export default class ArbitrumService extends GenericService {
     web3: Web3;
@@ -18,13 +18,13 @@ export default class ArbitrumService extends GenericService {
         this.web3.eth.accounts.wallet.add(config.arbitrumPrivateKey);
         this.registrar = new this.web3.eth.Contract(
             arbRegistrarABI as any,
-            config.arbitrumRegistrar,
+            config.arbitrumRegistrar
         );
     }
 
     getNonce = async (account: string): Promise<string> => {
         return this.registrar.methods.nonces(account).call();
-    }
+    };
 
     updateFor = async (account: string, pubkey: string, proof: string) => {
         const pubkeyBytes = this.web3.utils.utf8ToHex(pubkey);
@@ -32,7 +32,7 @@ export default class ArbitrumService extends GenericService {
             from: config.arbitrumAddress,
             gas: '10000000',
         });
-    }
+    };
 
     async scanFromLast() {
         const app = await this.call('db', 'getApp');
@@ -55,7 +55,6 @@ export default class ArbitrumService extends GenericService {
                 fromBlock: lastBlock,
                 toBlock: toBlock,
             });
-
 
             for (let event of events) {
                 const tx = await this.web3.eth.getTransaction(event.transactionHash);
@@ -125,7 +124,7 @@ export default class ArbitrumService extends GenericService {
         }
 
         this.scanTimeout = setTimeout(this.scan, shouldScanAgain ? 0 : 15000);
-    }
+    };
 
     async start() {
         this.scan();

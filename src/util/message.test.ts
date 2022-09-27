@@ -1,5 +1,5 @@
 // @ts-ignore
-import tape from "tape";
+import tape from 'tape';
 import {
     Connection,
     ConnectionMessageSubType,
@@ -9,8 +9,8 @@ import {
     Post,
     PostMessageSubType,
     Profile,
-    ProfileMessageSubType
-} from "./message";
+    ProfileMessageSubType,
+} from './message';
 
 tape('message.ts', async t => {
     const post1 = new Post({
@@ -52,25 +52,25 @@ tape('message.ts', async t => {
     t.deepEqual(
         Post.fromHex(post1.toHex()).toJSON(),
         post1.toJSON(),
-        'should serialize and deserialize Post',
+        'should serialize and deserialize Post'
     );
 
     t.deepEqual(
         Moderation.fromHex(mod1.toHex()).toJSON(),
         mod1.toJSON(),
-        'should serialize and deserialize Moderation',
+        'should serialize and deserialize Moderation'
     );
 
     t.deepEqual(
         Connection.fromHex(conn1.toHex()).toJSON(),
         conn1.toJSON(),
-        'should serialize and deserialize Connection',
+        'should serialize and deserialize Connection'
     );
 
     t.deepEqual(
         Profile.fromHex(pfp1.toHex()).toJSON(),
         pfp1.toJSON(),
-        'should serialize and deserialize Profile',
+        'should serialize and deserialize Profile'
     );
 
     t.end();

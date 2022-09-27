@@ -1,4 +1,4 @@
-import {Sequelize, BIGINT, STRING} from "sequelize";
+import { Sequelize, BIGINT, STRING } from 'sequelize';
 
 type LinkPreviewModel = {
     link: string;
@@ -11,34 +11,36 @@ type LinkPreviewModel = {
 };
 
 const linkPreview = (sequelize: Sequelize) => {
-    const model = sequelize.define('link', {
-        title: {
-            type: STRING,
+    const model = sequelize.define(
+        'link',
+        {
+            title: {
+                type: STRING,
+            },
+            image: {
+                type: STRING,
+            },
+            description: {
+                type: STRING,
+            },
+            link: {
+                type: STRING,
+                unique: true,
+            },
+            mediaType: {
+                type: STRING,
+            },
+            contentType: {
+                type: STRING,
+            },
+            favicon: {
+                type: STRING,
+            },
         },
-        image: {
-            type: STRING,
-        },
-        description: {
-            type: STRING,
-        },
-        link: {
-            type: STRING,
-            unique: true,
-        },
-        mediaType: {
-            type: STRING,
-        },
-        contentType: {
-            type: STRING,
-        },
-        favicon: {
-            type: STRING,
-        },
-    }, {
-        indexes: [
-            { fields: ['link'], unique: true },
-        ],
-    });
+        {
+            indexes: [{ fields: ['link'], unique: true }],
+        }
+    );
 
     const read = async (link: string): Promise<LinkPreviewModel> => {
         let result = await model.findOne({
@@ -48,7 +50,7 @@ const linkPreview = (sequelize: Sequelize) => {
         });
 
         return result?.toJSON() as LinkPreviewModel;
-    }
+    };
 
     const update = async (linkPreview: LinkPreviewModel) => {
         const result = await model.findOne({
@@ -62,13 +64,13 @@ const linkPreview = (sequelize: Sequelize) => {
         }
 
         return model.create(linkPreview);
-    }
+    };
 
     return {
         model,
         read,
         update,
     };
-}
+};
 
 export default linkPreview;

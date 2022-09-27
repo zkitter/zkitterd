@@ -1,4 +1,4 @@
-import {BIGINT, ModelCtor, Sequelize, STRING} from "sequelize";
+import { BIGINT, ModelCtor, Sequelize, STRING } from 'sequelize';
 
 type ConnectionModel = {
     messageId: string;
@@ -11,45 +11,49 @@ type ConnectionModel = {
 };
 
 const connections = (sequelize: Sequelize) => {
-    const model = sequelize.define('connections', {
-        messageId: {
-            type: STRING,
-            allowNull: false,
+    const model = sequelize.define(
+        'connections',
+        {
+            messageId: {
+                type: STRING,
+                allowNull: false,
+            },
+            hash: {
+                type: STRING,
+                allowNull: false,
+                primaryKey: true,
+            },
+            creator: {
+                type: STRING,
+                allowNull: false,
+            },
+            type: {
+                type: STRING,
+                allowNull: false,
+            },
+            subtype: {
+                type: STRING,
+            },
+            createdAt: {
+                type: BIGINT,
+                allowNull: false,
+            },
+            name: {
+                type: STRING,
+            },
         },
-        hash: {
-            type: STRING,
-            allowNull: false,
-            primaryKey: true,
-        },
-        creator: {
-            type: STRING,
-            allowNull: false,
-        },
-        type: {
-            type: STRING,
-            allowNull: false,
-        },
-        subtype: {
-            type: STRING,
-        },
-        createdAt: {
-            type: BIGINT,
-            allowNull: false,
-        },
-        name: {
-            type: STRING,
-        },
-    }, {
-        indexes: [
-            { fields: ['creator'] },
-            { fields: ['subtype'] },
-            { fields: ['name'] },
-            { fields: ['hash'], unique: true },
-            { fields: ['messageId'], unique: true },
-        ],
-    });
+        {
+            indexes: [
+                { fields: ['creator'] },
+                { fields: ['subtype'] },
+                { fields: ['name'] },
+                { fields: ['hash'], unique: true },
+                { fields: ['messageId'], unique: true },
+            ],
+        }
+    );
 
-    const findOne = async (hash: string): Promise<ConnectionModel|null> => {
+    const findOne = async (hash: string): Promise<ConnectionModel | null> => {
         let result: any = await model.findOne({
             where: {
                 hash,
@@ -61,7 +65,7 @@ const connections = (sequelize: Sequelize) => {
         const json = result.toJSON() as ConnectionModel;
 
         return json;
-    }
+    };
 
     const remove = async (hash: string) => {
         return model.destroy({
@@ -69,13 +73,13 @@ const connections = (sequelize: Sequelize) => {
                 hash,
             },
         });
-    }
+    };
 
     const findAllByTargetName = async (
         name: string,
         offset = 0,
         limit = 20,
-        order: 'DESC' | 'ASC' = 'DESC',
+        order: 'DESC' | 'ASC' = 'DESC'
     ): Promise<ConnectionModel[]> => {
         let result = await model.findAll({
             where: {
@@ -87,11 +91,11 @@ const connections = (sequelize: Sequelize) => {
         });
 
         return result.map((r: any) => r.toJSON() as ConnectionModel);
-    }
+    };
 
     const createConnection = async (record: ConnectionModel) => {
         return model.create(record);
-    }
+    };
 
     return {
         model,
@@ -100,6 +104,6 @@ const connections = (sequelize: Sequelize) => {
         findAllByTargetName,
         createConnection,
     };
-}
+};
 
 export default connections;

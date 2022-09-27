@@ -1,4 +1,4 @@
-import {Sequelize, BIGINT, STRING} from "sequelize";
+import { Sequelize, BIGINT, STRING } from 'sequelize';
 
 type ENSModel = {
     ens: string;
@@ -6,43 +6,44 @@ type ENSModel = {
 };
 
 const ens = (sequelize: Sequelize) => {
-    const model = sequelize.define('ens', {
-        ens: {
-            type: STRING,
-            allowNull: false,
-            validate: {
-                notEmpty: true,
+    const model = sequelize.define(
+        'ens',
+        {
+            ens: {
+                type: STRING,
+                allowNull: false,
+                validate: {
+                    notEmpty: true,
+                },
+                primaryKey: true,
+                unique: true,
             },
-            primaryKey: true,
-            unique: true,
-        },
-        address: {
-            type: STRING,
-            allowNull: false,
-            validate: {
-                notEmpty: true,
+            address: {
+                type: STRING,
+                allowNull: false,
+                validate: {
+                    notEmpty: true,
+                },
             },
         },
-    }, {
-        indexes: [
-            { fields: ['ens'] },
-            { fields: ['address'] },
-        ]
-    });
+        {
+            indexes: [{ fields: ['ens'] }, { fields: ['address'] }],
+        }
+    );
 
     const readByAddress = async (address: string): Promise<ENSModel> => {
         let result = await model.findOne({
             where: { address },
         });
         return result?.toJSON() as ENSModel;
-    }
+    };
 
     const readByENS = async (ens: string): Promise<ENSModel> => {
         let result = await model.findOne({
             where: { ens },
         });
         return result?.toJSON() as ENSModel;
-    }
+    };
 
     const update = async (ens: string, address: string) => {
         const result = await model.findOne({
@@ -60,7 +61,7 @@ const ens = (sequelize: Sequelize) => {
             ens,
             address,
         });
-    }
+    };
 
     return {
         model,
@@ -68,6 +69,6 @@ const ens = (sequelize: Sequelize) => {
         readByAddress,
         update,
     };
-}
+};
 
 export default ens;

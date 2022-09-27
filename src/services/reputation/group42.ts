@@ -1,11 +1,11 @@
-import {sequelize} from "../../util/sequelize";
-import semaphore from "../../models/semaphore";
-import {GenericService} from "../../util/svc";
-import app from "../../models/app";
-import Web3 from "web3";
-import config from "../../util/config";
-import {semaphoreABI} from "../../util/abi";
-import {Contract} from "web3-eth-contract";
+import { sequelize } from '../../util/sequelize';
+import semaphore from '../../models/semaphore';
+import { GenericService } from '../../util/svc';
+import app from '../../models/app';
+import Web3 from 'web3';
+import config from '../../util/config';
+import { semaphoreABI } from '../../util/abi';
+import { Contract } from 'web3-eth-contract';
 
 export default class Group42 extends GenericService {
     semaphore?: ReturnType<typeof semaphore>;
@@ -13,13 +13,13 @@ export default class Group42 extends GenericService {
     web3: Web3;
     contract: Contract;
 
-    constructor(opts: { app: ReturnType<typeof app>}) {
+    constructor(opts: { app: ReturnType<typeof app> }) {
         super();
         const httpProvider = new Web3.providers.HttpProvider(config.goerliHttpProvider);
         this.web3 = new Web3(httpProvider);
         this.contract = new this.web3.eth.Contract(
             semaphoreABI as any,
-            '0xE585f0Db9aB24dC912404DFfb9b28fb8BF211fA6',
+            '0xE585f0Db9aB24dC912404DFfb9b28fb8BF211fA6'
         );
         this.app = opts.app;
     }
@@ -47,7 +47,11 @@ export default class Group42 extends GenericService {
             const exist = await this.semaphore?.findOne(idCommitmentHex, 'semaphore_taz_members');
 
             if (!exist && groupId === '10806') {
-                await this.semaphore?.addID(idCommitmentHex, 'semaphore_taz_members', merkleTreeRoot);
+                await this.semaphore?.addID(
+                    idCommitmentHex,
+                    'semaphore_taz_members',
+                    merkleTreeRoot
+                );
             }
         }
 

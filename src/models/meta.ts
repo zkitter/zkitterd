@@ -1,5 +1,5 @@
-import {BIGINT, QueryTypes, Sequelize, STRING} from "sequelize";
-import {Mutex} from "async-mutex";
+import { BIGINT, QueryTypes, Sequelize, STRING } from 'sequelize';
+import { Mutex } from 'async-mutex';
 
 type MetaModel = {
     reference: string;
@@ -19,40 +19,45 @@ const emptyMeta = {
 };
 
 const meta = (sequelize: Sequelize) => {
-    const model = sequelize.define('meta', {
-        reference: {
-            type: STRING,
-            allowNull: false,
-            primaryKey: true,
-        },
-        postCount: {
-            type: BIGINT,
-        },
-        replyCount: {
-            type: BIGINT,
-        },
-        likeCount: {
-            type: BIGINT,
-        },
-        repostCount: {
-            type: BIGINT,
-        },
-    }, {
-        indexes: [
-            { fields: ['reference'], unique: true },
-        ],
-    });
-
-    const findOne = async (reference: string, context = ''): Promise<any|null> => {
-        const result = await sequelize.query(`
-            ${selectMetaQuery}
-        `, {
-            replacements: {
-                context: context || '',
-                reference,
+    const model = sequelize.define(
+        'meta',
+        {
+            reference: {
+                type: STRING,
+                allowNull: false,
+                primaryKey: true,
             },
-            type: QueryTypes.SELECT,
-        });
+            postCount: {
+                type: BIGINT,
+            },
+            replyCount: {
+                type: BIGINT,
+            },
+            likeCount: {
+                type: BIGINT,
+            },
+            repostCount: {
+                type: BIGINT,
+            },
+        },
+        {
+            indexes: [{ fields: ['reference'], unique: true }],
+        }
+    );
+
+    const findOne = async (reference: string, context = ''): Promise<any | null> => {
+        const result = await sequelize.query(
+            `
+            ${selectMetaQuery}
+        `,
+            {
+                replacements: {
+                    context: context || '',
+                    reference,
+                },
+                type: QueryTypes.SELECT,
+            }
+        );
 
         const values: any[] = [];
 
@@ -69,18 +74,18 @@ const meta = (sequelize: Sequelize) => {
             values.push(meta);
         }
 
-        return values[0] ? values[0] : {
-            liked: null,
-            reposted: null,
-            ...emptyMeta,
-        };
-    }
+        return values[0]
+            ? values[0]
+            : {
+                  liked: null,
+                  reposted: null,
+                  ...emptyMeta,
+              };
+    };
 
-    const findTags = async (
-        offset = 0,
-        limit = 20,
-    ) => {
-        const result = await sequelize.query(`
+    const findTags = async (offset = 0, limit = 20) => {
+        const result = await sequelize.query(
+            `
             SELECT
                 "reference",
                 "postCount"
@@ -88,34 +93,36 @@ const meta = (sequelize: Sequelize) => {
             WHERE "reference" LIKE '#%'
             ORDER BY "postCount" DESC
             LIMIT :limit OFFSET :offset
-        `, {
-            replacements: {
-                limit,
-                offset,
-            },
-            type: QueryTypes.SELECT,
-        });
+        `,
+            {
+                replacements: {
+                    limit,
+                    offset,
+                },
+                type: QueryTypes.SELECT,
+            }
+        );
 
         return result.map((r: any) => ({
             tagName: r.reference,
             postCount: Number(r.postCount),
         }));
-    }
+    };
 
     const update = async (record: MetaModel) => {
         return model.create(record);
-    }
+    };
 
     return {
         model,
         findOne,
         findTags,
         update,
-        addLike:  makeIncrementer('likeCount', 1),
+        addLike: makeIncrementer('likeCount', 1),
         addReply: makeIncrementer('replyCount', 1),
         addRepost: makeIncrementer('repostCount', 1),
         addPost: makeIncrementer('postCount', 1),
-        removeLike:  makeIncrementer('likeCount', -1),
+        removeLike: makeIncrementer('likeCount', -1),
         removeReply: makeIncrementer('replyCount', -1),
         removeRepost: makeIncrementer('repostCount', -1),
         removePost: makeIncrementer('postCount', -1),
@@ -147,9 +154,9 @@ const meta = (sequelize: Sequelize) => {
 
                 return res;
             });
-        }
+        };
     }
-}
+};
 
 export default meta;
 

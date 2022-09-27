@@ -1,5 +1,5 @@
-import config from "./config";
-import {Dialect, Sequelize} from "sequelize";
+import config from './config';
+import { Dialect, Sequelize } from 'sequelize';
 
 let cached: Sequelize;
 
@@ -22,7 +22,7 @@ function getSequelize(): Sequelize {
                 port: Number(config.dbPort),
                 dialect: config.dbDialect as Dialect,
                 logging: false,
-            },
+            }
         );
     }
 

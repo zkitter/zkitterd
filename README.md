@@ -39,6 +39,7 @@ You can set configuration using environment variable or by creating a `config.pr
 | `ARB_PRIVATE_KEY` | Private Key to the Arbitrum address to be used to fund onboarding. |
 | `ARB_ADDRESS` | The Arbitrum address to be used to fund onboarding. |
 | `MODERATORS` | Global moderations for the server. Defaults to `0x3F425586D68616A113C29c303766DAD444167EE8` and `0xd44a82dD160217d46D754a03C8f841edF06EBE3c` |
+| `WEB3_STORAGE_API_KEY` | [Web3 Storage ](https://web3.storage/) API Token|
 
 ## Build Instructions
 

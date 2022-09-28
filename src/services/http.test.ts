@@ -610,15 +610,14 @@ tape('HTTPService - Interep Signup', async t => {
 
 tape('HTTPService - get interep ID commitment', async t => {
     const http = new HttpService();
-    const [call, stubs] = stubCall(http);
+    const [, stubs] = stubCall(http);
     const res = newResponse();
 
     const getStub = sinon.stub(http.app, 'get');
-    const postStub = sinon.stub(http.app, 'post');
 
     http.addRoutes();
 
-    const interepGetIdParams = getStub.args[21];
+    const interepGetIdParams = getStub.args[23];
     // @ts-ignore
     const getIdHandler: any = interepGetIdParams[2];
     const getIdRequest = newRequest({
@@ -628,11 +627,11 @@ tape('HTTPService - get interep ID commitment', async t => {
     const fetchStub = stubFetch();
     fetchStub.returns(
         Promise.resolve({
-            json: async () => ({ sibilings: [0, 1, 0] }),
+            json: async () => ({ siblings: [0, 1, 0] }),
         })
     );
 
-    stubs.sempahore.findAllByCommitment.returns(
+    stubs.semaphore.findAllByCommitment.returns(
         Promise.resolve([
             {
                 provider: 'myspace',
@@ -660,7 +659,7 @@ tape('HTTPService - get interep ID commitment', async t => {
         [
             {
                 payload: {
-                    sibilings: [0, 1, 0],
+                    siblings: [0, 1, 0],
                     provider: 'myspace',
                     name: 'diamond',
                 },

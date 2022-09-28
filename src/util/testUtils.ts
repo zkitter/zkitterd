@@ -20,7 +20,7 @@ export const stubCall = (
         ens: {
             update: SinonStub;
         };
-        sempahore: {
+        semaphore: {
             addID: SinonStub;
             removeID: SinonStub;
             findOneByCommitment: SinonStub;
@@ -131,7 +131,7 @@ export const stubCall = (
         update: sinon.stub(),
     };
 
-    const sempahore = {
+    const semaphore = {
         addID: sinon.stub(),
         removeID: sinon.stub(),
         findOneByCommitment: sinon.stub(),
@@ -247,7 +247,7 @@ export const stubCall = (
 
     callStub
         .withArgs('db', 'getSemaphore')
-        .returns(Promise.resolve(sempahore))
+        .returns(Promise.resolve(semaphore))
         .withArgs('db', 'getInterepGroups')
         .returns(Promise.resolve(interepGroups))
         .withArgs('db', 'getUsers')
@@ -288,7 +288,7 @@ export const stubCall = (
         {
             app,
             ens,
-            sempahore,
+            semaphore,
             interepGroups,
             users,
             posts,

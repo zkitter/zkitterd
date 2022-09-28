@@ -1,10 +1,37 @@
-import "isomorphic-fetch";
-import tape from "tape";
-import sinon from "sinon";
-import HttpService from "./http";
-import {stubCall, stubFetch} from "../util/testUtils";
+import 'isomorphic-fetch';
+import tape from 'tape';
+import sinon from 'sinon';
+import HttpService from './http';
+import { stubCall, stubFetch } from '../util/testUtils';
 
-const post = {"type":"POST","subtype":"","messageId":"0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6","hash":"67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6","createdAt":"1648260542270","payload":{"topic":"","title":"","content":"auti.sm is a pwa ","reference":"","attachment":""},"meta":{"replyCount":2,"likeCount":2,"repostCount":0,"liked":null,"reposted":null,"blocked":null,"interepProvider":null,"interepGroup":null,"rootId":"0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6","moderation":"THREAD_HIDE_BLOCK","modblockedctx":null,"modfollowedctx":null,"modmentionedctx":null,"modLikedPost":null,"modBlockedPost":null,"modBlockedUser":null,"modFollowerUser":null}};
+const post = {
+    type: 'POST',
+    subtype: '',
+    messageId:
+        '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6',
+    hash: '67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6',
+    createdAt: '1648260542270',
+    payload: { topic: '', title: '', content: 'auti.sm is a pwa ', reference: '', attachment: '' },
+    meta: {
+        replyCount: 2,
+        likeCount: 2,
+        repostCount: 0,
+        liked: null,
+        reposted: null,
+        blocked: null,
+        interepProvider: null,
+        interepGroup: null,
+        rootId: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6',
+        moderation: 'THREAD_HIDE_BLOCK',
+        modblockedctx: null,
+        modfollowedctx: null,
+        modmentionedctx: null,
+        modLikedPost: null,
+        modBlockedPost: null,
+        modBlockedUser: null,
+        modFollowerUser: null,
+    },
+};
 
 const newRequest = (params?: any, body?: any, query?: any): any => {
     return {
@@ -18,7 +45,7 @@ const newRequest = (params?: any, body?: any, query?: any): any => {
         header: () => null,
         session: {},
     };
-}
+};
 
 const newResponse = (): any => {
     const ret: any = {
@@ -36,15 +63,17 @@ tape('HTTPService - handleGetUser', async t => {
     const req = newRequest();
     const res = newResponse();
 
-    stubs.users.readAll.returns(Promise.resolve([{ username: '0xuser1' }, { username: '0xuser2' }]))
+    stubs.users.readAll.returns(
+        Promise.resolve([{ username: '0xuser1' }, { username: '0xuser2' }])
+    );
     call.withArgs('ens', 'fetchNameByAddress').returns(Promise.resolve(''));
 
     await http.handleGetUser(req, res);
 
     t.deepEqual(
         stubs.users.readAll.args[0],
-        [ undefined, 0, 10 ],
-        'should read users db with correct params',
+        [undefined, 0, 10],
+        'should read users db with correct params'
     );
 
     t.deepEqual(
@@ -58,7 +87,7 @@ tape('HTTPService - handleGetUser', async t => {
                 error: undefined,
             },
         ],
-        'should return list of users',
+        'should return list of users'
     );
 
     t.end();
@@ -70,15 +99,17 @@ tape('HTTPService - handleSearchUser', async t => {
     const req = newRequest({ query: '2728' });
     const res = newResponse();
 
-    stubs.users.search.returns(Promise.resolve([{ username: '0xsearchuser1' }, { username: '0xsearchuser2' }]))
+    stubs.users.search.returns(
+        Promise.resolve([{ username: '0xsearchuser1' }, { username: '0xsearchuser2' }])
+    );
     call.withArgs('ens', 'fetchNameByAddress').returns(Promise.resolve(''));
 
     await http.handleSearchUser(req, res);
 
     t.deepEqual(
         stubs.users.search.args[0],
-        [ '2728', undefined, 0, 10 ],
-        'should search users db with correct params',
+        ['2728', undefined, 0, 10],
+        'should search users db with correct params'
     );
 
     t.deepEqual(
@@ -92,7 +123,7 @@ tape('HTTPService - handleSearchUser', async t => {
                 error: undefined,
             },
         ],
-        'should return list of users',
+        'should return list of users'
     );
 
     t.end();
@@ -104,9 +135,11 @@ tape('HTTPService - handleGetUserByAddress', async t => {
     const req = newRequest({ address: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c' });
     const res = newResponse();
 
-    stubs.users.findOneByName.returns(Promise.resolve({
-        username: '0xmyaddress',
-    }));
+    stubs.users.findOneByName.returns(
+        Promise.resolve({
+            username: '0xmyaddress',
+        })
+    );
 
     call.withArgs('ens', 'fetchNameByAddress').returns(Promise.resolve(''));
 
@@ -114,8 +147,8 @@ tape('HTTPService - handleGetUserByAddress', async t => {
 
     t.deepEqual(
         stubs.users.findOneByName.args[0],
-        [ '0xd44a82dD160217d46D754a03C8f841edF06EBE3c', undefined ],
-        'should get user with correct params',
+        ['0xd44a82dD160217d46D754a03C8f841edF06EBE3c', undefined],
+        'should get user with correct params'
     );
 
     t.deepEqual(
@@ -130,7 +163,7 @@ tape('HTTPService - handleGetUserByAddress', async t => {
                 error: undefined,
             },
         ],
-        'should return user',
+        'should return user'
     );
 
     t.end();
@@ -146,28 +179,41 @@ tape('HTTPService - handleAddUser', async t => {
     });
     const res = newResponse();
 
-    stubs.users.findOneByName.returns(Promise.resolve({
-        username: '0xmyaddress',
-    }));
+    stubs.users.findOneByName.returns(
+        Promise.resolve({
+            username: '0xmyaddress',
+        })
+    );
 
     call.withArgs('arbitrum', 'getNonce').returns(Promise.resolve(0));
-    call.withArgs('ens', 'ecrecover')
-        .returns(Promise.resolve('0xd44a82dD160217d46D754a03C8f841edF06EBE3c'));
-    call.withArgs('arbitrum', 'updateFor')
-        .returns(Promise.resolve('0xtxhash'));
+    call.withArgs('ens', 'ecrecover').returns(
+        Promise.resolve('0xd44a82dD160217d46D754a03C8f841edF06EBE3c')
+    );
+    call.withArgs('arbitrum', 'updateFor').returns(Promise.resolve('0xtxhash'));
 
     await http.handleAddUser(req, res);
 
     t.deepEqual(
         call.args[1],
-        [ 'ens', 'ecrecover', '0x87777c0e30f6a3458fd35fa202eec524c2b3b6713bbb3c388d43e9db9040867f', '0xproof' ],
-        'should call ecrecover with hash',
+        [
+            'ens',
+            'ecrecover',
+            '0x87777c0e30f6a3458fd35fa202eec524c2b3b6713bbb3c388d43e9db9040867f',
+            '0xproof',
+        ],
+        'should call ecrecover with hash'
     );
 
     t.deepEqual(
         call.args[2],
-        [ 'arbitrum', 'updateFor', '0xd44a82dD160217d46D754a03C8f841edF06EBE3c', '0xpubkey', '0xproof' ],
-        'should call arbitrum contract with correct params',
+        [
+            'arbitrum',
+            'updateFor',
+            '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
+            '0xpubkey',
+            '0xproof',
+        ],
+        'should call arbitrum contract with correct params'
     );
 
     t.deepEqual(
@@ -178,19 +224,25 @@ tape('HTTPService - handleAddUser', async t => {
                 error: undefined,
             },
         ],
-        'should return tx hash',
+        'should return tx hash'
     );
 
     await http.handleAddUser(newRequest(null, {}), res);
 
-    await http.handleAddUser(newRequest(null, {
-        account: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-    }), res);
+    await http.handleAddUser(
+        newRequest(null, {
+            account: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
+        }),
+        res
+    );
 
-    await http.handleAddUser(newRequest(null, {
-        account: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-        publicKey: '0xpubkey',
-    }), res);
+    await http.handleAddUser(
+        newRequest(null, {
+            account: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
+            publicKey: '0xpubkey',
+        }),
+        res
+    );
 
     t.equal(res.status.args[0][0], 400, 'should return error code');
     t.equal(res.send.args[1][0].payload, 'invalid account', 'should return error message');
@@ -207,17 +259,17 @@ tape('HTTPService - handleAddUser', async t => {
 tape('HTTPService - handleGetReplies', async t => {
     const http = new HttpService();
     const [call, stubs] = stubCall(http);
-    const req = newRequest(
-        null,
-        null,
-        { parent: '0xparenthash/67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6',
+    const req = newRequest(null, null, {
+        parent: '0xparenthash/67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6',
     });
     const res = newResponse();
 
-    stubs.posts.findOne.returns(Promise.resolve({
-        subtype: '',
-        payload: {},
-    }));
+    stubs.posts.findOne.returns(
+        Promise.resolve({
+            subtype: '',
+            payload: {},
+        })
+    );
 
     stubs.posts.findAllReplies.returns(Promise.resolve([{ hash: '0xposthash' }]));
 
@@ -234,49 +286,55 @@ tape('HTTPService - handleGetReplies', async t => {
             undefined,
             false,
         ],
-    'should find all replies',
+        'should find all replies'
     );
 
     t.deepEqual(
         res.send.args[0],
         [
             {
-                payload: [{
-                    hash: '0xposthash',
-                }],
+                payload: [
+                    {
+                        hash: '0xposthash',
+                    },
+                ],
                 error: undefined,
             },
         ],
-        'should return replies',
+        'should return replies'
     );
 
-    stubs.posts.findOne.returns(Promise.resolve({
-        subtype: 'M_POST',
-        payload: {
-            topic: 'https://twitter.com/0xTsukino/status/1465780936314740736',
-        },
-    }));
+    stubs.posts.findOne.returns(
+        Promise.resolve({
+            subtype: 'M_POST',
+            payload: {
+                topic: 'https://twitter.com/0xTsukino/status/1465780936314740736',
+            },
+        })
+    );
 
     stubs.posts.findAllReplies.returns(Promise.resolve([{ hash: '0xposthash' }]));
-    stubs.posts.findLastTweetInConversation.returns(Promise.resolve({hash: '0xtweethash'}));
+    stubs.posts.findLastTweetInConversation.returns(Promise.resolve({ hash: '0xtweethash' }));
 
     const fetch = stubFetch();
     fetch.reset();
-    fetch.returns(Promise.resolve({
-        json: async () => ({
-            data: [
-                {
-                    author_id: 'yagami',
-                    created_at: '1234',
-                    coversation_id: 'threadid',
-                    in_reply_to_user_id: 'replyid',
-                    text: 'hello!',
-                    id: '',
-                    referenced_tweets: [],
-                }
-            ]
+    fetch.returns(
+        Promise.resolve({
+            json: async () => ({
+                data: [
+                    {
+                        author_id: 'yagami',
+                        created_at: '1234',
+                        coversation_id: 'threadid',
+                        in_reply_to_user_id: 'replyid',
+                        text: 'hello!',
+                        id: '',
+                        referenced_tweets: [],
+                    },
+                ],
+            }),
         })
-    }))
+    );
     await http.handleGetReplies(req, res);
 
     t.deepEqual(
@@ -288,9 +346,9 @@ tape('HTTPService - handleGetReplies', async t => {
                 headers: {
                     Authorization: 'Bearer twBearerToken',
                 },
-            }
+            },
         ],
-        'should fetch twitter replies',
+        'should fetch twitter replies'
     );
 
     t.deepEqual(
@@ -312,7 +370,7 @@ tape('HTTPService - handleGetReplies', async t => {
                 },
             ],
         ],
-        'should create twitter replies',
+        'should create twitter replies'
     );
 
     fetch.reset();
@@ -331,14 +389,14 @@ tape('HTTPService - handleGetPosts', async t => {
 
     t.deepEqual(
         stubs.posts.findAllPosts.args[0],
-        [ undefined, undefined, 0, 10, undefined, false ],
-        'should find all posts',
+        [undefined, undefined, 0, 10, undefined, false],
+        'should find all posts'
     );
 
     t.deepEqual(
         res.send.args[0],
-        [{ payload: [post], error: undefined}],
-        'should return all posts',
+        [{ payload: [post], error: undefined }],
+        'should return all posts'
     );
 
     t.end();
@@ -356,14 +414,14 @@ tape('HTTPService - handleGetPostsByTag', async t => {
 
     t.deepEqual(
         stubs.tags.getPostsByTag.args[0],
-        [ '#unittest', undefined, 0, 10 ],
-        'should find all posts',
+        ['#unittest', undefined, 0, 10],
+        'should find all posts'
     );
 
     t.deepEqual(
         res.send.args[0],
-        [{ payload: [post], error: undefined}],
-        'should return all posts',
+        [{ payload: [post], error: undefined }],
+        'should return all posts'
     );
 
     t.end();
@@ -379,16 +437,12 @@ tape('HTTPService - handleGetTags', async t => {
 
     await http.handleGetTags(req, res);
 
-    t.deepEqual(
-        stubs.meta.findTags.args[0],
-        [ 0, 10 ],
-        'should find all tags',
-    );
+    t.deepEqual(stubs.meta.findTags.args[0], [0, 10], 'should find all tags');
 
     t.deepEqual(
         res.send.args[0],
-        [{ payload: [{ tagName: '#test' }], error: undefined}],
-        'should return all tags',
+        [{ payload: [{ tagName: '#test' }], error: undefined }],
+        'should return all tags'
     );
 
     t.end();
@@ -408,14 +462,14 @@ tape('HTTPService - handleGetUserReplies', async t => {
 
     t.deepEqual(
         stubs.posts.findAllRepliesFromCreator.args[0],
-        [ '0xmyuser', undefined, 0, 10 ],
-        'should find all replies',
+        ['0xmyuser', undefined, 0, 10],
+        'should find all replies'
     );
 
     t.deepEqual(
         res.send.args[0],
-        [{ payload: [post], error: undefined}],
-        'should return all replies',
+        [{ payload: [post], error: undefined }],
+        'should return all replies'
     );
 
     t.end();
@@ -435,14 +489,14 @@ tape('HTTPService - handleGetUserLikes', async t => {
 
     t.deepEqual(
         stubs.posts.findAllLikedPostsByCreator.args[0],
-        [ '0xmyuser', undefined, 0, 10 ],
-        'should find all likes',
+        ['0xmyuser', undefined, 0, 10],
+        'should find all likes'
     );
 
     t.deepEqual(
         res.send.args[0],
-        [{ payload: [post], error: undefined}],
-        'should return all likes',
+        [{ payload: [post], error: undefined }],
+        'should return all likes'
     );
 
     t.end();
@@ -460,16 +514,12 @@ tape('HTTPService - handleGetHomefeed', async t => {
 
     await http.handleGetHomefeed(req, res);
 
-    t.deepEqual(
-        stubs.posts.getHomeFeed.args[0],
-        [ undefined, 0, 10 ],
-        'should find home feed',
-    );
+    t.deepEqual(stubs.posts.getHomeFeed.args[0], [undefined, 0, 10], 'should find home feed');
 
     t.deepEqual(
         res.send.args[0],
-        [{ payload: [post], error: undefined}],
-        'should return home feed',
+        [{ payload: [post], error: undefined }],
+        'should return home feed'
     );
 
     t.end();
@@ -487,16 +537,12 @@ tape('HTTPService - handleGetPostByHash', async t => {
 
     await http.handleGetPostByHash(req, res);
 
-    t.deepEqual(
-        stubs.posts.findOne.args[0],
-        [ '0xposthash', undefined ],
-        'should find post by hash',
-    );
+    t.deepEqual(stubs.posts.findOne.args[0], ['0xposthash', undefined], 'should find post by hash');
 
     t.deepEqual(
         res.send.args[0],
-        [{ payload: post, error: undefined}],
-        'should return post by hash',
+        [{ payload: post, error: undefined }],
+        'should return post by hash'
     );
 
     t.end();
@@ -520,18 +566,23 @@ tape('HTTPService - Interep Signup', async t => {
         provider: 'myspace',
         name: 'diamond',
     });
-    signupRequest.session.twitterToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ._w7sKWvl7ojSC6JdSwY6VAaj4lbZ89o8PIhUaNtQeww';
+    signupRequest.session.twitterToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ._w7sKWvl7ojSC6JdSwY6VAaj4lbZ89o8PIhUaNtQeww';
 
-    stubs.twitterAuths.findUserByToken.returns(Promise.resolve({
-        user_token: 'userToken',
-        user_token_secret: 'userTokenSecret',
-    }));
+    stubs.twitterAuths.findUserByToken.returns(
+        Promise.resolve({
+            user_token: 'userToken',
+            user_token_secret: 'userTokenSecret',
+        })
+    );
 
     const fetchStub = stubFetch();
-    fetchStub.returns(Promise.resolve({
-        status: 201,
-        json: async () => 'BOOM!',
-    }));
+    fetchStub.returns(
+        Promise.resolve({
+            status: 201,
+            json: async () => 'BOOM!',
+        })
+    );
 
     await signupHandler(signupRequest, res);
 
@@ -544,13 +595,13 @@ tape('HTTPService - Interep Signup', async t => {
     t.deepEqual(
         fetchStub.args[0][0],
         'https://kovan.interep.link/api/v1/groups/myspace/diamond/0xidcommitment',
-        'should make request to interep',
+        'should make request to interep'
     );
 
     t.deepEqual(
         res.send.args[0],
-        [ { payload: 'BOOM!', error: undefined } ],
-        'should return result from interep',
+        [{ payload: 'BOOM!', error: undefined }],
+        'should return result from interep'
     );
 
     fetchStub.reset();
@@ -575,27 +626,33 @@ tape('HTTPService - get interep ID commitment', async t => {
     });
 
     const fetchStub = stubFetch();
-    fetchStub.returns(Promise.resolve({
-        json: async () => ({ sibilings: [0, 1, 0] }),
-    }));
+    fetchStub.returns(
+        Promise.resolve({
+            json: async () => ({ sibilings: [0, 1, 0] }),
+        })
+    );
 
-    stubs.sempahore.findAllByCommitment.returns(Promise.resolve([{
-        provider: 'myspace',
-        name: 'diamond',
-    }]))
+    stubs.sempahore.findAllByCommitment.returns(
+        Promise.resolve([
+            {
+                provider: 'myspace',
+                name: 'diamond',
+            },
+        ])
+    );
 
     await getIdHandler(getIdRequest, res);
 
     t.equal(
         interepGetIdParams[0],
         '/interrep/:identityCommitment',
-        'should listen to correct path',
+        'should listen to correct path'
     );
 
     t.deepEqual(
         fetchStub.args[0][0],
         'https://kovan.interep.link/api/v1/groups/myspace/diamond/0xidcommitment/proof',
-        'should make request to interep',
+        'should make request to interep'
     );
 
     t.deepEqual(
@@ -603,14 +660,14 @@ tape('HTTPService - get interep ID commitment', async t => {
         [
             {
                 payload: {
-                    sibilings: [ 0, 1, 0 ],
+                    sibilings: [0, 1, 0],
                     provider: 'myspace',
                     name: 'diamond',
                 },
                 error: undefined,
             },
         ],
-        'should return correct result from interep',
+        'should return correct result from interep'
     );
 
     fetchStub.reset();
@@ -633,11 +690,7 @@ tape('HTTPService - get preview', async t => {
     const getPreviewRequest = newRequest(null, null, { link: 'https://auti.sm' });
     await getPreviewHandler(getPreviewRequest, res);
 
-    t.equal(
-        getPreviewParams[0],
-        '/preview',
-        'should listen to correct path',
-    );
+    t.equal(getPreviewParams[0], '/preview', 'should listen to correct path');
 
     t.deepEqual(
         res.send.args[0][0],
@@ -653,7 +706,7 @@ tape('HTTPService - get preview', async t => {
             },
             error: undefined,
         },
-        'should return correct result from interep',
+        'should return correct result from interep'
     );
 
     t.end();

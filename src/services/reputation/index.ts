@@ -1,5 +1,5 @@
-import {GenericService} from "../../util/svc";
-import Group42 from "./group42";
+import { GenericService } from '../../util/svc';
+import Group42 from './group42';
 
 export class ReputationService extends GenericService {
     group42?: Group42;
@@ -20,5 +20,5 @@ export class ReputationService extends GenericService {
     sync = async () => {
         await this.group42!.sync();
         setTimeout(this.sync, 30000);
-    }
+    };
 }

@@ -1,9 +1,9 @@
-import {Response} from "express";
+import { Response } from 'express';
 
 type SSEClient = {
     res: Response;
     lastUsed: number;
-}
+};
 
 const CLIENT_CACHE: {
     [clientId: string]: SSEClient;
@@ -37,7 +37,7 @@ export const addConnection = (clientId: string, res: Response) => {
     })}\n\n`;
 
     res.write(raw);
-}
+};
 
 export const keepAlive = (clientId: string) => {
     const client = CLIENT_CACHE[clientId];
@@ -45,7 +45,7 @@ export const keepAlive = (clientId: string) => {
     if (!client) throw new Error(`${clientId} not found`);
 
     client.lastUsed = Date.now();
-}
+};
 
 export const addTopic = (clientId: string, topic: string) => {
     const client = CLIENT_CACHE[clientId];
@@ -57,7 +57,7 @@ export const addTopic = (clientId: string, topic: string) => {
     const bucket: { [id: string]: boolean } = TOPIC_MAP[topic] || {};
     bucket[clientId] = true;
     TOPIC_MAP[topic] = bucket;
-}
+};
 
 export const removeTopic = (clientId: string, topic: string) => {
     const client = CLIENT_CACHE[clientId];
@@ -71,7 +71,7 @@ export const removeTopic = (clientId: string, topic: string) => {
     if (bucket[clientId]) delete bucket[clientId];
 
     TOPIC_MAP[topic] = bucket;
-}
+};
 
 export const publishTopic = async (topic: string, data: any) => {
     const bucket: { [id: string]: boolean } = TOPIC_MAP[topic] || {};
@@ -85,7 +85,7 @@ export const publishTopic = async (topic: string, data: any) => {
             client.res.write(raw);
         }
     }
-}
+};
 
 export const removeConnection = (clientId: string) => {
     const client = CLIENT_CACHE[clientId];
@@ -95,12 +95,11 @@ export const removeConnection = (clientId: string) => {
     delete CLIENT_CACHE[clientId];
 
     client.res.end();
-
-}
+};
 
 export const getConnection = (clientId: string) => {
     return CLIENT_CACHE[clientId];
-}
+};
 
 export const pruneConnections = async () => {
     const now = Date.now();
@@ -114,7 +113,7 @@ export const pruneConnections = async () => {
             }
         }
     }
-}
+};
 
 const pruneLoop = async () => {
     if (pruneTimeout) {
@@ -124,6 +123,6 @@ const pruneLoop = async () => {
     await pruneConnections();
 
     setTimeout(pruneLoop, MAX_TTL);
-}
+};
 
 pruneLoop();

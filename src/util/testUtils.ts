@@ -1,14 +1,16 @@
-import "isomorphic-fetch";
-import sinon, {SinonStub} from "sinon";
+import 'isomorphic-fetch';
+import sinon, { SinonStub } from 'sinon';
 
 let fetchStub: any;
 export const stubFetch = () => {
     // @ts-ignore
     fetchStub = fetchStub || sinon.stub(global, 'fetch');
     return fetchStub;
-}
+};
 
-export const stubCall = (service: any): [
+export const stubCall = (
+    service: any
+): [
     SinonStub,
     {
         app: {
@@ -115,7 +117,7 @@ export const stubCall = (service: any): [
         zkchat: {
             verifyRLNProof: SinonStub;
             checkShare: SinonStub;
-        }
+        };
     }
 ] => {
     const callStub = sinon.stub(service, 'call');
@@ -304,4 +306,4 @@ export const stubCall = (service: any): [
             zkchat,
         },
     ];
-}
+};

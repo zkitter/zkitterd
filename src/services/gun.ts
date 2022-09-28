@@ -1,29 +1,32 @@
-import {GenericService} from "../util/svc";
-import Gun from "gun";
-import {IGunChainReference} from "gun/types/chain";
-import express from "express";
-import config from "../util/config";
-import logger from "../util/logger";
+import { GenericService } from '../util/svc';
+import Gun from 'gun';
+import { IGunChainReference } from 'gun/types/chain';
+import express from 'express';
+import config from '../util/config';
+import logger from '../util/logger';
 import {
     Connection,
     ConnectionMessageSubType,
     Message,
     MessageType,
-    Moderation, ModerationMessageSubType, parseMessageId,
+    Moderation,
+    ModerationMessageSubType,
+    parseMessageId,
     Post,
     PostMessageSubType,
-    Profile, ProfileMessageSubType
-} from "../util/message";
-import {Mutex} from "async-mutex";
-import {UserModel} from "../models/users";
-import {HASHTAG_REGEX, MENTION_REGEX} from "../util/regex";
-import vKey from "../../static/verification_key.json";
-import {showStatus} from "../util/twitter";
-import {Semaphore} from "@zk-kit/protocols";
+    Profile,
+    ProfileMessageSubType,
+} from '../util/message';
+import { Mutex } from 'async-mutex';
+import { UserModel } from '../models/users';
+import { HASHTAG_REGEX, MENTION_REGEX } from '../util/regex';
+import vKey from '../../static/verification_key.json';
+import { showStatus } from '../util/twitter';
+import { Semaphore } from '@zk-kit/protocols';
 
-const Graph = require("../../lib/gun/graph.js");
-const State = require("../../lib/gun/state.js");
-const Val = require("../../lib/gun/val.js");
+const Graph = require('../../lib/gun/graph.js');
+const State = require('../../lib/gun/state.js');
+const Val = require('../../lib/gun/val.js');
 
 const getMutex = new Mutex();
 const putMutex = new Mutex();
@@ -35,15 +38,14 @@ export default class GunService extends GenericService {
     watchGlobal = async () => {
         if (!this.gun) throw new Error('gun is not set up');
 
-        this.gun.get('message')
-            .map(async (data, messageId) => {
-                try {
-                    await this.handleGunMessage(data, messageId);
-                } catch (e) {
-                    logger.error(e.message, e);
-                }
-            });
-    }
+        this.gun.get('message').map(async (data, messageId) => {
+            try {
+                await this.handleGunMessage(data, messageId);
+            } catch (e) {
+                logger.error(e.message, e);
+            }
+        });
+    };
 
     watch = async (pubkey: string) => {
         if (!this.gun) throw new Error('gun is not set up');
@@ -53,7 +55,8 @@ export default class GunService extends GenericService {
         //
         // if (!user) throw new Error(`cannot find user with pubkey ${pubkey}`);
 
-        this.gun.user(pubkey)
+        this.gun
+            .user(pubkey)
             .get('message')
             .map(async (data, messageId) => {
                 try {
@@ -62,11 +65,11 @@ export default class GunService extends GenericService {
                     logger.error(e.message, e);
                 }
             });
-    }
+    };
 
     handleGunMessage = async (data: any, messageId: string, pubkey?: string) => {
         return insertMutex.runExclusive(async () => {
-            const {creator, hash} = parseMessageId(messageId);
+            const { creator, hash } = parseMessageId(messageId);
 
             let user: UserModel | null = null;
 
@@ -93,7 +96,7 @@ export default class GunService extends GenericService {
 
             if (!type) return;
 
-            if(data.payload) {
+            if (data.payload) {
                 // @ts-ignore
                 payload = await this.gun.get(data.payload['#']);
             }
@@ -115,13 +118,15 @@ export default class GunService extends GenericService {
                     });
                     await this.insertPost(
                         post,
-                        !data.proof ? undefined : {
-                            proof: data.proof,
-                            publicSignals: data.publicSignals,
-                            x_share: data.x_share,
-                            epoch: data.epoch,
-                            group: data.group,
-                        },
+                        !data.proof
+                            ? undefined
+                            : {
+                                  proof: data.proof,
+                                  publicSignals: data.publicSignals,
+                                  x_share: data.x_share,
+                                  epoch: data.epoch,
+                                  group: data.group,
+                              }
                     );
                     return;
                 case MessageType.Moderation:
@@ -163,7 +168,7 @@ export default class GunService extends GenericService {
                     return;
             }
         });
-    }
+    };
 
     async deleteMessage(messageId: string) {
         const { creator, hash } = parseMessageId(messageId);
@@ -177,31 +182,27 @@ export default class GunService extends GenericService {
 
         let msg;
 
-        if (msg = await conns.findOne(hash)) {
+        if ((msg = await conns.findOne(hash))) {
             switch (msg.subtype) {
-                case "FOLLOW":
+                case 'FOLLOW':
                     await userMeta.removeFollowing(msg.creator);
                     await userMeta.removeFollower(msg.name);
                     break;
-                case "BLOCK":
+                case 'BLOCK':
                     await userMeta.removeBlocking(msg.creator);
                     await userMeta.removeBlocked(msg.name);
                     break;
             }
 
             await conns.remove(hash);
-        }
-
-        else if (msg = await mods.findOne(hash)) {
+        } else if ((msg = await mods.findOne(hash))) {
             switch (msg.subtype) {
                 case 'LIKE':
                     await postMeta.removeLike(msg.reference);
                     break;
             }
             await mods.remove(hash);
-        }
-
-        else if (msg = await posts.findOne(hash)) {
+        } else if ((msg = await posts.findOne(hash))) {
             switch (msg.subtype) {
                 case 'REPOST':
                     await postMeta.removeRepost(msg.payload.reference);
@@ -236,31 +237,24 @@ export default class GunService extends GenericService {
             }
 
             await posts.remove(hash);
-        }
-
-        else if (await pfs.findOne(hash)) {
+        } else if (await pfs.findOne(hash)) {
             await pfs.remove(hash);
         }
-
     }
 
-    async insertPost(post: Post, data?: {
-        proof: string;
-        publicSignals: string;
-        x_share: string;
-        epoch: string;
-        group?: string;
-    }) {
+    async insertPost(
+        post: Post,
+        data?: {
+            proof: string;
+            publicSignals: string;
+            x_share: string;
+            epoch: string;
+            group?: string;
+        }
+    ) {
         const json = await post.toJSON();
 
-        const {
-            type,
-            subtype,
-            createdAt,
-            payload,
-            messageId,
-            hash,
-        } = json;
+        const { type, subtype, createdAt, payload, messageId, hash } = json;
 
         const creator = post.creator;
         const postDB = await this.call('db', 'getPosts');
@@ -296,13 +290,10 @@ export default class GunService extends GenericService {
                 let verified = false;
 
                 if (!data.x_share) {
-                    verified = await Semaphore.verifyProof(
-                        vKey as any,
-                        {
-                            proof,
-                            publicSignals,
-                        },
-                    );
+                    verified = await Semaphore.verifyProof(vKey as any, {
+                        proof,
+                        publicSignals,
+                    });
 
                     if (!verified) return;
                 } else {
@@ -320,11 +311,11 @@ export default class GunService extends GenericService {
                         x_share: data.x_share,
                     };
 
-                    const {
-                        shares,
-                        isSpam,
-                        isDuplicate,
-                    } = await this.call('zkchat', 'checkShare', share);
+                    const { shares, isSpam, isDuplicate } = await this.call(
+                        'zkchat',
+                        'checkShare',
+                        share
+                    );
 
                     if (isSpam || isDuplicate || !verified) return;
                 }
@@ -332,12 +323,12 @@ export default class GunService extends GenericService {
                 const group = await this.call(
                     'merkle',
                     'getGroupByRoot',
-                    '0x' + BigInt(publicSignals.merkleRoot).toString(16),
+                    '0x' + BigInt(publicSignals.merkleRoot).toString(16)
                 );
 
                 if (!group) return;
 
-                const [protocol, groupName, groupType] = group.split('_')
+                const [protocol, groupName, groupType] = group.split('_');
                 await semaphoreCreatorsDB.addSemaphoreCreator(messageId, groupName, groupType);
             }
 
@@ -422,15 +413,9 @@ export default class GunService extends GenericService {
 
     async insertModeration(moderation: Moderation) {
         const json = await moderation.toJSON();
-        const {
-            type,
-            subtype,
-            createdAt,
-            payload,
-            messageId,
-        } = json;
+        const { type, subtype, createdAt, payload, messageId } = json;
 
-        const {creator, hash} = parseMessageId(messageId);
+        const { creator, hash } = parseMessageId(messageId);
 
         const moderationDB = await this.call('db', 'getModerations');
         const postDB = await this.call('db', 'getPosts');
@@ -483,13 +468,7 @@ export default class GunService extends GenericService {
 
     async insertConnection(connection: Connection) {
         const json = await connection.toJSON();
-        const {
-            type,
-            subtype,
-            createdAt,
-            payload,
-            messageId,
-        } = json;
+        const { type, subtype, createdAt, payload, messageId } = json;
         const [creator, hash] = messageId.split('/');
 
         const connDB = await this.call('db', 'getConnections');
@@ -548,14 +527,8 @@ export default class GunService extends GenericService {
 
     async insertProfile(profile: Profile) {
         const json = await profile.toJSON();
-        const {
-            type,
-            subtype,
-            createdAt,
-            payload,
-            messageId,
-        } = json;
-        const {creator, hash} = parseMessageId(messageId);
+        const { type, subtype, createdAt, payload, messageId } = json;
+        const { creator, hash } = parseMessageId(messageId);
 
         const profileDB = await this.call('db', 'getProfiles');
         const twitterAuthDb = await this.call('db', 'getTwitterAuth');
@@ -585,13 +558,9 @@ export default class GunService extends GenericService {
 
             const {
                 entities: {
-                    urls: [{
-                        expanded_url: profileUrl,
-                    }],
+                    urls: [{ expanded_url: profileUrl }],
                 },
-                user: {
-                    screen_name,
-                }
+                user: { screen_name },
             } = await showStatus(value);
 
             if (screen_name !== key) {
@@ -636,9 +605,7 @@ export default class GunService extends GenericService {
         const app = express();
         const server = app.listen(config.gunPort);
         const ctx = this;
-        const gunPath = process.env.NODE_ENV === 'development'
-            ? './dev_gun_data'
-            : './gun_data';
+        const gunPath = process.env.NODE_ENV === 'development' ? './dev_gun_data' : './gun_data';
 
         const gun = Gun({
             file: gunPath,
@@ -657,7 +624,7 @@ export default class GunService extends GenericService {
                     const soul = put['#'];
                     const field = put['.'];
                     const state = put['>'];
-                    const value =  put[':'];
+                    const value = put[':'];
 
                     const [raw, key, username, messageId] = soul.split('/');
                     const recordDB = await ctx.call('db', 'getRecords');
@@ -679,7 +646,6 @@ export default class GunService extends GenericService {
                         if (username && ![username].includes(user.name)) {
                             throw new Error(`${user.name} does not match ${username}`);
                         }
-
                     }
 
                     let relation;
@@ -705,8 +671,8 @@ export default class GunService extends GenericService {
                     // Send ack back
                     // @ts-ignore
                     gun.on('in', {
-                        '@' : msg['@'],
-                        ok  : 0,
+                        '@': msg['@'],
+                        ok: 0,
                     });
                 } catch (e) {
                     logger.error('error processing PUT', {
@@ -758,10 +724,9 @@ export default class GunService extends GenericService {
 
                     // @ts-ignore
                     gun.on('in', {
-                        '@' : msg['#'],
-                        put : Graph.node(node),
+                        '@': msg['#'],
+                        put: Graph.node(node),
                     });
-
                 } catch (e) {
                     logger.error('error processing GET', {
                         error: e.message,
@@ -788,5 +753,4 @@ export default class GunService extends GenericService {
 
         logger.info(`gun server listening at ${config.gunPort}...`);
     }
-
 }

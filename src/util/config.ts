@@ -1,5 +1,5 @@
-import fs from "fs";
-import path from "path";
+import fs from 'fs';
+import path from 'path';
 
 let json: {
     interrepAPI?: string;
@@ -34,9 +34,10 @@ let json: {
 } = {};
 
 try {
-    const configBuffer = process.env.NODE_ENV === 'production'
-        ? fs.readFileSync(path.join(process.cwd(), 'config.prod.json'))
-        : process.env.NODE_ENV === 'test'
+    const configBuffer =
+        process.env.NODE_ENV === 'production'
+            ? fs.readFileSync(path.join(process.cwd(), 'config.prod.json'))
+            : process.env.NODE_ENV === 'test'
             ? fs.readFileSync(path.join(process.cwd(), 'config.test.json'))
             : fs.readFileSync(path.join(process.cwd(), 'config.dev.json'));
     const parsed = JSON.parse(configBuffer.toString('utf-8'));
@@ -67,10 +68,11 @@ const dbPort = json.dbPort || process.env.DB_PORT;
 const port = json.port || process.env.PORT;
 const gunPort = json.gunPort || process.env.GUN_PORT;
 const gunPeers = json.gunPeers || process.env?.GUN_PEERS?.split(' ') || [];
-const moderators = json.moderators || process.env?.MODERATORS?.split(' ') || [
-    '0x3F425586D68616A113C29c303766DAD444167EE8',
-    '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-];
+const moderators = json.moderators ||
+    process.env?.MODERATORS?.split(' ') || [
+        '0x3F425586D68616A113C29c303766DAD444167EE8',
+        '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
+    ];
 const interrepAPI = json.interrepAPI || process.env.INTERREP_API || 'https://kovan.interep.link';
 const interrepContract = json.interrepContract || process.env.INTERREP_CONTRACT || '';
 const jwtSecret = json.jwtSecret || process.env.JWT_SECRET || 'topjwtsecret';

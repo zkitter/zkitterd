@@ -1,5 +1,5 @@
-import {BIGINT, Sequelize, STRING} from "sequelize";
-import {ProfileMessageSubType} from "../util/message";
+import { BIGINT, Sequelize, STRING } from 'sequelize';
+import { ProfileMessageSubType } from '../util/message';
 
 type ProfileModel = {
     messageId: string;
@@ -19,49 +19,53 @@ export type UserProfile = {
     profileImage: string;
     twitterVerification: string;
     website: string;
-}
+};
 
 const profiles = (sequelize: Sequelize) => {
-    const model = sequelize.define('profiles', {
-        messageId: {
-            type: STRING,
-            allowNull: false,
+    const model = sequelize.define(
+        'profiles',
+        {
+            messageId: {
+                type: STRING,
+                allowNull: false,
+            },
+            hash: {
+                type: STRING,
+                allowNull: false,
+                primaryKey: true,
+            },
+            creator: {
+                type: STRING,
+                allowNull: false,
+            },
+            type: {
+                type: STRING,
+                allowNull: false,
+            },
+            subtype: {
+                type: STRING,
+            },
+            createdAt: {
+                type: BIGINT,
+                allowNull: false,
+            },
+            key: {
+                type: STRING,
+            },
+            value: {
+                type: STRING,
+            },
         },
-        hash: {
-            type: STRING,
-            allowNull: false,
-            primaryKey: true,
-        },
-        creator: {
-            type: STRING,
-            allowNull: false,
-        },
-        type: {
-            type: STRING,
-            allowNull: false,
-        },
-        subtype: {
-            type: STRING,
-        },
-        createdAt: {
-            type: BIGINT,
-            allowNull: false,
-        },
-        key: {
-            type: STRING,
-        },
-        value: {
-            type: STRING,
-        },
-    }, {
-        indexes: [
-            { fields: ['creator'] },
-            { fields: ['subtype'] },
-            { fields: ['key'] },
-            { fields: ['hash'], unique: true },
-            { fields: ['messageId'], unique: true },
-        ],
-    });
+        {
+            indexes: [
+                { fields: ['creator'] },
+                { fields: ['subtype'] },
+                { fields: ['key'] },
+                { fields: ['hash'], unique: true },
+                { fields: ['messageId'], unique: true },
+            ],
+        }
+    );
 
     const remove = async (hash: string) => {
         return model.destroy({
@@ -69,9 +73,9 @@ const profiles = (sequelize: Sequelize) => {
                 hash,
             },
         });
-    }
+    };
 
-    const findOne = async (hash: string): Promise<ProfileModel|null> => {
+    const findOne = async (hash: string): Promise<ProfileModel | null> => {
         let result: any = await model.findOne({
             where: {
                 hash,
@@ -83,11 +87,11 @@ const profiles = (sequelize: Sequelize) => {
         const json = result.toJSON() as ProfileModel;
 
         return json;
-    }
+    };
 
     const createProfile = async (record: ProfileModel) => {
         return model.create(record);
-    }
+    };
 
     return {
         model,
@@ -95,6 +99,6 @@ const profiles = (sequelize: Sequelize) => {
         findOne,
         createProfile,
     };
-}
+};
 
 export default profiles;

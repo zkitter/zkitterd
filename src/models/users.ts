@@ -1,6 +1,6 @@
-import {BIGINT, ENUM, QueryTypes, Sequelize, STRING} from "sequelize";
-import userMetaSeq from "./userMeta";
-import {Mutex} from "async-mutex";
+import { BIGINT, ENUM, QueryTypes, Sequelize, STRING } from 'sequelize';
+import userMetaSeq from './userMeta';
+import { Mutex } from 'async-mutex';
 
 export type UserModel = {
     username: string;
@@ -23,64 +23,71 @@ export type UserModel = {
         mentionedCount: number;
         followed: string | null;
         blocked: string | null;
-    }
+    };
 };
 
 const mutex = new Mutex();
 
 const users = (sequelize: Sequelize) => {
-    const model = sequelize.define('users', {
-        name: {
-            type: STRING,
-            allowNull: false,
-            validate: {
-                notEmpty: true,
+    const model = sequelize.define(
+        'users',
+        {
+            name: {
+                type: STRING,
+                allowNull: false,
+                validate: {
+                    notEmpty: true,
+                },
+                primaryKey: true,
+                unique: true,
             },
-            primaryKey: true,
-            unique: true,
+            pubkey: {
+                type: STRING,
+                allowNull: false,
+            },
+            joinedAt: {
+                type: BIGINT,
+            },
+            tx: {
+                type: STRING,
+                allowNull: false,
+            },
+            type: {
+                type: ENUM('arbitrum', 'ens', ''),
+                allowNull: false,
+            },
         },
-        pubkey: {
-            type: STRING,
-            allowNull: false,
-        },
-        joinedAt: {
-            type: BIGINT,
-        },
-        tx: {
-            type: STRING,
-            allowNull: false,
-        },
-        type: {
-            type: ENUM('arbitrum', 'ens', ''),
-            allowNull: false,
-        },
-    }, {
-        indexes: [
-            { fields: ['name'] },
-            { fields: ['pubkey'] },
-            { fields: ['type'] },
-            { fields: ['tx'] },
-        ]
-    });
+        {
+            indexes: [
+                { fields: ['name'] },
+                { fields: ['pubkey'] },
+                { fields: ['type'] },
+                { fields: ['tx'] },
+            ],
+        }
+    );
 
-    const findOneByName = async (name: string, context = ''): Promise<UserModel|null> => {
-        const values = await sequelize.query(`
+    const findOneByName = async (name: string, context = ''): Promise<UserModel | null> => {
+        const values = await sequelize.query(
+            `
             ${userSelectQuery}
             WHERE u.name = :name
-        `, {
-            type: QueryTypes.SELECT,
-            replacements: {
-                context: context || '',
-                name: name,
-            },
-        });
+        `,
+            {
+                type: QueryTypes.SELECT,
+                replacements: {
+                    context: context || '',
+                    name: name,
+                },
+            }
+        );
 
         const [user] = inflateValuesToUserJSON(values);
 
         return user || null;
-    }
+    };
 
-    const findOneByPubkey = async (pubkey: string): Promise<UserModel|null> => {
+    const findOneByPubkey = async (pubkey: string): Promise<UserModel | null> => {
         let result = await model.findOne({
             where: {
                 pubkey,
@@ -92,27 +99,36 @@ const users = (sequelize: Sequelize) => {
         const json = result.toJSON() as UserModel;
 
         return json;
-    }
+    };
 
     const readAll = async (context = '', offset = 0, limit = 20): Promise<UserModel[]> => {
-        const values = await sequelize.query(`
+        const values = await sequelize.query(
+            `
             ${userSelectQuery}
             ORDER BY (umt."followerCount"+umt."postingCount"+umt."mentionedCount") ASC
             LIMIT :limit OFFSET :offset
-        `, {
-            type: QueryTypes.SELECT,
-            replacements: {
-                context: context || '',
-                limit,
-                offset,
-            },
-        });
+        `,
+            {
+                type: QueryTypes.SELECT,
+                replacements: {
+                    context: context || '',
+                    limit,
+                    offset,
+                },
+            }
+        );
 
         return inflateValuesToUserJSON(values);
-    }
+    };
 
-    const search = async (query: string, context = '', offset = 0, limit = 5): Promise<UserModel[]> => {
-        const values = await sequelize.query(`
+    const search = async (
+        query: string,
+        context = '',
+        offset = 0,
+        limit = 5
+    ): Promise<UserModel[]> => {
+        const values = await sequelize.query(
+            `
             ${userSelectQuery}
             WHERE (
                 LOWER(u."name") LIKE :query 
@@ -120,18 +136,20 @@ const users = (sequelize: Sequelize) => {
                 OR LOWER(u."name") IN (SELECT LOWER(creator) from profiles WHERE subtype = 'NAME' AND LOWER(value) LIKE :query)
             )
             LIMIT :limit OFFSET :offset
-        `, {
-            type: QueryTypes.SELECT,
-            replacements: {
-                context: context || '',
-                query: `${query.toLowerCase()}%`,
-                limit,
-                offset,
-            },
-        });
+        `,
+            {
+                type: QueryTypes.SELECT,
+                replacements: {
+                    context: context || '',
+                    query: `${query.toLowerCase()}%`,
+                    limit,
+                    offset,
+                },
+            }
+        );
 
         return inflateValuesToUserJSON(values);
-    }
+    };
 
     const updateOrCreateUser = async (user: {
         name: string;
@@ -144,7 +162,7 @@ const users = (sequelize: Sequelize) => {
             const result = await model.findOne({
                 where: {
                     name: user.name,
-                }
+                },
             });
 
             if (result) {
@@ -157,14 +175,14 @@ const users = (sequelize: Sequelize) => {
 
             return model.create(user);
         });
-    }
+    };
 
     const ensureUser = async (name: string) => {
         return mutex.runExclusive(async () => {
             const result = await model.findOne({
                 where: {
                     name: name,
-                }
+                },
             });
 
             if (!result) {
@@ -176,9 +194,8 @@ const users = (sequelize: Sequelize) => {
                     joined: 0,
                 });
             }
-
         });
-    }
+    };
 
     return {
         model,
@@ -189,7 +206,7 @@ const users = (sequelize: Sequelize) => {
         search,
         updateOrCreateUser,
     };
-}
+};
 
 export default users;
 
@@ -232,7 +249,6 @@ const userSelectQuery = `
 `;
 
 function inflateValuesToUserJSON(values: any[]): UserModel[] {
-
     return values.map(value => {
         let twitterVerification = '';
 

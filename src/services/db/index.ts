@@ -1,25 +1,25 @@
-import {GenericService} from "../../util/svc";
-import {Dialect, Sequelize} from "sequelize";
-import app from "../../models/app";
-import config from "../../util/config";
-import users from "../../models/users";
-import records from "../../models/records";
-import posts from "../../models/posts";
-import meta from "../../models/meta";
-import moderations from "../../models/moderations";
-import profiles from "../../models/profiles";
-import userMeta from "../../models/userMeta";
-import connections from "../../models/connections";
-import semaphore from "../../models/semaphore";
-import tags from "../../models/tags";
-import linkPreview from "../../models/linkPreview";
-import ens from "../../models/ens";
-import twitterAuth from "../../models/twitterAuth";
-import interepGroups from "../../models/interepGroups";
-import semaphoreCreators from "../../models/semaphore_creators";
-import threads from "../../models/thread";
-import uploads from "../../models/uploads";
-import merkleRoot from "../../models/merkle_root";
+import { GenericService } from '../../util/svc';
+import { Dialect, Sequelize } from 'sequelize';
+import app from '../../models/app';
+import config from '../../util/config';
+import users from '../../models/users';
+import records from '../../models/records';
+import posts from '../../models/posts';
+import meta from '../../models/meta';
+import moderations from '../../models/moderations';
+import profiles from '../../models/profiles';
+import userMeta from '../../models/userMeta';
+import connections from '../../models/connections';
+import semaphore from '../../models/semaphore';
+import tags from '../../models/tags';
+import linkPreview from '../../models/linkPreview';
+import ens from '../../models/ens';
+import twitterAuth from '../../models/twitterAuth';
+import interepGroups from '../../models/interepGroups';
+import semaphoreCreators from '../../models/semaphore_creators';
+import threads from '../../models/thread';
+import uploads from '../../models/uploads';
+import merkleRoot from '../../models/merkle_root';
 
 export default class DBService extends GenericService {
     sequelize: Sequelize;
@@ -70,7 +70,7 @@ export default class DBService extends GenericService {
                     port: Number(config.dbPort),
                     dialect: config.dbDialect as Dialect,
                     logging: false,
-                },
+                }
             );
         }
     }

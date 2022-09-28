@@ -1,15 +1,12 @@
-import {GenericService} from "../util/svc";
-import {Contract} from "web3-eth-contract";
-import Web3 from "web3";
-import config from "../util/config";
-import {ensResolverABI} from "../util/abi";
+import { GenericService } from '../util/svc';
+import { Contract } from 'web3-eth-contract';
+import Web3 from 'web3';
+import config from '../util/config';
+import { ensResolverABI } from '../util/abi';
 import LRU from 'lru-cache';
 import Timeout = NodeJS.Timeout;
 
-const {
-    default: ENS,
-    getEnsAddress,
-} = require('@ensdomains/ensjs');
+const { default: ENS, getEnsAddress } = require('@ensdomains/ensjs');
 
 const cache = new LRU({
     max: 1000,
@@ -26,10 +23,7 @@ export default class ENSService extends GenericService {
         super();
         const httpProvider = new Web3.providers.HttpProvider(config.web3HttpProvider);
         this.web3 = new Web3(httpProvider);
-        this.resolver = new this.web3.eth.Contract(
-            ensResolverABI as any,
-            config.ensResolver,
-        );
+        this.resolver = new this.web3.eth.Contract(ensResolverABI as any, config.ensResolver);
         this.ens = new ENS({
             provider: httpProvider,
             ensAddress: getEnsAddress('1'),
@@ -38,7 +32,7 @@ export default class ENSService extends GenericService {
 
     ecrecover = async (data: string, sig: string) => {
         return this.web3.eth.accounts.recover(data, sig);
-    }
+    };
 
     fetchNameByAddress = async (address: string) => {
         const cached = cache.get(address);
@@ -47,7 +41,7 @@ export default class ENSService extends GenericService {
             return cached;
         }
 
-        const {name} = await this.ens.getName(address);
+        const { name } = await this.ens.getName(address);
 
         if (!name) return null;
 
@@ -55,7 +49,7 @@ export default class ENSService extends GenericService {
         const ens = await this.call('db', 'getENS');
         await ens.update(name, address);
         return name;
-    }
+    };
 
     fetchAddressByName = async (name: string) => {
         if (Web3.utils.isAddress(name)) return name;
@@ -75,5 +69,5 @@ export default class ENSService extends GenericService {
         await ens.update(name, address);
 
         return address;
-    }
+    };
 }

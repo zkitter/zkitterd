@@ -1,5 +1,5 @@
-import {Sequelize, STRING} from "sequelize";
-import {Mutex} from "async-mutex";
+import { Sequelize, STRING } from 'sequelize';
+import { Mutex } from 'async-mutex';
 
 type SemaphoreModel = {
     id_commitment: string;
@@ -10,53 +10,56 @@ type SemaphoreModel = {
 const mutex = new Mutex();
 
 const semaphore = (sequelize: Sequelize) => {
-    const model = sequelize.define('semaphore', {
-        id_commitment: {
-            type: STRING,
-            allowNull: false,
+    const model = sequelize.define(
+        'semaphore',
+        {
+            id_commitment: {
+                type: STRING,
+                allowNull: false,
+            },
+            group_id: {
+                type: STRING,
+                allowNull: false,
+            },
+            root_hash: {
+                type: STRING,
+                allowNull: false,
+            },
         },
-        group_id: {
-            type: STRING,
-            allowNull: false,
-        },
-        root_hash: {
-            type: STRING,
-            allowNull: false,
-        },
-    }, {
-        indexes: [
-            { fields: ['id_commitment'] },
-            { fields: ['group_id'] },
-            { fields: ['root_hash'] },
-        ],
-    });
+        {
+            indexes: [
+                { fields: ['id_commitment'] },
+                { fields: ['group_id'] },
+                { fields: ['root_hash'] },
+            ],
+        }
+    );
 
-    const findOneByCommitment = async (id_commitment: string): Promise<SemaphoreModel|null> => {
+    const findOneByCommitment = async (id_commitment: string): Promise<SemaphoreModel | null> => {
         let result = await model.findOne({
             where: {
                 id_commitment,
             },
-            order: [
-                ['createdAt', 'DESC'],
-            ],
+            order: [['createdAt', 'DESC']],
         });
 
         return result?.toJSON() as SemaphoreModel;
-    }
+    };
 
-    const findOne = async (id_commitment: string, group_id: string): Promise<SemaphoreModel|null> => {
+    const findOne = async (
+        id_commitment: string,
+        group_id: string
+    ): Promise<SemaphoreModel | null> => {
         let result = await model.findOne({
             where: {
                 id_commitment,
                 group_id,
             },
-            order: [
-                ['createdAt', 'DESC'],
-            ],
+            order: [['createdAt', 'DESC']],
         });
 
         return result?.toJSON() as SemaphoreModel;
-    }
+    };
 
     const findAllByCommitment = async (id_commitment: string): Promise<SemaphoreModel[]> => {
         let result = await model.findAll({
@@ -66,7 +69,7 @@ const semaphore = (sequelize: Sequelize) => {
         });
 
         return result.map(r => r.toJSON()) as SemaphoreModel[];
-    }
+    };
 
     const addID = async (id_commitment: string, group_id: string, root_hash: string) => {
         return mutex.runExclusive(async () => {
@@ -87,7 +90,7 @@ const semaphore = (sequelize: Sequelize) => {
                 return result.update({ root_hash });
             }
         });
-    }
+    };
 
     const removeID = async (id_commitment: string, group_id: string, root_hash: string) => {
         return mutex.runExclusive(async () => {
@@ -99,7 +102,7 @@ const semaphore = (sequelize: Sequelize) => {
                 },
             });
         });
-    }
+    };
 
     return {
         model,
@@ -109,6 +112,6 @@ const semaphore = (sequelize: Sequelize) => {
         addID,
         removeID,
     };
-}
+};
 
 export default semaphore;

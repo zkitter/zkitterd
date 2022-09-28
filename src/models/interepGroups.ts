@@ -1,5 +1,5 @@
-import {Sequelize, STRING} from "sequelize";
-import {Mutex} from "async-mutex";
+import { Sequelize, STRING } from 'sequelize';
+import { Mutex } from 'async-mutex';
 
 type InterepGroupModel = {
     provider: string;
@@ -10,29 +10,33 @@ type InterepGroupModel = {
 const mutex = new Mutex();
 
 const interepGroups = (sequelize: Sequelize) => {
-    const model = sequelize.define('interep_groups', {
-        name: {
-            type: STRING,
-            allowNull: false,
+    const model = sequelize.define(
+        'interep_groups',
+        {
+            name: {
+                type: STRING,
+                allowNull: false,
+            },
+            provider: {
+                type: STRING,
+                allowNull: false,
+            },
+            root_hash: {
+                type: STRING,
+                allowNull: false,
+            },
         },
-        provider: {
-            type: STRING,
-            allowNull: false,
-        },
-        root_hash: {
-            type: STRING,
-            allowNull: false,
-        },
-    }, {
-        indexes: [
-            { fields: ['root_hash'] },
-            { fields: ['provider'] },
-            { fields: ['name'] },
-            { fields: ['provider', 'name'], unique: true },
-        ],
-    });
+        {
+            indexes: [
+                { fields: ['root_hash'] },
+                { fields: ['provider'] },
+                { fields: ['name'] },
+                { fields: ['provider', 'name'], unique: true },
+            ],
+        }
+    );
 
-    const findOneByHash = async (root_hash: string): Promise<InterepGroupModel|null> => {
+    const findOneByHash = async (root_hash: string): Promise<InterepGroupModel | null> => {
         let result = await model.findOne({
             where: {
                 root_hash,
@@ -40,7 +44,7 @@ const interepGroups = (sequelize: Sequelize) => {
         });
 
         return result?.toJSON() as InterepGroupModel;
-    }
+    };
 
     const addHash = async (root_hash: string, provider: string, name: string) => {
         return mutex.runExclusive(async () => {
@@ -63,11 +67,11 @@ const interepGroups = (sequelize: Sequelize) => {
                 });
             }
         });
-    }
+    };
 
     const getGroup = async (provider: string, name: string): Promise<InterepGroupModel> => {
         return mutex.runExclusive(async () => {
-            const result = await  model.findOne({
+            const result = await model.findOne({
                 where: {
                     provider,
                     name,
@@ -76,7 +80,7 @@ const interepGroups = (sequelize: Sequelize) => {
 
             return result?.toJSON() as InterepGroupModel;
         });
-    }
+    };
 
     return {
         model,
@@ -84,6 +88,6 @@ const interepGroups = (sequelize: Sequelize) => {
         addHash,
         getGroup,
     };
-}
+};
 
 export default interepGroups;

@@ -1,4 +1,5 @@
-const mentionRegExp = '[' +
+const mentionRegExp =
+    '[' +
     '\\w-' +
     // Latin-1 Supplement (letters only) - https://en.wikipedia.org/wiki/List_of_Unicode_characters#Latin-1_Supplement
     '\u00C0-\u00D6' +
@@ -25,7 +26,7 @@ const mentionRegExp = '[' +
     '\u0600-\u06ff' +
     // Vietnamese http://vietunicode.sourceforge.net/charset/
     '\u00C0-\u1EF9' +
-    '\u002E'+
+    '\u002E' +
     ']';
 export const HASHTAG_REGEX = /\#[\w\u0590-\u05ff]+/g;
 export const MENTION_REGEX = new RegExp(`\@${mentionRegExp}+`, 'g');

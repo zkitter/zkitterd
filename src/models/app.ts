@@ -1,5 +1,5 @@
-import {Sequelize, BIGINT} from "sequelize";
-import {Mutex} from "async-mutex";
+import { Sequelize, BIGINT } from 'sequelize';
+import { Mutex } from 'async-mutex';
 
 const mutex = new Mutex();
 
@@ -11,27 +11,31 @@ type AppModel = {
 };
 
 const app = (sequelize: Sequelize) => {
-    const model = sequelize.define('app', {
-        lastENSBlockScanned: {
-            type: BIGINT,
+    const model = sequelize.define(
+        'app',
+        {
+            lastENSBlockScanned: {
+                type: BIGINT,
+            },
+            lastInterrepBlockScanned: {
+                type: BIGINT,
+            },
+            lastArbitrumBlockScanned: {
+                type: BIGINT,
+            },
+            lastGroup42BlockScanned: {
+                type: BIGINT,
+            },
         },
-        lastInterrepBlockScanned: {
-            type: BIGINT,
-        },
-        lastArbitrumBlockScanned: {
-            type: BIGINT,
-        },
-        lastGroup42BlockScanned: {
-            type: BIGINT,
-        },
-    }, {});
+        {}
+    );
 
     const read = async (): Promise<AppModel> => {
         return mutex.runExclusive(async () => {
             let result = await model.findOne();
             return result?.toJSON() as AppModel;
         });
-    }
+    };
 
     const updateLastENSBlock = async (blockHeight: number) => {
         return mutex.runExclusive(async () => {
@@ -47,8 +51,7 @@ const app = (sequelize: Sequelize) => {
                 lastENSBlockScanned: blockHeight,
             });
         });
-
-    }
+    };
 
     const updateLastInterrepBlock = async (blockHeight: number) => {
         return mutex.runExclusive(async () => {
@@ -64,7 +67,7 @@ const app = (sequelize: Sequelize) => {
                 lastInterrepBlockScanned: blockHeight,
             });
         });
-    }
+    };
 
     const updateLastArbitrumBlock = async (blockHeight: number) => {
         return mutex.runExclusive(async () => {
@@ -80,7 +83,7 @@ const app = (sequelize: Sequelize) => {
                 lastArbitrumBlockScanned: blockHeight,
             });
         });
-    }
+    };
 
     const updateLastGroup42BlockScanned = async (blockHeight: number) => {
         return mutex.runExclusive(async () => {
@@ -96,7 +99,7 @@ const app = (sequelize: Sequelize) => {
                 lastGroup42BlockScanned: blockHeight,
             });
         });
-    }
+    };
 
     return {
         model,
@@ -106,6 +109,6 @@ const app = (sequelize: Sequelize) => {
         updateLastArbitrumBlock,
         updateLastGroup42BlockScanned,
     };
-}
+};
 
 export default app;

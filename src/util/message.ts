@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from 'crypto';
 
 export enum MessageType {
     _TWEET = '@TWEET@',
@@ -13,14 +13,14 @@ export type MessageOption = {
     type: MessageType;
     creator?: string;
     createdAt?: Date;
-}
+};
 
 export class Message {
     type: MessageType;
     creator: string;
     createdAt: Date;
 
-    static getType(type: string): MessageType|null {
+    static getType(type: string): MessageType | null {
         switch (type.toUpperCase()) {
             case 'POST':
                 return MessageType.Post;
@@ -121,7 +121,7 @@ export class Post extends Message {
                 content,
                 reference,
                 attachment,
-            }
+            },
         });
 
         function cb(n: number) {
@@ -148,7 +148,7 @@ export class Post extends Message {
 
     constructor(opt: PostMessageOption) {
         super(opt);
-        this.type = opt.type === MessageType._TWEET ? MessageType._TWEET :  MessageType.Post;
+        this.type = opt.type === MessageType._TWEET ? MessageType._TWEET : MessageType.Post;
         this.tweetId = opt.type === MessageType._TWEET ? opt.hash : undefined;
         this.subtype = Post.getSubtype(opt.subtype);
         this.payload = {
@@ -187,7 +187,9 @@ export class Post extends Message {
         const content = encodeString(this.payload.content, 6);
         const reference = encodeString(this.payload.reference, 3);
         const attachment = encodeString(this.payload.attachment, 3);
-        return type + subtype + creator + createdAt + topic + title + content + reference + attachment;
+        return (
+            type + subtype + creator + createdAt + topic + title + content + reference + attachment
+        );
     }
 }
 
@@ -242,7 +244,7 @@ export class Moderation extends Message {
             createdAt: new Date(createdAt),
             payload: {
                 reference,
-            }
+            },
         });
 
         function cb(n: number) {
@@ -353,7 +355,7 @@ export class Connection extends Message {
             createdAt: new Date(createdAt),
             payload: {
                 name,
-            }
+            },
         });
 
         function cb(n: number) {
@@ -463,7 +465,7 @@ export class Profile extends Message {
             payload: {
                 key,
                 value,
-            }
+            },
         });
 
         function cb(n: number) {
@@ -552,16 +554,16 @@ function encodeNumber(num: number, maxBytes: number): string {
     return num.toString(16).padStart(maxBytes, '0');
 }
 
-function decodeNumber(data: string, maxBytes: number, cb?: (n:number) => void): [number, number] {
+function decodeNumber(data: string, maxBytes: number, cb?: (n: number) => void): [number, number] {
     const hex = data.slice(0, maxBytes);
     cb && cb(maxBytes);
-    return [parseInt(hex, 16), maxBytes]
+    return [parseInt(hex, 16), maxBytes];
 }
 
-function decodeHex(data: string, maxBytes: number, cb?: (n:number) => void): [string, number] {
+function decodeHex(data: string, maxBytes: number, cb?: (n: number) => void): [string, number] {
     const hex = data.slice(0, maxBytes);
     cb && cb(maxBytes);
-    return [hex, maxBytes]
+    return [hex, maxBytes];
 }
 
 function pad(str: string, len: number) {
@@ -581,7 +583,8 @@ function pad(str: string, len: number) {
 const HEX_64_REGEX = /\b[A-Fa-f0-9]{64}$\b/;
 export function parseMessageId(id: string) {
     const parsed = id.split('/');
-    let hash = '', creator = '';
+    let hash = '',
+        creator = '';
 
     if (parsed.length > 2) {
         return {

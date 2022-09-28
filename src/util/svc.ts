@@ -1,4 +1,4 @@
-import logger from "./logger";
+import logger from './logger';
 
 let callerId = 0;
 
@@ -54,13 +54,9 @@ export class GenericService {
         return Promise.reject(new Error('Main service not found'));
     }
 
-    async start() {
+    async start() {}
 
-    }
-
-    async stop() {
-
-    }
+    async stop() {}
 }
 
 export class MainService extends GenericService {
@@ -100,7 +96,6 @@ export class MainService extends GenericService {
                 });
                 return Promise.reject(e);
             }
-
         }
     }
 }

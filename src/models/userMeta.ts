@@ -1,5 +1,5 @@
-import {BIGINT, Sequelize, STRING} from "sequelize";
-import {Mutex} from "async-mutex";
+import { BIGINT, Sequelize, STRING } from 'sequelize';
+import { Mutex } from 'async-mutex';
 
 type UserMetaModel = {
     name: string;
@@ -23,51 +23,55 @@ const emptyMeta = {
 };
 
 const userMeta = (sequelize: Sequelize) => {
-    const model = sequelize.define('usermeta', {
-        name: {
-            type: STRING,
-            allowNull: false,
-            primaryKey: true,
+    const model = sequelize.define(
+        'usermeta',
+        {
+            name: {
+                type: STRING,
+                allowNull: false,
+                primaryKey: true,
+            },
+            followerCount: {
+                type: BIGINT,
+            },
+            followingCount: {
+                type: BIGINT,
+            },
+            blockedCount: {
+                type: BIGINT,
+            },
+            blockingCount: {
+                type: BIGINT,
+            },
+            mentionedCount: {
+                type: BIGINT,
+            },
+            postingCount: {
+                type: BIGINT,
+            },
         },
-        followerCount: {
-            type: BIGINT,
-        },
-        followingCount: {
-            type: BIGINT,
-        },
-        blockedCount: {
-            type: BIGINT,
-        },
-        blockingCount: {
-            type: BIGINT,
-        },
-        mentionedCount: {
-            type: BIGINT,
-        },
-        postingCount: {
-            type: BIGINT,
-        },
-    }, {
-        indexes: [
-            { fields: ['name'], unique: true }
-        ],
-    });
+        {
+            indexes: [{ fields: ['name'], unique: true }],
+        }
+    );
 
-    const findOne = async (name: string): Promise<UserMetaModel|null> => {
+    const findOne = async (name: string): Promise<UserMetaModel | null> => {
         let result = await model.findOne({
             where: {
                 name,
             },
         });
 
-        return result?.toJSON() as UserMetaModel || {
-            ...emptyMeta,
-        };
-    }
+        return (
+            (result?.toJSON() as UserMetaModel) || {
+                ...emptyMeta,
+            }
+        );
+    };
 
     const update = async (record: UserMetaModel) => {
         return model.create(record);
-    }
+    };
 
     return {
         model,
@@ -111,10 +115,8 @@ const userMeta = (sequelize: Sequelize) => {
 
                 return res;
             });
-        }
+        };
     }
-}
-
-
+};
 
 export default userMeta;

@@ -1,9 +1,14 @@
-import {BIGINT, Op, QueryTypes, Sequelize, STRING, where} from "sequelize";
-import {MessageType, PostJSON, PostMessageSubType} from "../util/message";
-import {Mutex} from "async-mutex";
-import bodyParser from "body-parser";
-import {globalModClause, globalVisibilityClause, notBlockedClause, replyModerationClause} from "../util/sql";
-import config from "../util/config";
+import { BIGINT, Op, QueryTypes, Sequelize, STRING, where } from 'sequelize';
+import { MessageType, PostJSON, PostMessageSubType } from '../util/message';
+import { Mutex } from 'async-mutex';
+import bodyParser from 'body-parser';
+import {
+    globalModClause,
+    globalVisibilityClause,
+    notBlockedClause,
+    replyModerationClause,
+} from '../util/sql';
+import config from '../util/config';
 
 const mutex = new Mutex();
 
@@ -24,65 +29,69 @@ export type PostModel = {
 };
 
 const posts = (sequelize: Sequelize) => {
-    const model = sequelize.define('posts', {
-        hash: {
-            type: STRING,
-            allowNull: false,
-            primaryKey: true,
+    const model = sequelize.define(
+        'posts',
+        {
+            hash: {
+                type: STRING,
+                allowNull: false,
+                primaryKey: true,
+            },
+            messageId: {
+                type: STRING,
+                allowNull: false,
+            },
+            creator: {
+                type: STRING,
+                allowNull: false,
+            },
+            proof: {
+                type: STRING(65535),
+            },
+            signals: {
+                type: STRING(65535),
+            },
+            type: {
+                type: STRING,
+                allowNull: false,
+            },
+            subtype: {
+                type: STRING,
+            },
+            createdAt: {
+                type: BIGINT,
+                allowNull: false,
+            },
+            topic: {
+                type: STRING,
+                allowNull: false,
+            },
+            title: {
+                type: STRING(4095),
+                allowNull: false,
+            },
+            content: {
+                type: STRING(65535),
+                allowNull: false,
+            },
+            reference: {
+                type: STRING,
+            },
+            attachment: {
+                type: STRING(4095),
+            },
         },
-        messageId: {
-            type: STRING,
-            allowNull: false,
-        },
-        creator: {
-            type: STRING,
-            allowNull: false,
-        },
-        proof: {
-            type: STRING(65535),
-        },
-        signals: {
-            type: STRING(65535),
-        },
-        type: {
-            type: STRING,
-            allowNull: false,
-        },
-        subtype: {
-            type: STRING,
-        },
-        createdAt: {
-            type: BIGINT,
-            allowNull: false,
-        },
-        topic: {
-            type: STRING,
-            allowNull: false,
-        },
-        title: {
-            type: STRING(4095),
-            allowNull: false,
-        },
-        content: {
-            type: STRING(65535),
-            allowNull: false,
-        },
-        reference: {
-            type: STRING,
-        },
-        attachment: {
-            type: STRING(4095),
-        },
-    }, {
-        indexes: [
-            { fields: ['creator'] },
-            { fields: ['subtype'] },
-            { fields: ['topic'] },
-            { fields: ['reference'] },
-            { fields: ['hash'], unique: true },
-            { fields: ['messageId'], unique: true },
-        ],
-    });
+        {
+            indexes: [
+                { fields: ['creator'] },
+                { fields: ['subtype'] },
+                { fields: ['topic'] },
+                { fields: ['reference'] },
+                { fields: ['hash'], unique: true },
+                { fields: ['messageId'], unique: true },
+            ],
+        }
+    );
 
     const remove = async (hash: string) => {
         return model.destroy({
@@ -90,7 +99,7 @@ const posts = (sequelize: Sequelize) => {
                 hash,
             },
         });
-    }
+    };
 
     const findRoot = async (messageId: string): Promise<string | null> => {
         const result = await model.findOne({
@@ -120,23 +129,26 @@ const posts = (sequelize: Sequelize) => {
         }
 
         return null;
-    }
+    };
 
-    const findOne = async (hash: string, context?: string): Promise<PostJSON|null> => {
-        const result = await sequelize.query(`
+    const findOne = async (hash: string, context?: string): Promise<PostJSON | null> => {
+        const result = await sequelize.query(
+            `
             ${selectJoinQuery}
             WHERE (
                 p.hash = :hash 
                 AND p."createdAt" != -1 
                 AND p."creator" NOT IN (SELECT name FROM connections WHERE name = p.creator AND creator = :context AND subtype = 'BLOCK')
             )
-        `, {
-            replacements: {
-                context: context || '',
-                hash,
-            },
-            type: QueryTypes.SELECT,
-        });
+        `,
+            {
+                replacements: {
+                    context: context || '',
+                    hash,
+                },
+                type: QueryTypes.SELECT,
+            }
+        );
 
         const values: PostJSON[] = [];
 
@@ -148,7 +160,7 @@ const posts = (sequelize: Sequelize) => {
         }
 
         return values[0];
-    }
+    };
 
     const findAllPosts = async (
         creator?: string,
@@ -156,9 +168,10 @@ const posts = (sequelize: Sequelize) => {
         offset = 0,
         limit = 20,
         order: 'DESC' | 'ASC' = 'DESC',
-        showAll = false,
+        showAll = false
     ): Promise<PostJSON[]> => {
-        const result = await sequelize.query(`
+        const result = await sequelize.query(
+            `
             ${selectJoinQuery}
             WHERE (
                 (p.type = 'POST' AND p.subtype IN ('', 'M_POST', 'REPOST')) 
@@ -170,15 +183,17 @@ const posts = (sequelize: Sequelize) => {
             )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
-        `, {
-            replacements: {
-                context: context || '',
-                creator: creator || '',
-                limit,
-                offset,
-            },
-            type: QueryTypes.SELECT,
-        });
+        `,
+            {
+                replacements: {
+                    context: context || '',
+                    creator: creator || '',
+                    limit,
+                    offset,
+                },
+                type: QueryTypes.SELECT,
+            }
+        );
 
         const values: PostJSON[] = [];
 
@@ -188,16 +203,17 @@ const posts = (sequelize: Sequelize) => {
         }
 
         return values;
-    }
+    };
 
     const findAllRepliesFromCreator = async (
         creator?: string,
         context?: string,
         offset = 0,
         limit = 20,
-        order: 'DESC' | 'ASC' = 'DESC',
+        order: 'DESC' | 'ASC' = 'DESC'
     ): Promise<PostJSON[]> => {
-        const result = await sequelize.query(`
+        const result = await sequelize.query(
+            `
             ${selectJoinQuery}
             WHERE (
                 p.type = 'POST' 
@@ -209,15 +225,17 @@ const posts = (sequelize: Sequelize) => {
             )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
-        `, {
-            replacements: {
-                context: context || '',
-                creator: creator || '',
-                limit,
-                offset,
-            },
-            type: QueryTypes.SELECT,
-        });
+        `,
+            {
+                replacements: {
+                    context: context || '',
+                    creator: creator || '',
+                    limit,
+                    offset,
+                },
+                type: QueryTypes.SELECT,
+            }
+        );
 
         const values: PostJSON[] = [];
 
@@ -227,15 +245,16 @@ const posts = (sequelize: Sequelize) => {
         }
 
         return values;
-    }
+    };
 
     const getHomeFeed = async (
         context?: string,
         offset = 0,
         limit = 20,
-        order: 'DESC' | 'ASC' = 'DESC',
+        order: 'DESC' | 'ASC' = 'DESC'
     ): Promise<PostJSON[]> => {
-        const result = await sequelize.query(`
+        const result = await sequelize.query(
+            `
             ${selectJoinQuery}
             WHERE (
                 p.subtype != 'REPLY' 
@@ -249,14 +268,16 @@ const posts = (sequelize: Sequelize) => {
             )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
-        `, {
-            replacements: {
-                context: context || '',
-                limit,
-                offset,
-            },
-            type: QueryTypes.SELECT,
-        });
+        `,
+            {
+                replacements: {
+                    context: context || '',
+                    limit,
+                    offset,
+                },
+                type: QueryTypes.SELECT,
+            }
+        );
 
         const values: PostJSON[] = [];
 
@@ -266,7 +287,7 @@ const posts = (sequelize: Sequelize) => {
         }
 
         return values;
-    }
+    };
 
     const findAllReplies = async (
         reference: string,
@@ -275,9 +296,10 @@ const posts = (sequelize: Sequelize) => {
         limit = 20,
         order: 'DESC' | 'ASC' = 'ASC',
         tweetId = '',
-        unmoderated = false,
+        unmoderated = false
     ): Promise<PostJSON[]> => {
-        const result = await sequelize.query(`
+        const result = await sequelize.query(
+            `
             ${selectJoinQuery}
             WHERE (
                 (
@@ -290,15 +312,17 @@ const posts = (sequelize: Sequelize) => {
             )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
-        `, {
-            replacements: {
-                reference,
-                context: context || '',
-                limit,
-                offset,
-            },
-            type: QueryTypes.SELECT,
-        });
+        `,
+            {
+                replacements: {
+                    reference,
+                    context: context || '',
+                    limit,
+                    offset,
+                },
+                type: QueryTypes.SELECT,
+            }
+        );
 
         const values: PostJSON[] = [];
         for (let r of result) {
@@ -307,16 +331,17 @@ const posts = (sequelize: Sequelize) => {
         }
 
         return values;
-    }
+    };
 
     const findAllLikedPostsByCreator = async (
         creator: string,
         context?: string,
         offset = 0,
         limit = 20,
-        order: 'DESC' | 'ASC' = 'DESC',
+        order: 'DESC' | 'ASC' = 'DESC'
     ): Promise<PostJSON[]> => {
-        const result = await sequelize.query(`
+        const result = await sequelize.query(
+            `
             ${selectLikedPostsQuery}
             WHERE (
                 p."createdAt" != -1
@@ -328,15 +353,17 @@ const posts = (sequelize: Sequelize) => {
             )
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
-        `, {
-            replacements: {
-                creator,
-                context: context || '',
-                limit,
-                offset,
-            },
-            type: QueryTypes.SELECT,
-        });
+        `,
+            {
+                replacements: {
+                    creator,
+                    context: context || '',
+                    limit,
+                    offset,
+                },
+                type: QueryTypes.SELECT,
+            }
+        );
 
         const values: PostJSON[] = [];
         for (let r of result) {
@@ -345,7 +372,7 @@ const posts = (sequelize: Sequelize) => {
         }
 
         return values;
-    }
+    };
 
     const findLastTweetInConversation = async (id: string) => {
         const result = await model.findOne({
@@ -355,33 +382,36 @@ const posts = (sequelize: Sequelize) => {
                         reference: id,
                         type: '@TWEET@',
                     },
-                ]
+                ],
             },
             order: [['createdAt', 'DESC']],
             limit: 1,
         });
 
         return result?.toJSON();
-    }
+    };
 
     const createTwitterPosts = async (records: PostModel[]) => {
         return mutex.runExclusive(async () => {
             for (let record of records) {
                 if (record.type !== '@TWEET@') continue;
 
-                const topic = `https://twitter.com/${record.creator}/status/${record.messageId}`
+                const topic = `https://twitter.com/${record.creator}/status/${record.messageId}`;
                 const result = await model.findOne({
                     where: {
                         [Op.or]: [
                             {
                                 topic: topic,
-                                subtype: [PostMessageSubType.MirrorPost, PostMessageSubType.MirrorReply],
+                                subtype: [
+                                    PostMessageSubType.MirrorPost,
+                                    PostMessageSubType.MirrorReply,
+                                ],
                             },
                             {
                                 messageId: record.messageId,
                                 type: '@TWEET@',
                             },
-                        ]
+                        ],
                     },
                 });
 
@@ -392,18 +422,18 @@ const posts = (sequelize: Sequelize) => {
                 await model.create(record);
             }
         });
-    }
+    };
 
     const createPost = async (record: PostModel) => {
         return mutex.runExclusive(async () => {
             const result = await model.findOne({
                 where: {
                     hash: record.hash,
-                }
+                },
             });
 
             if (result) {
-                const json = await result.toJSON() as PostModel;
+                const json = (await result.toJSON()) as PostModel;
                 if (json.createdAt < 0) {
                     // @ts-ignore
                     await result.changed('createdAt', true);
@@ -417,7 +447,7 @@ const posts = (sequelize: Sequelize) => {
 
             return model.create(record);
         });
-    }
+    };
 
     const ensurePost = async (messageId: string) => {
         return mutex.runExclusive(async () => {
@@ -425,7 +455,7 @@ const posts = (sequelize: Sequelize) => {
             const result = await model.findOne({
                 where: {
                     hash: hash || creator,
-                }
+                },
             });
 
             if (!result) {
@@ -441,11 +471,11 @@ const posts = (sequelize: Sequelize) => {
                     content: '',
                     reference: '',
                     attachment: '',
-                }
+                };
                 return model.create(emptyModel);
             }
         });
-    }
+    };
 
     return {
         model,
@@ -462,7 +492,7 @@ const posts = (sequelize: Sequelize) => {
         createPost,
         ensurePost,
     };
-}
+};
 
 export default posts;
 
@@ -567,8 +597,12 @@ const selectJoinQuery = `
         LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modblockeduser ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modfolloweduser ON modfolloweduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = p."creator" AND creator = root.creator LIMIT 1)
-        LEFT JOIN moderations gmodblocked ON gmodblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator IN (${config.moderators.map(d => `'${d}'`).join(',')}) LIMIT 1)
-        LEFT JOIN connections gmodblockeduser ON gmodblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator IN (${config.moderators.map(d => `'${d}'`).join(',')}) LIMIT 1)
+        LEFT JOIN moderations gmodblocked ON gmodblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator IN (${config.moderators
+            .map(d => `'${d}'`)
+            .join(',')}) LIMIT 1)
+        LEFT JOIN connections gmodblockeduser ON gmodblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator IN (${config.moderators
+            .map(d => `'${d}'`)
+            .join(',')}) LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN meta mt ON mt."reference" = p."messageId"
@@ -631,8 +665,12 @@ const selectLikedPostsQuery = `
         LEFT JOIN moderations modliked ON modliked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modblockeduser ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator = root.creator LIMIT 1)
-        LEFT JOIN moderations gmodblocked ON gmodblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator IN (${config.moderators.map(d => `'${d}'`).join(',')}) LIMIT 1)
-        LEFT JOIN connections gmodblockeduser ON gmodblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator IN (${config.moderators.map(d => `'${d}'`).join(',')}) LIMIT 1)
+        LEFT JOIN moderations gmodblocked ON gmodblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator IN (${config.moderators
+            .map(d => `'${d}'`)
+            .join(',')}) LIMIT 1)
+        LEFT JOIN connections gmodblockeduser ON gmodblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator IN (${config.moderators
+            .map(d => `'${d}'`)
+            .join(',')}) LIMIT 1)
         LEFT JOIN connections modfolloweduser ON modfolloweduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = p."creator" AND creator = root.creator LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
         LEFT JOIN posts rprp ON rprp."messageId" = (SELECT "messageId" from posts WHERE reference = p.reference AND creator = :context AND subtype = 'REPOST' AND p.subtype = 'REPOST' LIMIT 1)

@@ -81,6 +81,7 @@ export const stubCall = (
             findOne: SinonStub;
             createModeration: SinonStub;
             remove: SinonStub;
+            findAllLikesByReference: SinonStub;
         };
         connections: {
             findOne: SinonStub;
@@ -171,6 +172,7 @@ export const stubCall = (
         findOne: sinon.stub(),
         createModeration: sinon.stub(),
         remove: sinon.stub(),
+        findAllLikesByReference: sinon.stub(),
     };
 
     const connections = {

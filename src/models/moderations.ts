@@ -136,14 +136,14 @@ const moderations = (sequelize: Sequelize) => {
         reference: string,
         offset = 0,
         limit = 20,
-        order: "DESC" | "ASC" = "DESC"
+        order: 'DESC' | 'ASC' = 'DESC'
     ): Promise<string[]> => {
         const result = await model.findAll({
-          attributes: ["creators"],
-          where: { reference, subtype: "LIKE" },
-          offset,
-          limit,
-          order: [["createdAt", order]],
+            attributes: ['creators'],
+            where: { reference, subtype: 'LIKE' },
+            offset,
+            limit,
+            order: [['createdAt', order]],
         });
 
         return result.map((r: any) => r.toJSON().creator);

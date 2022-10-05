@@ -139,7 +139,7 @@ const moderations = (sequelize: Sequelize) => {
         order: 'DESC' | 'ASC' = 'DESC'
     ): Promise<string[]> => {
         const result = await model.findAll({
-            attributes: ['creators'],
+            attributes: ['creator'],
             where: { reference, subtype: 'LIKE' },
             offset,
             limit,

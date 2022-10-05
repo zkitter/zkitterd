@@ -7,12 +7,14 @@ import config from '../util/config';
 import logger from '../util/logger';
 import path from 'path';
 import Web3 from 'web3';
+
 const jsonParser = bodyParser.json();
 import { getLinkPreview } from 'link-preview-js';
 import queryString from 'querystring';
 import session from 'express-session';
 import jwt from 'jsonwebtoken';
-import { Dialect, QueryTypes, Sequelize } from 'sequelize';
+import { QueryTypes } from 'sequelize';
+
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 import { calculateReputation, OAuthProvider } from '@interep/reputation';
 import {
@@ -30,6 +32,7 @@ import {
 import { verifySignatureP256 } from '../util/crypto';
 import { parseMessageId, PostMessageSubType } from '../util/message';
 import multer from 'multer';
+
 const upload = multer({
     dest: './uploaded_files',
 });
@@ -382,6 +385,24 @@ export default class HttpService extends GenericService {
         res.send(makeResponse(likers));
     };
 
+    handleGetUserFollowers = async (req: Request, res: Response) => {
+        const limit = req.query.limit && Number(req.query.limit);
+        const offset = req.query.offset && Number(req.query.offset);
+        const user = req.params.user;
+        const connectionsDB = await this.call('db', 'getConnections');
+        const followers = await connectionsDB.findAllFollowersByName(user, offset, limit);
+        res.send(makeResponse(followers));
+    };
+
+    handleGetUserFollowings = async (req: Request, res: Response) => {
+        const limit = req.query.limit && Number(req.query.limit);
+        const offset = req.query.offset && Number(req.query.offset);
+        const user = req.params.user;
+        const connectionsDB = await this.call('db', 'getConnections');
+        const followings = await connectionsDB.findAllFollowingsByCreator(user, offset, limit);
+        res.send(makeResponse(followings));
+    };
+
     handleGetHomefeed = async (req: Request, res: Response) => {
         const limit = req.query.limit && Number(req.query.limit);
         const offset = req.query.offset && Number(req.query.offset);
@@ -512,19 +533,15 @@ export default class HttpService extends GenericService {
 
         const values = await sequelize.query(
             `
-            SELECT distinct zkc.receiver_pubkey as pubkey, zkc.receiver_address as address, null as group_id 
-            FROM zkchat_chats zkc
-            WHERE zkc.receiver_pubkey IN (
-                SELECT distinct receiver_pubkey FROM zkchat_chats WHERE sender_pubkey = :pubkey
-            )
-            UNION
-            SELECT distinct zkc.sender_pubkey as pubkey, zkc.sender_address as address, mr.group_id 
-            FROM zkchat_chats zkc
-            LEFT JOIN merkle_roots mr on mr.root_hash = zkc.rln_root
-            WHERE zkc.sender_pubkey IN (
-                SELECT distinct sender_pubkey FROM zkchat_chats WHERE receiver_pubkey = :pubkey
-            );
-        `,
+          SELECT distinct zkc.receiver_pubkey as pubkey, zkc.receiver_address as address, null as group_id
+          FROM zkchat_chats zkc
+          WHERE zkc.receiver_pubkey IN (SELECT distinct receiver_pubkey FROM zkchat_chats WHERE sender_pubkey = :pubkey)
+          UNION
+          SELECT distinct zkc.sender_pubkey as pubkey, zkc.sender_address as address, mr.group_id
+          FROM zkchat_chats zkc
+                   LEFT JOIN merkle_roots mr on mr.root_hash = zkc.rln_root
+          WHERE zkc.sender_pubkey IN (SELECT distinct sender_pubkey FROM zkchat_chats WHERE receiver_pubkey = :pubkey);
+      `,
             {
                 type: QueryTypes.SELECT,
                 replacements: {
@@ -619,6 +636,8 @@ export default class HttpService extends GenericService {
         this.app.get('/v1/tags', this.wrapHandler(this.handleGetTags));
         this.app.get('/v1/:creator/replies', this.wrapHandler(this.handleGetUserReplies));
         this.app.get('/v1/:creator/likes', this.wrapHandler(this.handleGetUserLikes));
+        this.app.get('/v1/:user/followers', this.wrapHandler(this.handleGetUserFollowers));
+        this.app.get('/v1/:user/followings', this.wrapHandler(this.handleGetUserFollowings));
         this.app.get('/v1/homefeed', this.wrapHandler(this.handleGetHomefeed));
         this.app.get('/v1/post/:hash', this.wrapHandler(this.handleGetPostByHash));
         this.app.get('/v1/post/:hash/likes', this.wrapHandler(this.handleGetLikesByPost));

@@ -617,7 +617,7 @@ tape('HTTPService - get interep ID commitment', async t => {
 
     http.addRoutes();
 
-    const interepGetIdParams = getStub.args[23];
+    const interepGetIdParams = getStub.args[25];
     // @ts-ignore
     const getIdHandler: any = interepGetIdParams[2];
     const getIdRequest = newRequest({
@@ -724,6 +724,36 @@ tape('HttpService - list all users who liked a post', async t => {
     await http.handleGetLikesByPost(newRequest({ hash: 'test' }, null, null), res);
 
     t.deepEqual(res.send.args[0][0].payload, likers, 'should be equal');
+    t.end();
+});
+
+tape('HttpService - get followers per user', async t => {
+    // const route = '/v1/post/:hash/likes';
+    const http = new HttpService();
+    const [, stubs] = stubCall(http);
+    const res = newResponse();
+    const followers = ['0xfoo', '0xbar'];
+
+    stubs.connections.findAllFollowersByName.returns(Promise.resolve(followers));
+
+    await http.handleGetUserFollowers(newRequest({ user: '0xr1oga' }, null, null), res);
+
+    t.deepEqual(res.send.args[0][0].payload, followers, 'should be equal');
+    t.end();
+});
+
+tape('HttpService - get followings per user', async t => {
+    // const route = '/v1/post/:hash/likes';
+    const http = new HttpService();
+    const [, stubs] = stubCall(http);
+    const res = newResponse();
+    const followings = ['0xfoo', '0xbar'];
+
+    stubs.connections.findAllFollowingsByCreator.returns(Promise.resolve(followings));
+
+    await http.handleGetUserFollowings(newRequest({ user: '0xr1oga' }, null, null), res);
+
+    t.deepEqual(res.send.args[0][0].payload, followings, 'should be equal');
     t.end();
 });
 

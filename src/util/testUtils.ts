@@ -86,6 +86,8 @@ export const stubCall = (
         connections: {
             findOne: SinonStub;
             createConnection: SinonStub;
+            findAllFollowersByName: SinonStub;
+            findAllFollowingsByCreator: SinonStub;
             remove: SinonStub;
         };
         profiles: {
@@ -178,6 +180,8 @@ export const stubCall = (
     const connections = {
         findOne: sinon.stub(),
         createConnection: sinon.stub(),
+        findAllFollowersByName: sinon.stub(),
+        findAllFollowingsByCreator: sinon.stub(),
         remove: sinon.stub(),
     };
 

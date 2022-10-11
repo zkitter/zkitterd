@@ -544,9 +544,9 @@ export default class HttpService extends GenericService {
 
     handleGetProofs = async (req: Request, res: Response) => {
         const { idCommitment } = req.params;
-        const { group = '' } = req.query;
+        const { group = '', proofType = '' } = req.query;
 
-        const proof = await this.call('merkle', 'findProof', idCommitment, group);
+        const proof = await this.call('merkle', 'findProof', idCommitment, group, proofType);
 
         res.send(
             makeResponse({

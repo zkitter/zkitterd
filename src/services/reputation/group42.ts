@@ -46,7 +46,7 @@ export default class Group42 extends GenericService {
             const idCommitmentHex = BigInt(identityCommitment).toString(16);
             const exist = await this.semaphore?.findOne(idCommitmentHex, 'semaphore_taz_members');
 
-            if (!exist && groupId === '42') {
+            if (!exist && (groupId === '10806' || groupId === '42' || groupId === '10807')) {
                 await this.semaphore?.addID(
                     idCommitmentHex,
                     'semaphore_taz_members',

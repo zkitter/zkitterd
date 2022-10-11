@@ -14,7 +14,12 @@ export type UserModel = {
     profileImage: string;
     website: string;
     twitterVerification: string;
+    group: boolean;
     meta: {
+        inviteSent: string | null;
+        acceptanceReceived: string | null;
+        inviteReceived: string | null;
+        acceptanceSent: string | null;
         blockedCount: number;
         blockingCount: number;
         followerCount: number;
@@ -229,11 +234,16 @@ const userSelectQuery = `
         name.value as nickname,
         "profileImage".value as "profileImage",
         "coverImage".value as "coverImage",
+        "group".value as "group",
         "twitterVerification".value as "tweetId",
         "twitterVerification".key as "twitterHandle",
         website.value as website,
         ecdh.value as ecdh,
-        idcommitment.value as idcommitment
+        idcommitment.value as idcommitment,
+        accept."messageId" as accepted,
+        invite."messageId" as invited,
+        invrecv."messageId" as invrecv,
+        acceptsent."messageId" as acceptsent
     FROM users u
     LEFT JOIN usermeta umt ON umt.name = u.name
     LEFT JOIN connections f ON f.subtype = 'FOLLOW' AND f.creator = :context AND f.name = u.name
@@ -243,9 +253,14 @@ const userSelectQuery = `
     LEFT JOIN profiles "profileImage" ON "profileImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'PROFILE_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles "coverImage" ON "coverImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'COVER_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles "twitterVerification" ON "twitterVerification"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'TWT_VERIFICATION' ORDER BY "createdAt" DESC LIMIT 1)
+    LEFT JOIN profiles "group" ON "group"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'GROUP' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles website ON website."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'WEBSITE' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles ecdh ON ecdh."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='ecdh_pubkey' ORDER BY "createdAt" DESC LIMIT 1)
     LEFT JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+    LEFT JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = :context AND invite.name = u.name 
+    LEFT JOIN connections invrecv ON invrecv.subtype = 'MEMBER_INVITE' AND invrecv.creator = u.name AND invrecv.name = :context
+    LEFT JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = u.name AND accept.name = :context 
+    LEFT JOIN connections acceptsent ON acceptsent.subtype = 'MEMBER_ACCEPT' AND acceptsent.creator = :context  AND acceptsent.name = u.name
 `;
 
 function inflateValuesToUserJSON(values: any[]): UserModel[] {
@@ -267,11 +282,16 @@ function inflateValuesToUserJSON(values: any[]): UserModel[] {
             bio: value.bio || '',
             profileImage: value.profileImage || '',
             coverImage: value.coverImage || '',
+            group: !!value.group,
             twitterVerification: twitterVerification,
             website: value.website || '',
             ecdh: value.ecdh || '',
             idcommitment: value.idcommitment || '',
             meta: {
+                inviteSent: value.invited || null,
+                acceptanceReceived: value.accepted || null,
+                inviteReceived: value.invrecv || null,
+                acceptanceSent: value.acceptsent || null,
                 blockedCount: value.blockedCount ? Number(value.blockedCount) : 0,
                 blockingCount: value.blockingCount ? Number(value.blockingCount) : 0,
                 followerCount: value.followerCount ? Number(value.followerCount) : 0,

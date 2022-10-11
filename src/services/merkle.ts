@@ -1,10 +1,10 @@
-import { GenericService } from '../util/svc';
-import { BindOrReplacements, Dialect, QueryTypes, Sequelize } from 'sequelize';
-import { generateMerkleTree } from '@zk-kit/protocols';
-import { MerkleProof, IncrementalMerkleTree } from '@zk-kit/incremental-merkle-tree';
-import merkleRoot from '../models/merkle_root';
-import { sequelize } from '../util/sequelize';
-import semaphore from '../models/semaphore';
+import {GenericService} from "../util/svc";
+import {BindOrReplacements, Dialect, QueryOptions, QueryTypes, Sequelize} from "sequelize";
+import {generateMerkleTree} from "@zk-kit/protocols";
+import {MerkleProof, IncrementalMerkleTree} from "@zk-kit/incremental-merkle-tree";
+import merkleRoot from "../models/merkle_root";
+import {sequelize} from "../util/sequelize";
+import semaphore from "../models/semaphore";
 
 export default class MerkleService extends GenericService {
     merkleRoot: ReturnType<typeof merkleRoot>;
@@ -16,25 +16,55 @@ export default class MerkleService extends GenericService {
         this.semaphore = semaphore(sequelize);
     }
 
-    makeTree = async (
-        group: string,
-        zkType: 'rln' | 'semaphore' = 'rln'
-    ): Promise<IncrementalMerkleTree> => {
+    getAllLeaves = async (group: string): Promise<any[]> => {
         const [protocol, groupName, groupType = ''] = group.split('_');
         const protocolBucket = SQL[protocol] || {};
         const groupBucket = protocolBucket[groupName] || {};
-        const { sql, replacement } = groupBucket[groupType] || {};
+        const {sql, replacement} = groupBucket[groupType] || {};
+        let query = '';
+        const options: QueryOptions = { type: QueryTypes.SELECT };
 
-        if (!sql) throw new Error(`${group} does not exist`);
-
-        const options = {
-            type: QueryTypes.SELECT,
-            replacements: replacement || {
+        if (protocol === 'custom') {
+            query = customGroupSQL;
+            options.replacements = {
+                group_address: groupName,
+            };
+        } else {
+            query = sql;
+            options.replacements = replacement || {
                 group_id: group,
-            },
-        };
+            };
+        }
 
-        const leaves = await sequelize.query(sql, options);
+        if (!query) throw new Error(`${group} does not exist`);
+
+        const leaves = await sequelize.query(query, options);
+        return leaves;
+    }
+
+    makeTree = async (group: string, zkType: 'rln' | 'semaphore' = 'rln'): Promise<IncrementalMerkleTree> => {
+        const [protocol, groupName, groupType = ''] = group.split('_');
+        const protocolBucket = SQL[protocol] || {};
+        const groupBucket = protocolBucket[groupName] || {};
+        const {sql, replacement} = groupBucket[groupType] || {};
+        let query = '';
+        const options: QueryOptions = { type: QueryTypes.SELECT };
+
+        if (protocol === 'custom') {
+            query = customGroupSQL;
+            options.replacements = {
+                group_address: groupName,
+            };
+        } else {
+            query = sql;
+            options.replacements = replacement || {
+                group_id: group,
+            };
+        }
+
+        if (!query) throw new Error(`${group} does not exist`);
+
+        const leaves = await sequelize.query(query, options);
         const tree = generateMerkleTree(
             zkType === 'rln' ? 15 : 20,
             BigInt(0),
@@ -175,3 +205,16 @@ const SQL: {
         },
     },
 };
+
+export const customGroupSQL = `
+    SELECT
+        u.name as address,
+        name.value as name,
+        idcommitment.value as id_commitment 
+    FROM users u
+    LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+    JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+    JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = :group_address AND invite.name = u.name
+    JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = u.name AND accept.name = :group_address
+`
+

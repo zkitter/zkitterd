@@ -1,4 +1,5 @@
-import { BIGINT, ModelCtor, Sequelize, STRING } from 'sequelize';
+import {BIGINT, ModelCtor, Sequelize, STRING} from "sequelize";
+import {ConnectionMessageSubType} from "../util/message";
 
 type ConnectionModel = {
     messageId: string;
@@ -97,12 +98,29 @@ const connections = (sequelize: Sequelize) => {
         return model.create(record);
     };
 
+    const findMemberInvite = async (groupAddress: string, memberAddress: string) => {
+        let result: any = await model.findOne({
+            where: {
+                creator: groupAddress,
+                name: memberAddress,
+                subtype: ConnectionMessageSubType.MemberInvite,
+            },
+        });
+
+        if (!result) return null;
+
+        const json = result.toJSON() as ConnectionModel;
+
+        return json;
+    };
+
     return {
         model,
         findOne,
         remove,
         findAllByTargetName,
         createConnection,
+        findMemberInvite,
     };
 };
 

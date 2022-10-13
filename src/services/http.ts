@@ -3,18 +3,16 @@ import express, { Express, NextFunction, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import cors, { CorsOptions } from 'cors';
 import http from 'http';
-import config from '../util/config';
-import logger from '../util/logger';
-import path from 'path';
-import Web3 from 'web3';
-const jsonParser = bodyParser.json();
-import { getLinkPreview } from 'link-preview-js';
-import queryString from 'querystring';
+import config from "../util/config";
+import logger from "../util/logger";
+import path from "path";
+import Web3 from "web3";
+import {getLinkPreview} from "link-preview-js";
+import queryString from "querystring";
 import session from 'express-session';
-import jwt from 'jsonwebtoken';
-import { Dialect, QueryTypes, Sequelize } from 'sequelize';
-const SequelizeStore = require('connect-session-sequelize')(session.Store);
-import { calculateReputation, OAuthProvider } from '@interep/reputation';
+import jwt from "jsonwebtoken";
+import {QueryTypes} from "sequelize";
+import {calculateReputation, OAuthProvider} from "@interep/reputation";
 import {
     accessToken,
     createHeader,
@@ -25,35 +23,27 @@ import {
     showStatus,
     TW_AUTH_URL,
     updateStatus,
-    verifyCredential,
-} from '../util/twitter';
-import { verifySignatureP256 } from '../util/crypto';
-import { parseMessageId, PostMessageSubType } from '../util/message';
+    verifyCredential
+} from "../util/twitter";
+import {verifySignatureP256} from "../util/crypto";
+import {parseMessageId, PostMessageSubType} from "../util/message";
 import multer from 'multer';
+import fs from 'fs';
+import {getFilesFromPath} from 'web3.storage';
+import {UploadModel} from "../models/uploads";
+import {genExternalNullifier, Semaphore, SemaphoreFullProof} from "@zk-kit/protocols";
+import vKey from "../../static/verification_key.json";
+import merkleRoot from "../models/merkle_root";
+import {sequelize} from "../util/sequelize";
+import crypto from 'crypto';
+import {addConnection, addTopic, keepAlive, publishTopic, removeConnection, SSEType} from "../util/sse";
+import {customGroupSQL} from "./merkle";
+
+const jsonParser = bodyParser.json();
+const SequelizeStore = require("connect-session-sequelize")(session.Store);
 const upload = multer({
     dest: './uploaded_files',
 });
-import fs from 'fs';
-import { getFilesFromPath } from 'web3.storage';
-import { UploadModel } from '../models/uploads';
-import {
-    genExternalNullifier,
-    RLNFullProof,
-    Semaphore,
-    SemaphoreFullProof,
-} from '@zk-kit/protocols';
-import vKey from '../../static/verification_key.json';
-import merkleRoot from '../models/merkle_root';
-import { sequelize } from '../util/sequelize';
-import crypto from 'crypto';
-import {
-    addConnection,
-    addTopic,
-    keepAlive,
-    publishTopic,
-    removeConnection,
-    SSEType,
-} from '../util/sse';
 
 const corsOptions: CorsOptions = {
     credentials: true,
@@ -555,6 +545,33 @@ export default class HttpService extends GenericService {
         );
     };
 
+    handleGetMembers = async (req: Request, res: Response) => {
+        const {group} = req.params;
+        const leaves = await this.call('merkle', 'getAllLeaves', group);
+        res.send(makeResponse(leaves));
+    }
+
+    handleGetGroupsByAddress = async (req: Request, res: Response) => {
+        const {address} = req.params;
+        const values = await sequelize.query(`
+            SELECT
+                u.name as address,
+                name.value as name,
+                idcommitment.value as idcommitment 
+            FROM users u
+            LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+            JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+            JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = u.name AND invite.name = :member_address
+            JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :member_address AND accept.name = u.name
+        `, {
+            type: QueryTypes.SELECT,
+            replacements: {
+                member_address: address,
+            },
+        });
+        res.send(makeResponse(values));
+    }
+
     handleGetEvents = async (req: Request, res: Response) => {
         const headers = {
             'Content-Type': 'text/event-stream',
@@ -627,6 +644,8 @@ export default class HttpService extends GenericService {
         this.app.get('/v1/zkchat/chats/search/:query?', this.wrapHandler(this.handleSearchChats));
 
         this.app.get('/v1/proofs/:idCommitment', this.wrapHandler(this.handleGetProofs));
+        this.app.get('/v1/group_members/:group', this.wrapHandler(this.handleGetMembers));
+        this.app.get('/v1/:address/groups', this.wrapHandler(this.handleGetGroupsByAddress));
         this.app.get('/v1/events', this.wrapHandler(this.handleGetEvents));
         this.app.post(
             '/v1/events/:clientId',

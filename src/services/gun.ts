@@ -14,19 +14,20 @@ import {
     parseMessageId,
     Post,
     PostMessageSubType,
-    Profile,
-    ProfileMessageSubType,
-} from '../util/message';
-import { Mutex } from 'async-mutex';
-import { UserModel } from '../models/users';
-import { HASHTAG_REGEX, MENTION_REGEX } from '../util/regex';
-import vKey from '../../static/verification_key.json';
-import { showStatus } from '../util/twitter';
-import { Semaphore } from '@zk-kit/protocols';
+    Profile, ProfileMessageSubType
+} from "../util/message";
+import {Mutex} from "async-mutex";
+import {UserModel} from "../models/users";
+import {HASHTAG_REGEX, MENTION_REGEX} from "../util/regex";
+import vKey from "../../static/verification_key.json";
+import {showStatus} from "../util/twitter";
+import {Semaphore} from "@zk-kit/protocols";
+import merkleRoot from "../models/merkle_root";
+import {sequelize} from "../util/sequelize";
 
-const Graph = require('../../lib/gun/graph.js');
-const State = require('../../lib/gun/state.js');
-const Val = require('../../lib/gun/val.js');
+const Graph = require("../../lib/gun/graph.js");
+const State = require("../../lib/gun/state.js");
+const Val = require("../../lib/gun/val.js");
 
 const getMutex = new Mutex();
 const putMutex = new Mutex();
@@ -34,6 +35,7 @@ const insertMutex = new Mutex();
 
 export default class GunService extends GenericService {
     gun?: IGunChainReference;
+    merkleRoot?: ReturnType<typeof merkleRoot>;
 
     watchGlobal = async () => {
         if (!this.gun) throw new Error('gun is not set up');
@@ -602,6 +604,7 @@ export default class GunService extends GenericService {
     }
 
     async start() {
+        this.merkleRoot = await merkleRoot(sequelize);
         const app = express();
         const server = app.listen(config.gunPort);
         const ctx = this;

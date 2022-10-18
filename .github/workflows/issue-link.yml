@@ -3,6 +3,11 @@ on:
   pull_request:
     types: [opened]
 
+# set minimum required permissions for automatic `GITHUB_TOKEN` token
+permissions:
+  pull-requests: write
+  issues: read
+
 jobs:
   issue-links:
     name: Link PR to Issue
@@ -10,7 +15,6 @@ jobs:
     steps:
       - uses: tkt-actions/add-issue-links@v1.8.0
         with:
-          repo-token: ${{ secrets.TOKEN }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
           branch-prefix: 'issue-'
           resolve: true
- 

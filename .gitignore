@@ -16,3 +16,4 @@ config.prod.json
 config.json
 gun.test.db
 test.db
+uploaded_files/

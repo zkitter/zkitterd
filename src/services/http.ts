@@ -535,7 +535,6 @@ export default class HttpService extends GenericService {
     handleGetProofs = async (req: Request, res: Response) => {
         const { idCommitment } = req.params;
         const { group = '', proofType = '' } = req.query;
-
         const proof = await this.call('merkle', 'findProof', idCommitment, group, proofType);
 
         res.send(
@@ -605,7 +604,6 @@ export default class HttpService extends GenericService {
 
     handleSSETerminate = async (req: Request, res: Response) => {
         const { clientId } = req.params;
-        console.log(clientId);
         removeConnection(clientId);
         res.send(makeResponse('ok'));
     };

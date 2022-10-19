@@ -103,7 +103,7 @@ export default class MerkleService extends GenericService {
         return null;
     };
 
-    findProof = async (idCommitment: string, group?: string, proofType?: string) => {
+    findProof = async (idCommitment: string, group?: string, _proofType?: 'semaphore' | 'rln') => {
         if (!group) {
             const row = await this.semaphore.findOneByCommitment(idCommitment);
             if (!row) throw new Error(`${idCommitment} is not in any groups`);
@@ -117,7 +117,12 @@ export default class MerkleService extends GenericService {
             await this.call('interrep', 'syncOne', group).catch(() => null);
         }
 
-        const tree = await this.makeTree(group, proofType || service === 'taz' ? 'semaphore' : 'rln');
+        const proofType = _proofType
+            ? _proofType
+            : service === 'taz'
+                ? 'semaphore'
+                : 'rln';
+        const tree = await this.makeTree(group, proofType);
         const proof = await tree.createProof(tree.indexOf(BigInt('0x' + idCommitment)));
 
         if (!proof) {

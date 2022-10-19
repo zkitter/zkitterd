@@ -746,7 +746,7 @@ export default class GunService extends GenericService {
         this.gun = gun;
 
         const userDB = await this.call('db', 'getUsers');
-        const users = await userDB.readAll('', 0, 100);
+        const users = await userDB.readAll('', 0, 1000);
 
         for (const user of users) {
             await this.watch(user.pubkey);

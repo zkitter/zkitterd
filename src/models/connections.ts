@@ -1,4 +1,4 @@
-import { BIGINT, ModelCtor, Sequelize, STRING } from 'sequelize';
+import { BIGINT, Sequelize, STRING } from 'sequelize';
 import { ConnectionMessageSubType } from '../util/message';
 
 type ConnectionModel = {
@@ -94,6 +94,40 @@ const connections = (sequelize: Sequelize) => {
     return result.map((r: any) => r.toJSON() as ConnectionModel);
   };
 
+  const findAllFollowersByName = async (
+    name: string,
+    offset = 0,
+    limit = 20,
+    order: 'DESC' | 'ASC' = 'DESC'
+  ): Promise<ConnectionModel[]> => {
+    let result = await model.findAll({
+      attributes: ['creator'],
+      where: { name },
+      offset,
+      limit,
+      order: [['createdAt', order]],
+    });
+
+    return result.map((r: any) => r.toJSON().creator);
+  };
+
+  const findAllFollowingsByCreator = async (
+    creator: string,
+    offset = 0,
+    limit = 20,
+    order: 'DESC' | 'ASC' = 'DESC'
+  ): Promise<ConnectionModel[]> => {
+    let result = await model.findAll({
+      attributes: ['name'],
+      where: { creator },
+      offset,
+      limit,
+      order: [['createdAt', order]],
+    });
+
+    return result.map((r: any) => r.toJSON().name);
+  };
+
   const createConnection = async (record: ConnectionModel) => {
     return model.create(record);
   };
@@ -119,6 +153,8 @@ const connections = (sequelize: Sequelize) => {
     findOne,
     remove,
     findAllByTargetName,
+    findAllFollowersByName,
+    findAllFollowingsByCreator,
     createConnection,
     findMemberInvite,
   };

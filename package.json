@@ -12,6 +12,7 @@
     "start": "NODE_ENV=production npm run build && node ./build/server.js",
     "test": "NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' tape -r ts-node/register ./src/**/*.test.ts ./src/**/**/*.test.ts | tap-spec",
     "test:coverage": "nyc npm run test",
+    "test:some": "_some() { find ./src -path *$1*.test.ts -exec tape -r ts-node/register {} \\; | tap-spec; }; NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' _some",
     "format:check": "prettier --check 'src/**/*.ts'",
     "format:write": "prettier --write 'src/**/*.ts'",
     "prepare": "husky install"

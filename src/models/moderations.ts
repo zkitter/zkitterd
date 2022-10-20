@@ -132,6 +132,23 @@ const moderations = (sequelize: Sequelize) => {
     return result.map((r: any) => r.toJSON() as ModerationJSON);
   };
 
+  const findAllLikesByReference = async (
+    reference: string,
+    offset = 0,
+    limit = 20,
+    order: 'DESC' | 'ASC' = 'DESC'
+  ): Promise<string[]> => {
+    const result = await model.findAll({
+      attributes: ['creator'],
+      where: { reference, subtype: 'LIKE' },
+      offset,
+      limit,
+      order: [['createdAt', order]],
+    });
+
+    return result.map((r: any) => r.toJSON().creator);
+  };
+
   const createModeration = async (record: ModerationModel) => {
     return model.create(record);
   };
@@ -141,6 +158,7 @@ const moderations = (sequelize: Sequelize) => {
     findOne,
     remove,
     findAllByReference,
+    findAllLikesByReference,
     findThreadModeration,
     createModeration,
   };

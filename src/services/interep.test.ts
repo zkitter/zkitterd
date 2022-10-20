@@ -8,7 +8,7 @@ const fetchStub = stubFetch();
 getMockDB();
 const interrep = new InterrepService();
 
-const [callStub, { sempahore, interepGroups }] = stubCall(interrep);
+const [callStub, { semaphore, interepGroups }] = stubCall(interrep);
 
 tape('InterepService.start', async (t: any) => {
   const datas = [
@@ -80,12 +80,12 @@ tape('InterepService.start', async (t: any) => {
 //     await interrep.addID('0x123456', 'autism', 'gold');
 //
 //     t.same(
-//         sempahore.addID.args[0],
+//         semaphore.addID.args[0],
 //         ['0x123456', 'autism', 'gold'],
 //         'should add new id to semaphore database',
 //     );
 //
-//     sempahore.addID.reset();
+//     semaphore.addID.reset();
 //     t.end();
 // });
 //
@@ -93,11 +93,11 @@ tape('InterepService.start', async (t: any) => {
 //     await interrep.removeID('0x123456', 'autism', 'gold');
 //
 //     t.same(
-//         sempahore.removeID.args[0],
+//         semaphore.removeID.args[0],
 //         ['0x123456', 'autism', 'gold'],
 //         'should remove id from semaphore database',
 //     );
-//     sempahore.removeID.reset();
+//     semaphore.removeID.reset();
 //     t.end();
 // });
 
@@ -205,14 +205,14 @@ tape('InterepService.inProvider', async t => {
 //     );
 //
 //     t.same(
-//         sempahore.addID.args[0],
+//         semaphore.addID.args[0],
 //         [ '0x123456', 'twitter', 'gold' ] ,
 //     );
 //
-//     t.notOk(sempahore.removeID.args[0]);
+//     t.notOk(semaphore.removeID.args[0]);
 //
 //     fetchStub.reset();
-//     sempahore.addID.reset();
+//     semaphore.addID.reset();
 //
 //     let i = true;
 //     fetchStub.returns(Promise.resolve({
@@ -234,9 +234,9 @@ tape('InterepService.inProvider', async t => {
 //         ],
 //     );
 //
-//     t.notOk(sempahore.addID.args[0]);
+//     t.notOk(semaphore.addID.args[0]);
 //     t.same(
-//         sempahore.removeID.args[0],
+//         semaphore.removeID.args[0],
 //         [ '0x3456789', 'twitter', 'gold' ] ,
 //     );
 //

@@ -79,7 +79,7 @@ const semaphore = (sequelize: Sequelize) => {
         });
 
         return result.map(r => r.toJSON()) as SemaphoreModel[];
-    }
+    };
 
     const addID = async (id_commitment: string, group_id: string, root_hash: string) => {
         return mutex.runExclusive(async () => {

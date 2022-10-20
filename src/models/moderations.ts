@@ -146,7 +146,7 @@ const moderations = (sequelize: Sequelize) => {
             order: [['createdAt', order]],
         });
 
-        return result.map((r: any) => r.toJSON().creator);
+        return result.map((r: any) => r.toJSON().messageId);
     };
 
     const createModeration = async (record: ModerationModel) => {

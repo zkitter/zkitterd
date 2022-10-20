@@ -717,7 +717,7 @@ tape('HttpService - list all users who liked a post', async t => {
     const http = new HttpService();
     const [, stubs] = stubCall(http);
     const res = newResponse();
-    const likers = ['0xfoo', '0xbar'];
+    const likers = ['0xfoo/hash1', '0xbar/hash2'];
 
     stubs.moderations.findAllLikesByReference.returns(Promise.resolve(likers));
 

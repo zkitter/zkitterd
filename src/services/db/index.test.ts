@@ -1115,7 +1115,10 @@ tape('DBService', async t => {
     );
 
     const thread1: any = await db.sequelize.query(
-        `select * from threads where message_id = '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/25df09401b73ffd9d83b7dd57c489abd1065624d38a05d8be192d55295c43204'`
+        `select *
+     from threads
+     where message_id =
+           '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/25df09401b73ffd9d83b7dd57c489abd1065624d38a05d8be192d55295c43204'`
     );
     t.deepEqual(
         thread1[0][0].message_id,
@@ -1129,7 +1132,10 @@ tape('DBService', async t => {
     );
 
     const thread2: any = await db.sequelize.query(
-        `select * from threads where message_id = '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/25df09401b73ffd9d83b7dd57c489abd1065624d38a05d8be192d55295c43204'`
+        `select *
+     from threads
+     where message_id =
+           '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/25df09401b73ffd9d83b7dd57c489abd1065624d38a05d8be192d55295c43204'`
     );
     t.notok(thread2[0][0], 'should remove thread data');
 
@@ -1190,8 +1196,7 @@ tape('DBService', async t => {
 
     // @ts-ignore
     const { updatedAt, createdAt, ...user2 } = await db.users!.findOneByPubkey(
-        'MNw7njaTh0k835aq0JKtmpq33izkGwFxdldqf3txB64.a-yzwTFi1hNP-4lrpHB5NAw7p100oAOUefpYwfLPer8',
-        '0x3F425586D68616A113C29c303766DAD444167EE8'
+        'MNw7njaTh0k835aq0JKtmpq33izkGwFxdldqf3txB64.a-yzwTFi1hNP-4lrpHB5NAw7p100oAOUefpYwfLPer8'
     );
     t.deepEqual(
         user2,

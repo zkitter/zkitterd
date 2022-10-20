@@ -40,6 +40,7 @@ export const deriveMessageId = async (chatMessage: ChatMessage): Promise<string>
     data += chatMessage.receiver;
 
     if (chatMessage.type === 'DIRECT') {
+        // @ts-ignore
         data += chatMessage.pubkey || '';
         data += chatMessage.ciphertext;
     }
@@ -52,42 +53,6 @@ export const deriveMessageId = async (chatMessage: ChatMessage): Promise<string>
 
     return crypto.createHash('sha256').update(data).digest('hex');
 }
-
-export const createChatMessage = async (opts: {
-    type: 'DIRECT' | 'PUBLIC_ROOM',
-    sender: string;
-    timestamp?: Date;
-    pubkey?: string;
-    receiver: string;
-    content?: string;
-    reference?: string;
-    attachment?: string;
-    rln?: RLNFullProof & {
-        epoch: number;
-        x_share: string;
-    };
-}): Promise<ChatMessage | null> => {
-    let val: ChatMessage;
-
-    switch (opts.type) {
-        case 'DIRECT':
-            val = {
-                messageId: '',
-                type: ChatMessageType.DIRECT,
-                timestamp: opts.timestamp || new Date(),
-                sender: opts.sender,
-                pubkey: opts.pubkey,
-                receiver: opts.receiver,
-                rln: opts.rln,
-                ciphertext: '',
-            };
-            val.messageId = await deriveMessageId(val);
-            return val;
-        default:
-            return null;
-    }
-}
-
 function assert(data: any) {
     if (!data) throw new Error(`cannot be null`);
 }

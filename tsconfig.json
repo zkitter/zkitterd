@@ -13,7 +13,8 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "sourceMap": true,
-    "noEmit": true
+    "noEmit": true,
+    "useUnknownInCatchVariables": false
   },
   "include": [
     "src"

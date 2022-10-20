@@ -6,65 +6,65 @@ import { globalModClause, globalVisibilityClause, replyModerationClause } from '
 import config from '../util/config';
 
 type TagModel = {
-    tag_name: string;
-    message_id: string;
+  tag_name: string;
+  message_id: string;
 };
 
 const mutex = new Mutex();
 
 const tags = (sequelize: Sequelize) => {
-    const model = sequelize.define(
-        'tags',
-        {
-            tag_name: {
-                type: STRING,
-            },
-            message_id: {
-                type: STRING,
-            },
-        },
-        {
-            indexes: [{ fields: ['tag_name', 'message_id'], unique: true }],
-        }
-    );
+  const model = sequelize.define(
+    'tags',
+    {
+      tag_name: {
+        type: STRING,
+      },
+      message_id: {
+        type: STRING,
+      },
+    },
+    {
+      indexes: [{ fields: ['tag_name', 'message_id'], unique: true }],
+    }
+  );
 
-    const addTagPost = async (tagName: string, messageId: string) => {
-        return mutex.runExclusive(async () => {
-            const res = await model.create({
-                tag_name: tagName,
-                message_id: messageId,
-            });
+  const addTagPost = async (tagName: string, messageId: string) => {
+    return mutex.runExclusive(async () => {
+      const res = await model.create({
+        tag_name: tagName,
+        message_id: messageId,
+      });
 
-            return res;
+      return res;
+    });
+  };
+
+  const removeTagPost = async (tagName: string, messageId: string) => {
+    return mutex.runExclusive(async () => {
+      try {
+        const res = await model.destroy({
+          where: {
+            tag_name: tagName,
+            message_id: messageId,
+          },
         });
-    };
+        return res;
+      } catch (e) {
+        return false;
+      }
+    });
+  };
 
-    const removeTagPost = async (tagName: string, messageId: string) => {
-        return mutex.runExclusive(async () => {
-            try {
-                const res = await model.destroy({
-                    where: {
-                        tag_name: tagName,
-                        message_id: messageId,
-                    },
-                });
-                return res;
-            } catch (e) {
-                return false;
-            }
-        });
-    };
-
-    const getPostsByTag = async (
-        tagName: string,
-        context?: string,
-        offset = 0,
-        limit = 20,
-        order: 'DESC' | 'ASC' = 'DESC',
-        showAll = false
-    ) => {
-        const result = await sequelize.query(
-            `
+  const getPostsByTag = async (
+    tagName: string,
+    context?: string,
+    offset = 0,
+    limit = 20,
+    order: 'DESC' | 'ASC' = 'DESC',
+    showAll = false
+  ) => {
+    const result = await sequelize.query(
+      `
             ${selectTagPostsQuery}
             WHERE (
                 (p."createdAt" != -1) 
@@ -80,33 +80,33 @@ const tags = (sequelize: Sequelize) => {
             ORDER BY p."createdAt" ${order}
             LIMIT :limit OFFSET :offset
         `,
-            {
-                replacements: {
-                    context: context || '',
-                    limit,
-                    offset,
-                    tagName,
-                },
-                type: QueryTypes.SELECT,
-            }
-        );
+      {
+        replacements: {
+          context: context || '',
+          limit,
+          offset,
+          tagName,
+        },
+        type: QueryTypes.SELECT,
+      }
+    );
 
-        const values: PostJSON[] = [];
+    const values: PostJSON[] = [];
 
-        for (let r of result) {
-            const post = inflateResultToPostJSON(r);
-            values.push(post);
-        }
+    for (let r of result) {
+      const post = inflateResultToPostJSON(r);
+      values.push(post);
+    }
 
-        return values;
-    };
+    return values;
+  };
 
-    return {
-        model,
-        getPostsByTag,
-        addTagPost,
-        removeTagPost,
-    };
+  return {
+    model,
+    getPostsByTag,
+    addTagPost,
+    removeTagPost,
+  };
 };
 
 export default tags;
@@ -162,11 +162,11 @@ const selectTagPostsQuery = `
         LEFT JOIN moderations modliked ON modliked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN moderations modblocked ON modblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = root.creator LIMIT 1)
         LEFT JOIN moderations gmodblocked ON gmodblocked."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator IN (${config.moderators
-            .map(d => `'${d}'`)
-            .join(',')}) LIMIT 1)
+          .map(d => `'${d}'`)
+          .join(',')}) LIMIT 1)
         LEFT JOIN connections gmodblockeduser ON gmodblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator IN (${config.moderators
-            .map(d => `'${d}'`)
-            .join(',')}) LIMIT 1)
+          .map(d => `'${d}'`)
+          .join(',')}) LIMIT 1)
         LEFT JOIN connections modblockeduser ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = p."creator" AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modfolloweduser ON modfolloweduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = p."creator" AND creator = root.creator LIMIT 1)
         LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE p."messageId" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)

@@ -9,65 +9,65 @@ import Timeout = NodeJS.Timeout;
 const { default: ENS, getEnsAddress } = require('@ensdomains/ensjs');
 
 const cache = new LRU({
-    max: 1000,
-    maxAge: 60 * 60 * 1000,
+  max: 1000,
+  maxAge: 60 * 60 * 1000,
 });
 
 export default class ENSService extends GenericService {
-    web3: Web3;
-    resolver: Contract;
-    ens: typeof ENS;
-    scanTimeout?: Timeout | null;
+  web3: Web3;
+  resolver: Contract;
+  ens: typeof ENS;
+  scanTimeout?: Timeout | null;
 
-    constructor() {
-        super();
-        const httpProvider = new Web3.providers.HttpProvider(config.web3HttpProvider);
-        this.web3 = new Web3(httpProvider);
-        this.resolver = new this.web3.eth.Contract(ensResolverABI as any, config.ensResolver);
-        this.ens = new ENS({
-            provider: httpProvider,
-            ensAddress: getEnsAddress('1'),
-        });
+  constructor() {
+    super();
+    const httpProvider = new Web3.providers.HttpProvider(config.web3HttpProvider);
+    this.web3 = new Web3(httpProvider);
+    this.resolver = new this.web3.eth.Contract(ensResolverABI as any, config.ensResolver);
+    this.ens = new ENS({
+      provider: httpProvider,
+      ensAddress: getEnsAddress('1'),
+    });
+  }
+
+  ecrecover = async (data: string, sig: string) => {
+    return this.web3.eth.accounts.recover(data, sig);
+  };
+
+  fetchNameByAddress = async (address: string) => {
+    const cached = cache.get(address);
+
+    if (cache.get(address)) {
+      return cached;
     }
 
-    ecrecover = async (data: string, sig: string) => {
-        return this.web3.eth.accounts.recover(data, sig);
-    };
+    const { name } = await this.ens.getName(address);
 
-    fetchNameByAddress = async (address: string) => {
-        const cached = cache.get(address);
+    if (!name) return null;
 
-        if (cache.get(address)) {
-            return cached;
-        }
+    cache.set(address, name);
+    const ens = await this.call('db', 'getENS');
+    await ens.update(name, address);
+    return name;
+  };
 
-        const { name } = await this.ens.getName(address);
+  fetchAddressByName = async (name: string) => {
+    if (Web3.utils.isAddress(name)) return name;
 
-        if (!name) return null;
+    const cached = cache.get(name);
 
-        cache.set(address, name);
-        const ens = await this.call('db', 'getENS');
-        await ens.update(name, address);
-        return name;
-    };
+    if (cache.get(name)) {
+      return cached;
+    }
 
-    fetchAddressByName = async (name: string) => {
-        if (Web3.utils.isAddress(name)) return name;
+    const address = await this.ens.name(name).getAddress();
 
-        const cached = cache.get(name);
+    if (!address) throw new Error(`cannot find address for ${name}`);
 
-        if (cache.get(name)) {
-            return cached;
-        }
+    cache.set(name, address);
+    const ens = await this.call('db', 'getENS');
+    await ens.update(name, address);
 
-        const address = await this.ens.name(name).getAddress();
-
-        if (!address) throw new Error(`cannot find address for ${name}`);
-
-        cache.set(name, address);
-        const ens = await this.call('db', 'getENS');
-        await ens.update(name, address);
-
-        return address;
-    };
+    return address;
+  };
 }

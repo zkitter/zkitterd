@@ -13,21 +13,21 @@ import MerkleService from './services/merkle';
 import { ReputationService } from './services/reputation';
 
 (async function initApp() {
-    try {
-        const main = new MainService();
-        main.add('db', new DBService());
-        main.add('merkle', new MerkleService());
-        main.add('interrep', new InterrepService());
-        main.add('zkchat', new ZKChatService());
-        main.add('ens', new ENSService());
-        main.add('arbitrum', new ArbitrumService());
-        main.add('gun', new GunService());
-        main.add('ipfs', new IPFSService());
-        main.add('http', new HttpService());
-        main.add('reputation', new ReputationService());
-        await main.start();
-    } catch (e) {
-        logger.error(e.message, { stack: e.stack });
-        throw e;
-    }
+  try {
+    const main = new MainService();
+    main.add('db', new DBService());
+    main.add('merkle', new MerkleService());
+    main.add('interrep', new InterrepService());
+    main.add('zkchat', new ZKChatService());
+    main.add('ens', new ENSService());
+    main.add('arbitrum', new ArbitrumService());
+    main.add('gun', new GunService());
+    main.add('ipfs', new IPFSService());
+    main.add('http', new HttpService());
+    main.add('reputation', new ReputationService());
+    await main.start();
+  } catch (e) {
+    logger.error(e.message, { stack: e.stack });
+    throw e;
+  }
 })();

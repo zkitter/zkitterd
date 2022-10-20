@@ -2,46 +2,46 @@ import fs from 'fs';
 import path from 'path';
 
 let json: {
-    interrepAPI?: string;
-    web3HttpProvider?: string;
-    arbitrumHttpProvider?: string;
-    goerliHttpProvider?: string;
-    arbitrumRegistrar?: string;
-    arbitrumPrivateKey?: string;
-    arbitrumAddress?: string;
-    ensResolver?: string;
-    interrepContract?: string;
-    dbDialect?: string;
-    dbStorage?: string;
-    dbName?: string;
-    dbUsername?: string;
-    dbPassword?: string;
-    dbHost?: string;
-    dbPort?: string;
-    port?: number;
-    gunPort?: number;
-    gunPeers?: string[];
-    moderators?: string[];
-    jwtSecret?: string;
-    twCallbackUrl?: string;
-    twConsumerKey?: string;
-    twConsumerSecret?: string;
-    twBearerToken?: string;
-    twAccessKey?: string;
-    twAccessSecret?: string;
-    rapidAPIKey?: string;
-    web3StorageAPIKey?: string;
+  interrepAPI?: string;
+  web3HttpProvider?: string;
+  arbitrumHttpProvider?: string;
+  goerliHttpProvider?: string;
+  arbitrumRegistrar?: string;
+  arbitrumPrivateKey?: string;
+  arbitrumAddress?: string;
+  ensResolver?: string;
+  interrepContract?: string;
+  dbDialect?: string;
+  dbStorage?: string;
+  dbName?: string;
+  dbUsername?: string;
+  dbPassword?: string;
+  dbHost?: string;
+  dbPort?: string;
+  port?: number;
+  gunPort?: number;
+  gunPeers?: string[];
+  moderators?: string[];
+  jwtSecret?: string;
+  twCallbackUrl?: string;
+  twConsumerKey?: string;
+  twConsumerSecret?: string;
+  twBearerToken?: string;
+  twAccessKey?: string;
+  twAccessSecret?: string;
+  rapidAPIKey?: string;
+  web3StorageAPIKey?: string;
 } = {};
 
 try {
-    const configBuffer =
-        process.env.NODE_ENV === 'production'
-            ? fs.readFileSync(path.join(process.cwd(), 'config.prod.json'))
-            : process.env.NODE_ENV === 'test'
-            ? fs.readFileSync(path.join(process.cwd(), 'config.test.json'))
-            : fs.readFileSync(path.join(process.cwd(), 'config.dev.json'));
-    const parsed = JSON.parse(configBuffer.toString('utf-8'));
-    json = parsed;
+  const configBuffer =
+    process.env.NODE_ENV === 'production'
+      ? fs.readFileSync(path.join(process.cwd(), 'config.prod.json'))
+      : process.env.NODE_ENV === 'test'
+      ? fs.readFileSync(path.join(process.cwd(), 'config.test.json'))
+      : fs.readFileSync(path.join(process.cwd(), 'config.dev.json'));
+  const parsed = JSON.parse(configBuffer.toString('utf-8'));
+  json = parsed;
 } catch (e) {}
 
 const rapidAPIKey = json.rapidAPIKey || process.env.RAPIDAPI_KEY;
@@ -69,10 +69,10 @@ const port = json.port || process.env.PORT;
 const gunPort = json.gunPort || process.env.GUN_PORT;
 const gunPeers = json.gunPeers || process.env?.GUN_PEERS?.split(' ') || [];
 const moderators = json.moderators ||
-    process.env?.MODERATORS?.split(' ') || [
-        '0x3F425586D68616A113C29c303766DAD444167EE8',
-        '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-    ];
+  process.env?.MODERATORS?.split(' ') || [
+    '0x3F425586D68616A113C29c303766DAD444167EE8',
+    '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
+  ];
 const interrepAPI = json.interrepAPI || process.env.INTERREP_API || 'https://kovan.interep.link';
 const interrepContract = json.interrepContract || process.env.INTERREP_CONTRACT || '';
 const jwtSecret = json.jwtSecret || process.env.JWT_SECRET || 'topjwtsecret';
@@ -96,35 +96,35 @@ if (!rapidAPIKey) throw new Error(`rapidAPIKey is not valid`);
 if (!web3StorageAPIKey) throw new Error(`web3StorageAPIKey is not valid`);
 
 const config = {
-    interrepAPI,
-    web3HttpProvider,
-    arbitrumHttpProvider,
-    goerliHttpProvider,
-    arbitrumRegistrar,
-    arbitrumPrivateKey,
-    arbitrumAddress,
-    ensResolver,
-    interrepContract,
-    dbDialect,
-    dbStorage,
-    dbName,
-    dbUsername,
-    dbPassword,
-    dbHost,
-    dbPort,
-    port: port ? Number(port) : 3000,
-    gunPort: gunPort ? Number(gunPort) : 8765,
-    gunPeers,
-    jwtSecret,
-    twCallbackUrl,
-    twConsumerKey,
-    twConsumerSecret,
-    twBearerToken,
-    twAccessKey,
-    twAccessSecret,
-    rapidAPIKey,
-    moderators,
-    web3StorageAPIKey,
+  interrepAPI,
+  web3HttpProvider,
+  arbitrumHttpProvider,
+  goerliHttpProvider,
+  arbitrumRegistrar,
+  arbitrumPrivateKey,
+  arbitrumAddress,
+  ensResolver,
+  interrepContract,
+  dbDialect,
+  dbStorage,
+  dbName,
+  dbUsername,
+  dbPassword,
+  dbHost,
+  dbPort,
+  port: port ? Number(port) : 3000,
+  gunPort: gunPort ? Number(gunPort) : 8765,
+  gunPeers,
+  jwtSecret,
+  twCallbackUrl,
+  twConsumerKey,
+  twConsumerSecret,
+  twBearerToken,
+  twAccessKey,
+  twAccessSecret,
+  rapidAPIKey,
+  moderators,
+  web3StorageAPIKey,
 };
 
 export default config;

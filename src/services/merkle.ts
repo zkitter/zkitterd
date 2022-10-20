@@ -7,170 +7,170 @@ import { sequelize } from '../util/sequelize';
 import semaphore from '../models/semaphore';
 
 export default class MerkleService extends GenericService {
-    merkleRoot: ReturnType<typeof merkleRoot>;
-    semaphore: ReturnType<typeof semaphore>;
+  merkleRoot: ReturnType<typeof merkleRoot>;
+  semaphore: ReturnType<typeof semaphore>;
 
-    constructor() {
-        super();
-        this.merkleRoot = merkleRoot(sequelize);
-        this.semaphore = semaphore(sequelize);
+  constructor() {
+    super();
+    this.merkleRoot = merkleRoot(sequelize);
+    this.semaphore = semaphore(sequelize);
+  }
+
+  getAllLeaves = async (group: string): Promise<any[]> => {
+    const [protocol, groupName, groupType = ''] = group.split('_');
+    const protocolBucket = SQL[protocol] || {};
+    const groupBucket = protocolBucket[groupName] || {};
+    const { sql, replacement } = groupBucket[groupType] || {};
+    let query = '';
+    const options: QueryOptions = { type: QueryTypes.SELECT };
+
+    if (protocol === 'custom') {
+      query = customGroupSQL;
+      options.replacements = {
+        group_address: groupName,
+      };
+    } else {
+      query = sql;
+      options.replacements = replacement || {
+        group_id: group,
+      };
     }
 
-    getAllLeaves = async (group: string): Promise<any[]> => {
-        const [protocol, groupName, groupType = ''] = group.split('_');
-        const protocolBucket = SQL[protocol] || {};
-        const groupBucket = protocolBucket[groupName] || {};
-        const { sql, replacement } = groupBucket[groupType] || {};
-        let query = '';
-        const options: QueryOptions = { type: QueryTypes.SELECT };
+    if (!query) throw new Error(`${group} does not exist`);
 
-        if (protocol === 'custom') {
-            query = customGroupSQL;
-            options.replacements = {
-                group_address: groupName,
-            };
-        } else {
-            query = sql;
-            options.replacements = replacement || {
-                group_id: group,
-            };
-        }
+    const leaves = await sequelize.query(query, options);
+    return leaves;
+  };
 
-        if (!query) throw new Error(`${group} does not exist`);
+  makeTree = async (
+    group: string,
+    zkType: 'rln' | 'semaphore' = 'rln'
+  ): Promise<IncrementalMerkleTree> => {
+    const [protocol, groupName, groupType = ''] = group.split('_');
+    const protocolBucket = SQL[protocol] || {};
+    const groupBucket = protocolBucket[groupName] || {};
+    const { sql, replacement } = groupBucket[groupType] || {};
+    let query = '';
+    const options: QueryOptions = { type: QueryTypes.SELECT };
 
-        const leaves = await sequelize.query(query, options);
-        return leaves;
+    if (protocol === 'custom') {
+      query = customGroupSQL;
+      options.replacements = {
+        group_address: groupName,
+      };
+    } else {
+      query = sql;
+      options.replacements = replacement || {
+        group_id: group,
+      };
+    }
+
+    if (!query) throw new Error(`${group} does not exist`);
+
+    const leaves = await sequelize.query(query, options);
+    const tree = generateMerkleTree(
+      zkType === 'rln' ? 15 : 20,
+      BigInt(0),
+      leaves.map(({ id_commitment }: any) => '0x' + id_commitment)
+    );
+
+    return tree;
+  };
+
+  getGroupByRoot = async (root: string): Promise<string | null> => {
+    const exist = await this.merkleRoot.getGroupByRoot(root);
+    return exist?.group_id || null;
+  };
+
+  verifyProof = async (proof: MerkleProof): Promise<string | null> => {
+    const groups = [
+      'zksocial_all',
+      'interrep_twitter_unrated',
+      'interrep_twitter_bronze',
+      'interrep_twitter_silver',
+      'interrep_twitter_gold',
+    ];
+
+    const existingGroup = await this.getGroupByRoot(proof.root);
+
+    if (existingGroup) {
+      const tree = await this.makeTree(existingGroup);
+      if (tree.verifyProof(proof)) return existingGroup;
+    }
+
+    for (const group of groups) {
+      const tree = await this.makeTree(group);
+      if (tree.verifyProof(proof)) return group;
+    }
+
+    return null;
+  };
+
+  findProof = async (idCommitment: string, group?: string, _proofType?: 'semaphore' | 'rln') => {
+    if (!group) {
+      const row = await this.semaphore.findOneByCommitment(idCommitment);
+      if (!row) throw new Error(`${idCommitment} is not in any groups`);
+      group = row.group_id;
+    }
+
+    const exist = await this.semaphore.findOne(idCommitment, group);
+    const [protocol, service] = group.split('_');
+
+    if (!exist && protocol === 'interrep') {
+      await this.call('interrep', 'syncOne', group).catch(() => null);
+    }
+
+    const proofType = _proofType ? _proofType : service === 'taz' ? 'semaphore' : 'rln';
+    const tree = await this.makeTree(group, proofType);
+    const proof = await tree.createProof(tree.indexOf(BigInt('0x' + idCommitment)));
+
+    if (!proof) {
+      throw new Error(`${idCommitment} is not in ${group}`);
+    }
+
+    const root = '0x' + proof.root.toString(16);
+
+    await this.addRoot(root, group);
+
+    const retProof = {
+      root,
+      siblings: proof.siblings.map(siblings =>
+        Array.isArray(siblings)
+          ? siblings.map(element => '0x' + element.toString(16))
+          : '0x' + siblings.toString(16)
+      ),
+      pathIndices: proof.pathIndices,
+      leaf: '0x' + proof.leaf.toString(16),
+      group: group,
     };
 
-    makeTree = async (
-        group: string,
-        zkType: 'rln' | 'semaphore' = 'rln'
-    ): Promise<IncrementalMerkleTree> => {
-        const [protocol, groupName, groupType = ''] = group.split('_');
-        const protocolBucket = SQL[protocol] || {};
-        const groupBucket = protocolBucket[groupName] || {};
-        const { sql, replacement } = groupBucket[groupType] || {};
-        let query = '';
-        const options: QueryOptions = { type: QueryTypes.SELECT };
+    return retProof;
+  };
 
-        if (protocol === 'custom') {
-            query = customGroupSQL;
-            options.replacements = {
-                group_address: groupName,
-            };
-        } else {
-            query = sql;
-            options.replacements = replacement || {
-                group_id: group,
-            };
-        }
+  addRoot = async (rootHash: string, group: string) => {
+    return this.merkleRoot.addRoot(rootHash, group);
+  };
 
-        if (!query) throw new Error(`${group} does not exist`);
-
-        const leaves = await sequelize.query(query, options);
-        const tree = generateMerkleTree(
-            zkType === 'rln' ? 15 : 20,
-            BigInt(0),
-            leaves.map(({ id_commitment }: any) => '0x' + id_commitment)
-        );
-
-        return tree;
-    };
-
-    getGroupByRoot = async (root: string): Promise<string | null> => {
-        const exist = await this.merkleRoot.getGroupByRoot(root);
-        return exist?.group_id || null;
-    };
-
-    verifyProof = async (proof: MerkleProof): Promise<string | null> => {
-        const groups = [
-            'zksocial_all',
-            'interrep_twitter_unrated',
-            'interrep_twitter_bronze',
-            'interrep_twitter_silver',
-            'interrep_twitter_gold',
-        ];
-
-        const existingGroup = await this.getGroupByRoot(proof.root);
-
-        if (existingGroup) {
-            const tree = await this.makeTree(existingGroup);
-            if (tree.verifyProof(proof)) return existingGroup;
-        }
-
-        for (const group of groups) {
-            const tree = await this.makeTree(group);
-            if (tree.verifyProof(proof)) return group;
-        }
-
-        return null;
-    };
-
-    findProof = async (idCommitment: string, group?: string, _proofType?: 'semaphore' | 'rln') => {
-        if (!group) {
-            const row = await this.semaphore.findOneByCommitment(idCommitment);
-            if (!row) throw new Error(`${idCommitment} is not in any groups`);
-            group = row.group_id;
-        }
-
-        const exist = await this.semaphore.findOne(idCommitment, group);
-        const [protocol, service] = group.split('_');
-
-        if (!exist && protocol === 'interrep') {
-            await this.call('interrep', 'syncOne', group).catch(() => null);
-        }
-
-        const proofType = _proofType ? _proofType : service === 'taz' ? 'semaphore' : 'rln';
-        const tree = await this.makeTree(group, proofType);
-        const proof = await tree.createProof(tree.indexOf(BigInt('0x' + idCommitment)));
-
-        if (!proof) {
-            throw new Error(`${idCommitment} is not in ${group}`);
-        }
-
-        const root = '0x' + proof.root.toString(16);
-
-        await this.addRoot(root, group);
-
-        const retProof = {
-            root,
-            siblings: proof.siblings.map(siblings =>
-                Array.isArray(siblings)
-                    ? siblings.map(element => '0x' + element.toString(16))
-                    : '0x' + siblings.toString(16)
-            ),
-            pathIndices: proof.pathIndices,
-            leaf: '0x' + proof.leaf.toString(16),
-            group: group,
-        };
-
-        return retProof;
-    };
-
-    addRoot = async (rootHash: string, group: string) => {
-        return this.merkleRoot.addRoot(rootHash, group);
-    };
-
-    findRoot = async (rootHash: string) => {
-        const cached = await this.merkleRoot.getGroupByRoot(rootHash);
-        return cached?.group_id;
-    };
+  findRoot = async (rootHash: string) => {
+    const cached = await this.merkleRoot.getGroupByRoot(rootHash);
+    return cached?.group_id;
+  };
 }
 
 const SQL: {
-    [protocol: string]: {
-        [groupName: string]: {
-            [groupType: string]: {
-                sql: string;
-                replacement?: BindOrReplacements;
-            };
-        };
+  [protocol: string]: {
+    [groupName: string]: {
+      [groupType: string]: {
+        sql: string;
+        replacement?: BindOrReplacements;
+      };
     };
+  };
 } = {
-    zksocial: {
-        all: {
-            '': {
-                sql: `
+  zksocial: {
+    all: {
+      '': {
+        sql: `
                     SELECT u.name as address, pf.value as id_commitment FROM users u
                     LEFT JOIN profiles pf ON pf."messageId" = (
                         SELECT "messageId" FROM profiles 
@@ -180,34 +180,34 @@ const SQL: {
                     )
                     WHERE pf.value IS NOT NULL
                 `,
-            },
-        },
+      },
     },
-    interrep: {
-        twitter: {
-            unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-            bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-            silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-            gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-        },
-        github: {
-            unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-            bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-            silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-            gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-        },
-        reddit: {
-            unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-            bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-            silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-            gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-        },
+  },
+  interrep: {
+    twitter: {
+      unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
     },
-    semaphore: {
-        taz: {
-            members: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-        },
+    github: {
+      unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
     },
+    reddit: {
+      unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+    },
+  },
+  semaphore: {
+    taz: {
+      members: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+    },
+  },
 };
 
 export const customGroupSQL = `

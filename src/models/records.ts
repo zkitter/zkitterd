@@ -1,104 +1,104 @@
 import { BIGINT, Sequelize, STRING } from 'sequelize';
 
 type RecordModel = {
-    soul: string;
-    field: string;
-    value: string;
-    relation: string;
-    state: number;
+  soul: string;
+  field: string;
+  value: string;
+  relation: string;
+  state: number;
 };
 
 const records = (sequelize: Sequelize) => {
-    const model = sequelize.define(
-        'records',
+  const model = sequelize.define(
+    'records',
+    {
+      soul: {
+        type: STRING(4095),
+      },
+      field: {
+        type: STRING(4095),
+      },
+      value: {
+        type: STRING(65535),
+      },
+      relation: {
+        type: STRING(65535),
+      },
+      state: {
+        type: BIGINT,
+      },
+    },
+    {
+      indexes: [
         {
-            soul: {
-                type: STRING(4095),
-            },
-            field: {
-                type: STRING(4095),
-            },
-            value: {
-                type: STRING(65535),
-            },
-            relation: {
-                type: STRING(65535),
-            },
-            state: {
-                type: BIGINT,
-            },
+          fields: ['soul'],
         },
         {
-            indexes: [
-                {
-                    fields: ['soul'],
-                },
-                {
-                    unique: true,
-                    fields: ['soul', 'field'],
-                },
-            ],
-        }
-    );
+          unique: true,
+          fields: ['soul', 'field'],
+        },
+      ],
+    }
+  );
 
-    const findOne = async (soul: string, field: string): Promise<RecordModel | null> => {
-        let result = await model.findOne({
-            where: {
-                soul,
-                field,
-            },
-        });
+  const findOne = async (soul: string, field: string): Promise<RecordModel | null> => {
+    let result = await model.findOne({
+      where: {
+        soul,
+        field,
+      },
+    });
 
-        return (result?.toJSON() as RecordModel) || null;
-    };
+    return (result?.toJSON() as RecordModel) || null;
+  };
 
-    const findAll = async (soul: string): Promise<RecordModel[]> => {
-        let result = await model.findAll({
-            where: {
-                soul,
-            },
-        });
+  const findAll = async (soul: string): Promise<RecordModel[]> => {
+    let result = await model.findAll({
+      where: {
+        soul,
+      },
+    });
 
-        return result.map(r => r.toJSON() as RecordModel);
-    };
+    return result.map(r => r.toJSON() as RecordModel);
+  };
 
-    const readAll = async (offset = 0, limit = 20): Promise<RecordModel[]> => {
-        let result = await model.findAll({
-            offset,
-            limit,
-        });
+  const readAll = async (offset = 0, limit = 20): Promise<RecordModel[]> => {
+    let result = await model.findAll({
+      offset,
+      limit,
+    });
 
-        return result.map(r => r.toJSON() as RecordModel);
-    };
+    return result.map(r => r.toJSON() as RecordModel);
+  };
 
-    const updateOrCreateRecord = async (record: RecordModel) => {
-        const result = await model.findOne({
-            where: {
-                soul: record.soul,
-                field: record.field,
-            },
-        });
+  const updateOrCreateRecord = async (record: RecordModel) => {
+    const result = await model.findOne({
+      where: {
+        soul: record.soul,
+        field: record.field,
+      },
+    });
 
-        const json = result?.toJSON() as RecordModel;
+    const json = result?.toJSON() as RecordModel;
 
-        if (json?.state >= record.state) {
-            return Promise.resolve();
-        }
+    if (json?.state >= record.state) {
+      return Promise.resolve();
+    }
 
-        if (result) {
-            return result.update(record);
-        }
+    if (result) {
+      return result.update(record);
+    }
 
-        return model.create(record);
-    };
+    return model.create(record);
+  };
 
-    return {
-        model,
-        findOne,
-        findAll,
-        readAll,
-        updateOrCreateRecord,
-    };
+  return {
+    model,
+    findOne,
+    findAll,
+    readAll,
+    updateOrCreateRecord,
+  };
 };
 
 export default records;

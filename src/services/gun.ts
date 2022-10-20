@@ -14,20 +14,21 @@ import {
     parseMessageId,
     Post,
     PostMessageSubType,
-    Profile, ProfileMessageSubType
-} from "../util/message";
-import {Mutex} from "async-mutex";
-import {UserModel} from "../models/users";
-import {HASHTAG_REGEX, MENTION_REGEX} from "../util/regex";
-import vKey from "../../static/verification_key.json";
-import {showStatus} from "../util/twitter";
-import {Semaphore} from "@zk-kit/protocols";
-import merkleRoot from "../models/merkle_root";
-import {sequelize} from "../util/sequelize";
+    Profile,
+    ProfileMessageSubType,
+} from '../util/message';
+import { Mutex } from 'async-mutex';
+import { UserModel } from '../models/users';
+import { HASHTAG_REGEX, MENTION_REGEX } from '../util/regex';
+import vKey from '../../static/verification_key.json';
+import { showStatus } from '../util/twitter';
+import { Semaphore } from '@zk-kit/protocols';
+import merkleRoot from '../models/merkle_root';
+import { sequelize } from '../util/sequelize';
 
-const Graph = require("../../lib/gun/graph.js");
-const State = require("../../lib/gun/state.js");
-const Val = require("../../lib/gun/val.js");
+const Graph = require('../../lib/gun/graph.js');
+const State = require('../../lib/gun/state.js');
+const Val = require('../../lib/gun/val.js');
 
 const getMutex = new Mutex();
 const putMutex = new Mutex();

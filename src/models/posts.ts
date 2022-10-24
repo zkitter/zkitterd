@@ -374,6 +374,22 @@ const posts = (sequelize: Sequelize) => {
     return values;
   };
 
+  const findAllRetweets = async (
+    messageId: string,
+    offset = 0,
+    limit = 20,
+    order: 'DESC' | 'ASC' = 'DESC'
+  ) => {
+    const result = await model.findAll({
+      where: { reference: messageId, subtype: 'REPOST' },
+      offset,
+      limit,
+      order: [['createdAt', order]],
+    });
+
+    return result.map((r: any) => r.toJSON().creator);
+  };
+
   const findLastTweetInConversation = async (id: string) => {
     const result = await model.findOne({
       where: {
@@ -482,6 +498,7 @@ const posts = (sequelize: Sequelize) => {
     findAllPosts,
     findAllRepliesFromCreator,
     findAllLikedPostsByCreator,
+    findAllRetweets,
     findLastTweetInConversation,
     findAllReplies,
     getHomeFeed,

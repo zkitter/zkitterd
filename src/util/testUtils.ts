@@ -1,5 +1,6 @@
 import 'isomorphic-fetch';
 import sinon, { SinonStub } from 'sinon';
+import Sinon from 'sinon';
 
 let fetchStub: any;
 export const stubFetch = () => {
@@ -42,6 +43,7 @@ export const stubCall = (
       findLastTweetInConversation: SinonStub;
       findAllRepliesFromCreator: SinonStub;
       findAllLikedPostsByCreator: SinonStub;
+      findAllRetweets: SinonStub;
       getHomeFeed: SinonStub;
       createTwitterPosts: SinonStub;
       findAllPosts: SinonStub;
@@ -159,6 +161,7 @@ export const stubCall = (
     findLastTweetInConversation: sinon.stub(),
     findAllRepliesFromCreator: sinon.stub(),
     findAllLikedPostsByCreator: sinon.stub(),
+    findAllRetweets: sinon.stub(),
     getHomeFeed: sinon.stub(),
     findAllPosts: sinon.stub(),
     findAllReplies: sinon.stub(),

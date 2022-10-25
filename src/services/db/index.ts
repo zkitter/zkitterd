@@ -1,7 +1,6 @@
 import { GenericService } from '../../util/svc';
-import { Dialect, Sequelize } from 'sequelize';
+import { Sequelize } from 'sequelize';
 import app from '../../models/app';
-import config from '../../util/config';
 import users from '../../models/users';
 import records from '../../models/records';
 import posts from '../../models/posts';
@@ -20,6 +19,7 @@ import semaphoreCreators from '../../models/semaphore_creators';
 import threads from '../../models/thread';
 import uploads from '../../models/uploads';
 import merkleRoot from '../../models/merkle_root';
+import { sequelize } from '../../util/sequelize';
 
 export default class DBService extends GenericService {
   sequelize: Sequelize;
@@ -54,25 +54,7 @@ export default class DBService extends GenericService {
       logging: false,
     });
 
-    if (!config.dbDialect || config.dbDialect === 'sqlite') {
-      this.sequelize = new Sequelize({
-        dialect: 'sqlite',
-        storage: config.dbStorage,
-        logging: false,
-      });
-    } else {
-      this.sequelize = new Sequelize(
-        config.dbName as string,
-        config.dbUsername as string,
-        config.dbPassword,
-        {
-          host: config.dbHost,
-          port: Number(config.dbPort),
-          dialect: config.dbDialect as Dialect,
-          logging: false,
-        }
-      );
-    }
+    this.sequelize = sequelize;
   }
 
   async getRecords(): Promise<ReturnType<typeof records>> {
@@ -257,13 +239,9 @@ export default class DBService extends GenericService {
       await this.app?.updateLastInterrepBlock(28311377);
       await this.app?.updateLastArbitrumBlock(2193241);
       await this.app?.updateLastGroup42BlockScanned(7660170);
-      // await this.app?.updateLastArbitrumBlock(9317700);
     }
 
     await this.app?.updateLastGroup42BlockScanned(7660170);
-
-    // await this.app?.updateLastArbitrumBlock(2193241);
-    // await this.app?.updateLastInterrepBlock(27202837);
   }
   async stop() {
     await this.sequelize.close();

@@ -3,7 +3,7 @@ import tape from 'tape';
 import ENSService from './ens';
 import { stubCall } from '../util/testUtils';
 
-tape('ENSService', async t => {
+tape.skip('ENSService', async t => {
   const ens = new ENSService();
   const [call, stubs] = stubCall(ens);
   await ens.start();

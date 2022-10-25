@@ -730,7 +730,7 @@ tape('HttpService - get followings per user', async t => {
   t.end();
 });
 
-tape('EXIT', t => {
+tape.skip('EXIT', t => {
   t.end();
   process.exit(0);
 });

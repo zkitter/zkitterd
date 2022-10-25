@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [ '16.x' ]
+        node: ['16.x']
     name: Node ${{ matrix.node }} build
     steps:
       - uses: actions/checkout@v2
@@ -14,4 +14,4 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: npm install
-      - run: npm run test:coverage
+      - run: npm run test

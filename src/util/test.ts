@@ -3,13 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import DBService from '../services/db';
 
-let db: DBService | null = null;
-
 const gunpath = path.join(process.cwd(), 'gun.test.db');
-const dbpath = path.join(process.cwd(), 'test.db');
 
 if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
-if (fs.existsSync(dbpath)) fs.unlinkSync(dbpath);
 
 export const getMockDB = async () => {
   const db = new DBService();

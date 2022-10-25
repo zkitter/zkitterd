@@ -265,4 +265,7 @@ export default class DBService extends GenericService {
     // await this.app?.updateLastArbitrumBlock(2193241);
     // await this.app?.updateLastInterrepBlock(27202837);
   }
+  async stop() {
+    await this.sequelize.close();
+  }
 }

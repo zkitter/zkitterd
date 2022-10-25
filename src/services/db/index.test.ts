@@ -6,10 +6,8 @@ import * as csv from 'csv';
 import { getMockDB } from '../../util/test';
 
 const gunpath = path.join(process.cwd(), 'gun.test.db');
-const dbpath = path.join(process.cwd(), 'test.db');
 
 if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
-if (fs.existsSync(dbpath)) fs.unlinkSync(dbpath);
 
 const parse = async (filename: string, insertFn: (data: any) => any) => {
   return new Promise((resolve, reject) => {
@@ -1436,6 +1434,5 @@ tape('DBService', async t => {
 
   await db.stop();
   if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
-  if (fs.existsSync(dbpath)) fs.unlinkSync(dbpath);
   t.end();
 });

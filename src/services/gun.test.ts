@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import { Semaphore } from '@zk-kit/protocols';
 import GunService from './gun';
 import { stubCall, stubFetch } from '../util/testUtils';
-import { getMockDB } from '../util/test';
+
 const fetchStub = stubFetch();
 
 const verifyProofStub = sinon.stub(Semaphore, 'verifyProof').returns(Promise.resolve(true));
@@ -85,8 +85,6 @@ tape('GunService - insert a post', async t => {
 });
 
 tape('GunService - insert an anon post', async t => {
-  getMockDB();
-
   const gun = new GunService();
   // @ts-ignore
   gun.gun = { get: sinon.stub() };

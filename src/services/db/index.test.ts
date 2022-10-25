@@ -1,13 +1,34 @@
-import fs from 'fs';
-import path from 'path';
 import tape from 'tape';
-
+import fs from 'fs';
 import DBService from './index';
+import path from 'path';
+import * as csv from 'csv';
 import { getMockDB } from '../../util/test';
 
 const gunpath = path.join(process.cwd(), 'gun.test.db');
+const dbpath = path.join(process.cwd(), 'test.db');
 
 if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
+if (fs.existsSync(dbpath)) fs.unlinkSync(dbpath);
+
+const parse = async (filename: string, insertFn: (data: any) => any) => {
+  return new Promise((resolve, reject) => {
+    const buf = fs.readFileSync(path.join(process.cwd(), 'static', 'tests', filename));
+    csv.parse(
+      buf,
+      {
+        delimiter: ',',
+        skip_empty_lines: true,
+        columns: true,
+      },
+      async (err, rows) => {
+        if (err) return reject(err);
+        await Promise.all(rows.map((row: any) => insertFn(row)));
+        resolve(rows);
+      }
+    );
+  });
+};
 
 tape('DBService', async t => {
   const db = await getMockDB();
@@ -96,6 +117,8 @@ tape('DBService', async t => {
       { tagName: '#TODO', postCount: 9 },
       { tagName: '#test', postCount: 6 },
       { tagName: '#autism', postCount: 2 },
+      { tagName: '#dev', postCount: 2 },
+      { tagName: '#bugs', postCount: 1 },
       { tagName: '#bug', postCount: 1 },
     ],
     'should return tags'
@@ -422,6 +445,44 @@ tape('DBService', async t => {
         type: 'POST',
         subtype: 'REPLY',
         messageId:
+          '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/723e35b004f0e5580cb1bcf8216239e3d9713d2ce0579c04200fcb21e163b40b',
+        hash: '723e35b004f0e5580cb1bcf8216239e3d9713d2ce0579c04200fcb21e163b40b',
+        createdAt: '1647989221339',
+        payload: {
+          topic: '',
+          title: '',
+          content: 'test',
+          reference:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
+          attachment: '',
+        },
+        meta: {
+          replyCount: 0,
+          likeCount: 0,
+          repostCount: 0,
+          liked: null,
+          reposted: null,
+          blocked: null,
+          interepProvider: null,
+          interepGroup: null,
+          rootId:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
+          moderation: null,
+          modblockedctx: null,
+          modfollowedctx:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/5fadaa7e4ca3154129751b3568432f18b4aecee762fd908062cfd27cdba36467',
+          modmentionedctx: null,
+          modLikedPost: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          modFollowerUser:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/5fadaa7e4ca3154129751b3568432f18b4aecee762fd908062cfd27cdba36467',
+        },
+      },
+      {
+        type: 'POST',
+        subtype: 'REPLY',
+        messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
         hash: 'bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
         createdAt: '1647989094705',
@@ -447,52 +508,13 @@ tape('DBService', async t => {
           moderation: null,
           modblockedctx: null,
           modfollowedctx:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/5fadaa7e4ca3154129751b3568432f18b4aecee762fd908062cfd27cdba36467',
           modmentionedctx: null,
           modLikedPost: null,
           modBlockedPost: null,
           modBlockedUser: null,
           modFollowerUser:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
-        },
-      },
-      {
-        type: 'POST',
-        subtype: 'REPLY',
-        messageId:
-          '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
-        hash: 'b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
-        createdAt: '1647579193827',
-        payload: {
-          topic: '',
-          title: '',
-          content: 'teest asdfasdf ',
-          reference:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
-          attachment: '',
-        },
-        meta: {
-          replyCount: 0,
-          likeCount: 1,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
-          rootId:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
-          moderation: 'THREAD_ONLY_MENTION',
-          modblockedctx: null,
-          modfollowedctx:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
-          modmentionedctx: null,
-          modLikedPost:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/4a20a1924dd087e348e2bfa1cc5827300e471687b9e5b631cc27453c715310a2',
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/5fadaa7e4ca3154129751b3568432f18b4aecee762fd908062cfd27cdba36467',
         },
       },
     ],
@@ -967,13 +989,13 @@ tape('DBService', async t => {
           moderation: null,
           modblockedctx: null,
           modfollowedctx:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/5fadaa7e4ca3154129751b3568432f18b4aecee762fd908062cfd27cdba36467',
           modmentionedctx: null,
           modLikedPost: null,
           modBlockedPost: null,
           modBlockedUser: null,
           modFollowerUser:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/5fadaa7e4ca3154129751b3568432f18b4aecee762fd908062cfd27cdba36467',
         },
       },
       {
@@ -998,7 +1020,7 @@ tape('DBService', async t => {
           moderation: null,
           modblockedctx: null,
           modfollowedctx:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/5fadaa7e4ca3154129751b3568432f18b4aecee762fd908062cfd27cdba36467',
           modmentionedctx: null,
           modLikedPost: null,
           modBlockedPost: null,
@@ -1046,7 +1068,7 @@ tape('DBService', async t => {
           moderation: null,
           modblockedctx: null,
           modfollowedctx:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/5fadaa7e4ca3154129751b3568432f18b4aecee762fd908062cfd27cdba36467',
           modmentionedctx: null,
           modLikedPost: null,
           modBlockedPost: null,
@@ -1083,7 +1105,7 @@ tape('DBService', async t => {
           moderation: 'THREAD_HIDE_BLOCK',
           modblockedctx: null,
           modfollowedctx:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/5fadaa7e4ca3154129751b3568432f18b4aecee762fd908062cfd27cdba36467',
           modmentionedctx: null,
           modLikedPost: null,
           modBlockedPost: null,
@@ -1414,10 +1436,6 @@ tape('DBService', async t => {
 
   await db.stop();
   if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
+  if (fs.existsSync(dbpath)) fs.unlinkSync(dbpath);
   t.end();
-});
-
-tape('EXIT', t => {
-  t.end();
-  process.exit(0);
 });

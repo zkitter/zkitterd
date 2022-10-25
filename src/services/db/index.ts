@@ -246,4 +246,7 @@ export default class DBService extends GenericService {
   async stop() {
     await this.sequelize.close();
   }
+  async stop() {
+    await this.sequelize.close();
+  }
 }

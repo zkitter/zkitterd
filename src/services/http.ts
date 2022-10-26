@@ -366,6 +366,15 @@ export default class HttpService extends GenericService {
     res.send(makeResponse(likers));
   };
 
+  handleGetRetweetsByPost = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const hash = req.params.hash;
+    const postsDB = await this.call('db', 'getPosts');
+    const retweets = await postsDB.findAllRetweets(hash, offset, limit);
+    res.send(makeResponse(retweets));
+  };
+
   handleGetUserFollowers = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
@@ -648,6 +657,7 @@ export default class HttpService extends GenericService {
     this.app.get('/v1/homefeed', this.wrapHandler(this.handleGetHomefeed));
     this.app.get('/v1/post/:hash', this.wrapHandler(this.handleGetPostByHash));
     this.app.get('/v1/post/:hash/likes', this.wrapHandler(this.handleGetLikesByPost));
+    this.app.get('/v1/post/:hash/retweets', this.wrapHandler(this.handleGetRetweetsByPost));
 
     this.app.get('/v1/zkchat/users', this.wrapHandler(this.handleGetChatUsers));
     this.app.post(

@@ -594,7 +594,7 @@ tape('HTTPService - get interep ID commitment', async t => {
 
   http.addRoutes();
 
-  const interepGetIdParams = getStub.args[27];
+  const interepGetIdParams = getStub.args[28];
   // @ts-ignore
   const getIdHandler: any = interepGetIdParams[2];
   const getIdRequest = newRequest({
@@ -686,7 +686,6 @@ tape.skip('HTTPService - get preview', async t => {
 });
 
 tape('HttpService - list all users who liked a post', async t => {
-  // const route = '/v1/post/:hash/likes';
   const http = new HttpService();
   const [, stubs] = stubCall(http);
   const res = newResponse();
@@ -701,7 +700,6 @@ tape('HttpService - list all users who liked a post', async t => {
 });
 
 tape('HttpService - get followers per user', async t => {
-  // const route = '/v1/post/:hash/likes';
   const http = new HttpService();
   const [, stubs] = stubCall(http);
   const res = newResponse();
@@ -716,7 +714,6 @@ tape('HttpService - get followers per user', async t => {
 });
 
 tape('HttpService - get followings per user', async t => {
-  // const route = '/v1/post/:hash/likes';
   const http = new HttpService();
   const [, stubs] = stubCall(http);
   const res = newResponse();

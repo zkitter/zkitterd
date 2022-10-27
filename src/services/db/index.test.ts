@@ -1395,7 +1395,7 @@ tape('DBService', async t => {
   );
 
   const searchResults = await db.posts!.search('test');
-  t.equal(searchResults.length, 42, 'should search post by text content');
+  t.equal(searchResults.length, 20, 'should search post by text content');
 
   await db.stop();
   if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);

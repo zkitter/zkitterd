@@ -1,6 +1,27 @@
 import config from './config';
 import { Dialect, Sequelize } from 'sequelize';
 
+const options =
+  process.env.NODE_ENV === 'test'
+    ? {
+        host: config.dbHost,
+        port: Number(config.dbPort),
+        dialect: config.dbDialect as Dialect,
+        logging: false,
+        dialectOptions: {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false,
+          },
+        },
+      }
+    : {
+        host: config.dbHost,
+        port: Number(config.dbPort),
+        dialect: config.dbDialect as Dialect,
+        logging: false,
+      };
+
 let cached: Sequelize;
 
 function getSequelize(): Sequelize {
@@ -17,12 +38,7 @@ function getSequelize(): Sequelize {
       config.dbName as string,
       config.dbUsername as string,
       config.dbPassword,
-      {
-        host: config.dbHost,
-        port: Number(config.dbPort),
-        dialect: config.dbDialect as Dialect,
-        logging: false,
-      }
+      options
     );
   }
 

@@ -1,32 +1,13 @@
-import tape from 'tape';
 import fs from 'fs';
-import DBService from './index';
 import path from 'path';
-import * as csv from 'csv';
+import tape from 'tape';
+
+import DBService from './index';
 import { getMockDB } from '../../util/test';
 
 const gunpath = path.join(process.cwd(), 'gun.test.db');
 
 if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
-
-const parse = async (filename: string, insertFn: (data: any) => any) => {
-  return new Promise((resolve, reject) => {
-    const buf = fs.readFileSync(path.join(process.cwd(), 'static', 'tests', filename));
-    csv.parse(
-      buf,
-      {
-        delimiter: ',',
-        skip_empty_lines: true,
-        columns: true,
-      },
-      async (err, rows) => {
-        if (err) return reject(err);
-        await Promise.all(rows.map((row: any) => insertFn(row)));
-        resolve(rows);
-      }
-    );
-  });
-};
 
 tape('DBService', async t => {
   const db = await getMockDB();

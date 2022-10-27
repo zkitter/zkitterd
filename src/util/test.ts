@@ -22,6 +22,7 @@ export const getMockDB = async () => {
     parse('meta.csv', db.meta!.update),
     parse('moderations.csv', db.moderations!.createModeration),
     parse('posts.csv', db.posts!.createPost),
+    db.posts?.vectorizeContent(),
     parse('profiles.csv', db.profiles!.createProfile),
     parse('semaphore_creators.csv', ({ group, provider, message_id }) =>
       db!.semaphoreCreators!.addSemaphoreCreator(message_id, provider, group)

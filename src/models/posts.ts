@@ -503,14 +503,16 @@ const posts = (sequelize: Sequelize) => {
     await sequelize.query(`CREATE INDEX ts_idx ON posts USING GIN (ts)`);
   };
 
-  const search = async (query: string) =>
+  const search = async (query: string, offset = 0, limit = 20, order: 'DESC' | 'ASC' = 'DESC') =>
     sequelize
+      // prettier-ignore
       .query(
-        `
-        SELECT *
-        from posts
-        where ts @@ to_tsquery('english', :query)`,
-        { type: QueryTypes.SELECT, replacements: { query } }
+        `SELECT *
+              FROM posts
+              WHERE ts @@ to_tsquery('english', :query)
+              ORDER BY "createdAt" ${order} LIMIT :limit
+              OFFSET :offset`,
+        { type: QueryTypes.SELECT, replacements: { limit, offset, query } }
       )
       .then(result => result.map(inflateResultToPostJSON));
 

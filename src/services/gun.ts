@@ -745,11 +745,11 @@ export default class GunService extends GenericService {
     const userDB = await this.call('db', 'getUsers');
     const users = await userDB.readAll('', 0, 1000);
 
-    // for (const user of users) {
-    //   await this.watch(user.pubkey);
-    // }
-    //
-    // await this.watchGlobal();
+    for (const user of users) {
+      await this.watch(user.pubkey);
+    }
+
+    await this.watchGlobal();
 
     logger.info(`gun server listening at ${config.gunPort}...`);
   }

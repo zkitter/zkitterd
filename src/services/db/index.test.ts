@@ -1,34 +1,13 @@
-import tape from 'tape';
 import fs from 'fs';
-import DBService from './index';
 import path from 'path';
-import * as csv from 'csv';
+import tape from 'tape';
+
+import DBService from './index';
 import { getMockDB } from '../../util/test';
 
 const gunpath = path.join(process.cwd(), 'gun.test.db');
-const dbpath = path.join(process.cwd(), 'test.db');
 
 if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
-if (fs.existsSync(dbpath)) fs.unlinkSync(dbpath);
-
-const parse = async (filename: string, insertFn: (data: any) => any) => {
-  return new Promise((resolve, reject) => {
-    const buf = fs.readFileSync(path.join(process.cwd(), 'static', 'tests', filename));
-    csv.parse(
-      buf,
-      {
-        delimiter: ',',
-        skip_empty_lines: true,
-        columns: true,
-      },
-      async (err, rows) => {
-        if (err) return reject(err);
-        await Promise.all(rows.map((row: any) => insertFn(row)));
-        resolve(rows);
-      }
-    );
-  });
-};
 
 tape('DBService', async t => {
   const db = await getMockDB();
@@ -59,6 +38,7 @@ tape('DBService', async t => {
       lastArbitrumBlockScanned: 2193241,
       lastENSBlockScanned: 12957300,
       lastInterrepBlockScanned: 28311377,
+      lastGroup42BlockScanned: 7660170,
     },
     'should read and write app'
   );
@@ -116,8 +96,6 @@ tape('DBService', async t => {
       { tagName: '#TODO', postCount: 9 },
       { tagName: '#test', postCount: 6 },
       { tagName: '#autism', postCount: 2 },
-      { tagName: '#dev', postCount: 2 },
-      { tagName: '#bugs', postCount: 1 },
       { tagName: '#bug', postCount: 1 },
     ],
     'should return tags'
@@ -147,7 +125,7 @@ tape('DBService', async t => {
       creator: '0x3F425586D68616A113C29c303766DAD444167EE8',
       type: 'MODERATION',
       subtype: 'LIKE',
-      createdAt: 1646285327701,
+      createdAt: '1646285327701',
       reference: '945bb091bfadd460418c36ce6274d6a4f9689aaca1b95879ffe35ca7a4eded5b',
     },
     'should return one moderation'
@@ -168,7 +146,7 @@ tape('DBService', async t => {
       type: 'MODERATION',
       subtype: 'THREAD_ONLY_MENTION',
       hash: '691336cb1993b3f689414a415bfe7ddf84e7fcb4c4a439cf7cc299878676cfd8',
-      createdAt: 1648193705500,
+      createdAt: '1648193705500',
     },
     'should return thread moderation'
   );
@@ -209,7 +187,7 @@ tape('DBService', async t => {
       messageId:
         '0x3F425586D68616A113C29c303766DAD444167EE8/d0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
       hash: 'd0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
-      createdAt: 1648193678747,
+      createdAt: '1648193678747',
       payload: {
         topic: 'https://twitter.com/AutismDev/status/1507259650093182977',
         title: '',
@@ -259,7 +237,7 @@ tape('DBService', async t => {
         messageId:
           '0x3F425586D68616A113C29c303766DAD444167EE8/1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
         hash: '1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
-        createdAt: 1648192630248,
+        createdAt: '1648192630248',
         payload: {
           topic: 'https://twitter.com/AutismDev/status/1507255252461842438',
           title: '',
@@ -294,7 +272,7 @@ tape('DBService', async t => {
         subtype: '',
         messageId: 'db51fd8dd7d710c56ef9cca92ee3bc1e332d029f78a67f09d22087a2ac3be038',
         hash: 'db51fd8dd7d710c56ef9cca92ee3bc1e332d029f78a67f09d22087a2ac3be038',
-        createdAt: 1648192605180,
+        createdAt: '1648192605180',
         payload: {
           topic: '',
           title: '',
@@ -327,7 +305,7 @@ tape('DBService', async t => {
         subtype: '',
         messageId: '6c62eb251be69ca722e5a615f616ce68b6ad3378b4568c93e34cad455905cc9a',
         hash: '6c62eb251be69ca722e5a615f616ce68b6ad3378b4568c93e34cad455905cc9a',
-        createdAt: 1648093704735,
+        createdAt: '1648093704735',
         payload: {
           topic: '',
           title: '',
@@ -361,7 +339,7 @@ tape('DBService', async t => {
         messageId:
           '0x3aec555a667EF810C4B0a0D064D6Fb7c66161360/899e3621100ce2d3411431ca777cea7fa0223fccec9ab073181bd7ee65a64456',
         hash: '899e3621100ce2d3411431ca777cea7fa0223fccec9ab073181bd7ee65a64456',
-        createdAt: 1648093364657,
+        createdAt: '1648093364657',
         payload: {
           topic: '',
           title: '',
@@ -397,7 +375,7 @@ tape('DBService', async t => {
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/ca8462e60519167046ce106caca1c45c21bf7b198f2c29c2ee802dbb5c32ed6e',
         hash: 'ca8462e60519167046ce106caca1c45c21bf7b198f2c29c2ee802dbb5c32ed6e',
-        createdAt: 1648001768213,
+        createdAt: '1648001768213',
         payload: {
           topic: '',
           title: '',
@@ -427,7 +405,7 @@ tape('DBService', async t => {
         },
       },
     ],
-    'should return all post'
+    'should return all posts'
   );
 
   // @ts-ignore
@@ -444,47 +422,9 @@ tape('DBService', async t => {
         type: 'POST',
         subtype: 'REPLY',
         messageId:
-          '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/723e35b004f0e5580cb1bcf8216239e3d9713d2ce0579c04200fcb21e163b40b',
-        hash: '723e35b004f0e5580cb1bcf8216239e3d9713d2ce0579c04200fcb21e163b40b',
-        createdAt: 1647989221339,
-        payload: {
-          topic: '',
-          title: '',
-          content: 'test',
-          reference:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-          attachment: '',
-        },
-        meta: {
-          replyCount: 0,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
-          rootId:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-          moderation: null,
-          modblockedctx: null,
-          modfollowedctx:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
-          modmentionedctx: null,
-          modLikedPost: null,
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
-        },
-      },
-      {
-        type: 'POST',
-        subtype: 'REPLY',
-        messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
         hash: 'bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
-        createdAt: 1647989094705,
+        createdAt: '1647989094705',
         payload: {
           topic: '',
           title: '',
@@ -516,6 +456,45 @@ tape('DBService', async t => {
             '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
         },
       },
+      {
+        type: 'POST',
+        subtype: 'REPLY',
+        messageId:
+          '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
+        hash: 'b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
+        createdAt: '1647579193827',
+        payload: {
+          topic: '',
+          title: '',
+          content: 'teest asdfasdf ',
+          reference:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
+          attachment: '',
+        },
+        meta: {
+          replyCount: 0,
+          likeCount: 1,
+          repostCount: 0,
+          liked: null,
+          reposted: null,
+          blocked: null,
+          interepProvider: null,
+          interepGroup: null,
+          rootId:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
+          moderation: 'THREAD_ONLY_MENTION',
+          modblockedctx: null,
+          modfollowedctx:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
+          modmentionedctx: null,
+          modLikedPost:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/4a20a1924dd087e348e2bfa1cc5827300e471687b9e5b631cc27453c715310a2',
+          modBlockedPost: null,
+          modBlockedUser: null,
+          modFollowerUser:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
+        },
+      },
     ],
     'should return replies from creator'
   );
@@ -531,7 +510,7 @@ tape('DBService', async t => {
         messageId:
           '0x3F425586D68616A113C29c303766DAD444167EE8/d0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
         hash: 'd0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
-        createdAt: 1648193678747,
+        createdAt: '1648193678747',
         payload: {
           topic: 'https://twitter.com/AutismDev/status/1507259650093182977',
           title: '',
@@ -568,7 +547,7 @@ tape('DBService', async t => {
         messageId:
           '0x3F425586D68616A113C29c303766DAD444167EE8/1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
         hash: '1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
-        createdAt: 1648192630248,
+        createdAt: '1648192630248',
         payload: {
           topic: 'https://twitter.com/AutismDev/status/1507255252461842438',
           title: '',
@@ -616,7 +595,7 @@ tape('DBService', async t => {
         messageId:
           '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/699a260463efd7d6173a4af8fae4bc8b7d62fa1a3e13bcff8ba3de652d676b82',
         hash: '699a260463efd7d6173a4af8fae4bc8b7d62fa1a3e13bcff8ba3de652d676b82',
-        createdAt: 1647564670980,
+        createdAt: '1647564670980',
         payload: {
           topic: '',
           title: '',
@@ -653,7 +632,7 @@ tape('DBService', async t => {
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
         hash: 'b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
-        createdAt: 1647579193827,
+        createdAt: '1647579193827',
         payload: {
           topic: '',
           title: '',
@@ -706,7 +685,7 @@ tape('DBService', async t => {
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
         hash: 'b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
-        createdAt: 1647579193827,
+        createdAt: '1647579193827',
         payload: {
           topic: '',
           title: '',
@@ -745,7 +724,7 @@ tape('DBService', async t => {
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/1b18998ef35ecbb35760e71f6531f75912f79a9162eadfae90bb4e8740aa132b',
         hash: '1b18998ef35ecbb35760e71f6531f75912f79a9162eadfae90bb4e8740aa132b',
-        createdAt: 1647579176008,
+        createdAt: '1647579176008',
         payload: {
           topic: '',
           title: '',
@@ -779,7 +758,7 @@ tape('DBService', async t => {
         },
       },
     ],
-    'should return all liked post by a user'
+    'should return all liked posts by a user'
   );
 
   // @ts-ignore
@@ -795,11 +774,11 @@ tape('DBService', async t => {
       creator: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
       type: 'PROFILE',
       subtype: 'NAME',
-      createdAt: 1634053438409,
+      createdAt: '1634053438409',
       key: '',
       value: '夜神 月',
     },
-    'should return all liked post by a user'
+    'should return profile'
   );
 
   await db.posts!.createTwitterPosts([
@@ -830,7 +809,7 @@ tape('DBService', async t => {
       signals: null,
       type: '@TWEET@',
       subtype: '',
-      createdAt: 1,
+      createdAt: '1',
       topic: '',
       title: '',
       content: 'Hello World,',
@@ -864,7 +843,7 @@ tape('DBService', async t => {
       subtype: '',
       messageId: '0xcreator/testensureid',
       hash: 'testensureid',
-      createdAt: 1,
+      createdAt: '1',
       payload: {
         topic: '',
         title: '',
@@ -965,7 +944,7 @@ tape('DBService', async t => {
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
         hash: 'bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
-        createdAt: 1647989094705,
+        createdAt: '1647989094705',
         payload: {
           topic: '',
           title: '',
@@ -1003,14 +982,8 @@ tape('DBService', async t => {
         messageId:
           '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
         hash: 'f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-        createdAt: 1647989013660,
-        payload: {
-          topic: '',
-          title: '',
-          content: 'test #test',
-          reference: '',
-          attachment: '',
-        },
+        createdAt: '1647989013660',
+        payload: { topic: '', title: '', content: 'test #test', reference: '', attachment: '' },
         meta: {
           replyCount: 3,
           likeCount: 0,
@@ -1057,14 +1030,8 @@ tape('DBService', async t => {
         messageId:
           '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
         hash: 'f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-        createdAt: 1647989013660,
-        payload: {
-          topic: '',
-          title: '',
-          content: 'test #test',
-          reference: '',
-          attachment: '',
-        },
+        createdAt: '1647989013660',
+        payload: { topic: '', title: '', content: 'test #test', reference: '', attachment: '' },
         meta: {
           replyCount: 3,
           likeCount: 0,
@@ -1093,7 +1060,7 @@ tape('DBService', async t => {
         messageId:
           '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/30d6bb9d8275795bdab6d5eb5f14010fe98793f42f633024aa9de4c83e5a60f1',
         hash: '30d6bb9d8275795bdab6d5eb5f14010fe98793f42f633024aa9de4c83e5a60f1',
-        createdAt: 1647575979244,
+        createdAt: '1647575979244',
         payload: {
           topic: '',
           title: '',
@@ -1162,12 +1129,12 @@ tape('DBService', async t => {
     um1,
     {
       name: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-      followerCount: 4,
-      followingCount: 4,
-      blockedCount: 0,
-      blockingCount: 0,
-      mentionedCount: 2,
-      postingCount: 22,
+      followerCount: '4',
+      followingCount: '4',
+      blockedCount: '0',
+      blockingCount: '0',
+      mentionedCount: '2',
+      postingCount: '22',
     },
     'should return user meta by name'
   );
@@ -1191,11 +1158,16 @@ tape('DBService', async t => {
       bio: '',
       profileImage: 'https://i1.sndcdn.com/artworks-000452560338-e3uzc2-t500x500.jpg',
       coverImage: 'https://s3.amazonaws.com/99Covers-Facebook-Covers/watermark/14238.jpg',
+      group: false,
       twitterVerification: 'https://twitter.com/0xTsukino/status/1465332814937690114',
       website: '',
       ecdh: '',
       idcommitment: '',
       meta: {
+        inviteSent: null,
+        acceptanceReceived: null,
+        inviteReceived: null,
+        acceptanceSent: null,
         blockedCount: 0,
         blockingCount: 0,
         followerCount: 4,
@@ -1220,7 +1192,7 @@ tape('DBService', async t => {
       name: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb',
       pubkey:
         'MNw7njaTh0k835aq0JKtmpq33izkGwFxdldqf3txB64.a-yzwTFi1hNP-4lrpHB5NAw7p100oAOUefpYwfLPer8',
-      joinedAt: 1644254074000,
+      joinedAt: '1644254074000',
       tx: '0xfde1d05921ccb073f71b747fd323fa313d51c77db82311993555692881ff9387',
       type: 'arbitrum',
     },
@@ -1244,11 +1216,16 @@ tape('DBService', async t => {
         bio: '',
         profileImage: '',
         coverImage: '',
+        group: false,
         twitterVerification: '',
         website: '',
         ecdh: '',
         idcommitment: '',
         meta: {
+          inviteSent: null,
+          acceptanceReceived: null,
+          inviteReceived: null,
+          acceptanceSent: null,
           blockedCount: 1,
           blockingCount: 0,
           followerCount: 0,
@@ -1256,59 +1233,6 @@ tape('DBService', async t => {
           postingCount: 0,
           mentionedCount: 0,
           followed: null,
-          blocked: null,
-        },
-      },
-      {
-        username: '0xa1853B60F097C01f08572742eBa2309ff28d9bEf',
-        address: '0xa1853B60F097C01f08572742eBa2309ff28d9bEf',
-        joinedTx: '',
-        type: '',
-        pubkey: '',
-        joinedAt: 0,
-        name: '',
-        bio: '',
-        profileImage: '',
-        coverImage: '',
-        twitterVerification: '',
-        website: '',
-        ecdh: '',
-        idcommitment: '',
-        meta: {
-          blockedCount: 0,
-          blockingCount: 0,
-          followerCount: 1,
-          followingCount: 0,
-          postingCount: 0,
-          mentionedCount: 0,
-          followed: null,
-          blocked: null,
-        },
-      },
-      {
-        username: '0x860C68abeEE0ecBd97729C7d1E09dA1e7EaD3C50',
-        address: '0x860C68abeEE0ecBd97729C7d1E09dA1e7EaD3C50',
-        joinedTx: '',
-        type: '',
-        pubkey: '',
-        joinedAt: 0,
-        name: '',
-        bio: '',
-        profileImage: '',
-        coverImage: '',
-        twitterVerification: '',
-        website: '',
-        ecdh: '',
-        idcommitment: '',
-        meta: {
-          blockedCount: 0,
-          blockingCount: 0,
-          followerCount: 2,
-          followingCount: 0,
-          postingCount: 0,
-          mentionedCount: 1,
-          followed:
-            '0x3F425586D68616A113C29c303766DAD444167EE8/1105653bf93e388a2a5c1695de512e2d52b19ec9fa9f17312336e5f1e657c81c',
           blocked: null,
         },
       },
@@ -1326,11 +1250,16 @@ tape('DBService', async t => {
           'https://hips.hearstapps.com/hmg-prod.s3.amazonaws.com/images/rick-and-morty-poopybuthole-1574420029.jpg?crop=0.704xw:1.00xh;0,0&resize=480:*',
         coverImage:
           'https://imagesvc.meredithcorp.io/v3/mm/image?q=85&c=sc&poi=face&w=2000&h=1000&url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F6%2F2017%2F07%2Fmr-poopybutthole-season-2-episode-4-2000.jpg',
+        group: false,
         twitterVerification: '',
         website: '',
         ecdh: '',
         idcommitment: '',
         meta: {
+          inviteSent: null,
+          acceptanceReceived: null,
+          inviteReceived: null,
+          acceptanceSent: null,
           blockedCount: 0,
           blockingCount: 0,
           followerCount: 1,
@@ -1353,16 +1282,85 @@ tape('DBService', async t => {
         bio: '',
         profileImage: 'https://media3.giphy.com/media/WcEvIajIk332g/giphy.gif',
         coverImage: '',
+        group: false,
         twitterVerification: '',
         website: '',
         ecdh: '',
         idcommitment: '',
         meta: {
+          inviteSent: null,
+          acceptanceReceived: null,
+          inviteReceived: null,
+          acceptanceSent: null,
           blockedCount: 0,
           blockingCount: 0,
           followerCount: 0,
           followingCount: 0,
           postingCount: 2,
+          mentionedCount: 2,
+          followed: null,
+          blocked: null,
+        },
+      },
+      {
+        username: '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63',
+        address: '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63',
+        joinedTx: '0xc35bd6dbbeec827b2b6cccc1acaae032e6e9a0ebb190ba5d7c276d7c6cce0fc6',
+        type: 'arbitrum',
+        pubkey:
+          'z-CGdwpcNR39Ib3j_uTnAVtEoWyCuhMIXhZijh272lo.3KcFAl0dkDzuAGj54PUVq1fpJzVpGlFeuTf3j8NabUI',
+        joinedAt: 1647393506000,
+        name: '0xFEBc',
+        bio: '',
+        profileImage: '',
+        coverImage: '',
+        group: false,
+        twitterVerification: '',
+        website: '',
+        ecdh: '',
+        idcommitment: '',
+        meta: {
+          inviteSent: null,
+          acceptanceReceived: null,
+          inviteReceived: null,
+          acceptanceSent: null,
+          blockedCount: 0,
+          blockingCount: 1,
+          followerCount: 1,
+          followingCount: 2,
+          postingCount: 5,
+          mentionedCount: 3,
+          followed: null,
+          blocked: null,
+        },
+      },
+      {
+        username: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb',
+        address: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb',
+        joinedTx: '0xfde1d05921ccb073f71b747fd323fa313d51c77db82311993555692881ff9387',
+        type: 'arbitrum',
+        pubkey:
+          'MNw7njaTh0k835aq0JKtmpq33izkGwFxdldqf3txB64.a-yzwTFi1hNP-4lrpHB5NAw7p100oAOUefpYwfLPer8',
+        joinedAt: 1644254074000,
+        name: 'Ohwee',
+        bio: '',
+        profileImage: '',
+        coverImage: '',
+        group: false,
+        twitterVerification: '',
+        website: '',
+        ecdh: '',
+        idcommitment: '',
+        meta: {
+          inviteSent: null,
+          acceptanceReceived: null,
+          inviteReceived: null,
+          acceptanceSent: null,
+          blockedCount: 0,
+          blockingCount: 0,
+          followerCount: 2,
+          followingCount: 3,
+          postingCount: 7,
           mentionedCount: 2,
           followed: null,
           blocked: null,
@@ -1389,11 +1387,16 @@ tape('DBService', async t => {
         bio: '',
         profileImage: 'https://i1.sndcdn.com/artworks-000452560338-e3uzc2-t500x500.jpg',
         coverImage: 'https://s3.amazonaws.com/99Covers-Facebook-Covers/watermark/14238.jpg',
+        group: false,
         twitterVerification: 'https://twitter.com/0xTsukino/status/1465332814937690114',
         website: '',
         ecdh: '',
         idcommitment: '',
         meta: {
+          inviteSent: null,
+          acceptanceReceived: null,
+          inviteReceived: null,
+          acceptanceSent: null,
           blockedCount: 0,
           blockingCount: 0,
           followerCount: 4,
@@ -1409,43 +1412,12 @@ tape('DBService', async t => {
     'should search user by name'
   );
 
-  // @ts-ignore
-  const user5 = await db.users!.search('oh', '0x3F425586D68616A113C29c303766DAD444167EE8', 0, 2);
-  t.deepEqual(
-    user5,
-    [
-      {
-        username: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb',
-        address: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb',
-        joinedTx: '0xfde1d05921ccb073f71b747fd323fa313d51c77db82311993555692881ff9387',
-        type: 'arbitrum',
-        pubkey:
-          'MNw7njaTh0k835aq0JKtmpq33izkGwFxdldqf3txB64.a-yzwTFi1hNP-4lrpHB5NAw7p100oAOUefpYwfLPer8',
-        joinedAt: 1644254074000,
-        name: 'Ohwee',
-        bio: '',
-        profileImage: '',
-        coverImage: '',
-        twitterVerification: '',
-        website: '',
-        ecdh: '',
-        idcommitment: '',
-        meta: {
-          blockedCount: 0,
-          blockingCount: 0,
-          followerCount: 2,
-          followingCount: 3,
-          postingCount: 7,
-          mentionedCount: 2,
-          followed: null,
-          blocked: null,
-        },
-      },
-    ],
-    'should search user by name'
-  );
-
+  await db.stop();
   if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
-  if (fs.existsSync(dbpath)) fs.unlinkSync(dbpath);
   t.end();
+});
+
+tape('EXIT', t => {
+  t.end();
+  process.exit(0);
 });

@@ -2,10 +2,8 @@ import 'isomorphic-fetch';
 import tape from 'tape';
 import InterrepService from './interrep';
 import { stubCall, stubFetch } from '../util/testUtils';
-import { getMockDB } from '../util/test';
 const fetchStub = stubFetch();
 
-getMockDB();
 const interrep = new InterrepService();
 
 const [callStub, { semaphore, interepGroups }] = stubCall(interrep);
@@ -118,8 +116,6 @@ tape('InterepService.getBatchFromRootHash', async t => {
   const res = await interrep.getBatchFromRootHash('0x123456');
 
   t.same(interepGroups.findOneByHash.args[0], ['0x123456']);
-
-  console.log(fetchStub.args[1]);
   t.same(fetchStub.args[0][0], 'https://kovan.interep.link/api/v1/batches/0x123456');
 
   t.same(

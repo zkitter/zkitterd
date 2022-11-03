@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import { stubCall } from '../util/testUtils';
 import ArbitrumService from './arbitrum';
 
-tape('ArbitrumService', async t => {
+tape.skip('ArbitrumService', async t => {
   const arb = new ArbitrumService();
   const [call, stubs] = stubCall(arb);
 

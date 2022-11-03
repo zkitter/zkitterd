@@ -727,21 +727,7 @@ tape('HttpService - get followings per user', async t => {
   t.end();
 });
 
-tape('HttpService - get retweets per post', async t => {
-  const http = new HttpService();
-  const [, stubs] = stubCall(http);
-  const res = newResponse();
-  const retweets = ['0xfoo', '0xbar'];
-
-  stubs.posts.findAllRetweets.returns(Promise.resolve(retweets));
-
-  await http.handleGetRetweetsByPost(newRequest({ hash: '0x123/bar' }, null, null), res);
-
-  t.deepEqual(res.send.args[0][0].payload, retweets, 'should be equal');
-  t.end();
-});
-
-tape('EXIT', t => {
+tape.skip('EXIT', t => {
   t.end();
   process.exit(0);
 });

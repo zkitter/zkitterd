@@ -148,8 +148,8 @@ export default class InterrepService extends GenericService {
   }
 
   async start() {
-    this.interepGroups = await interepGroups(sequelize);
-    this.semaphore = await semaphore(sequelize);
+    this.interepGroups = interepGroups(sequelize);
+    this.semaphore = semaphore(sequelize);
     await this.sync();
   }
 

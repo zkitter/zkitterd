@@ -650,15 +650,15 @@ export default class HttpService extends GenericService {
     const values = await sequelize.query(
         // prettier-ignore
         `
-            SELECT zkc.message_id, zkc.type, zkc.timestamp, zkc.sender_address as creator FROM zkchat_chats zkc
+            SELECT zkc.message_id, zkc.type, zkc.timestamp, zkc.sender_address as creator, zkc.sender_pubkey as sender_pubkey FROM zkchat_chats zkc
             WHERE zkc.receiver_address = :address
             UNION
-            SELECT p."messageId" as message_id, m.subtype as type, m."createdAt" as timestamp,  m.creator as creator FROM moderations m
+            SELECT p."messageId" as message_id, m.subtype as type, m."createdAt" as timestamp,  m.creator as creator, null as sender_pubkey FROM moderations m
             JOIN posts p on p."messageId" = m.reference
             WHERE m.subtype = 'LIKE'
             AND p.creator = :address
             UNION
-            SELECT p."messageId" as message_id, p.subtype as type, p."createdAt" as timestamp,  p.creator as creator FROM posts p
+            SELECT p."messageId" as message_id, p.subtype as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM posts p
             JOIN posts op on op."messageId" = p.reference AND p.subtype = 'REPLY'
             AND op.creator = :address
             ORDER BY timestamp DESC

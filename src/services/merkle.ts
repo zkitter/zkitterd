@@ -218,6 +218,6 @@ export const customGroupSQL = `
     FROM users u
     LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
     JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
-    JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = :group_address AND invite.name = u.name
-    JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = u.name AND accept.name = :group_address
+       JOIN connections invite ON invite."messageId" = (SELECT "messageId" FROM connections WHERE connections.subtype = 'MEMBER_INVITE' AND connections.creator = :group_address AND connections.name = u.name ORDER BY "createdAt" DESC LIMIT 1)
+    JOIN connections accept ON accept."messageId" = (SELECT "messageId" FROM connections WHERE connections.subtype = 'MEMBER_ACCEPT' AND connections.creator = u.name AND connections.name = :group_address ORDER BY "createdAt" DESC LIMIT 1)
 `;

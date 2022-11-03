@@ -1,9 +1,9 @@
-# autismd
+# Zkitterd
 
-[![Build](https://github.com/autism-org/autismd/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/autism-org/autismd/actions/workflows/build-and-test.yml)
+[![Build](https://github.com/zkitter/zkitterd/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/zkitter/zkitterd/actions/workflows/build-and-test.yml)
 [![Discord](https://img.shields.io/discord/887573677959417889)](https://discord.com/invite/GVP9MghwXc)
 
-Official Node/Typescript implementation of the [Autism](https://docs.auti.sm/) full node.
+Official Node/Typescript implementation of the [Zkitter](https://docs.zkitter.com/) full node.
 
 ## Requirements
 - Node 12.22+
@@ -35,7 +35,7 @@ You can set configuration using environment variable or by creating a `config.pr
 | `TW_ACCESS_KEY` | Twitter API Access Token. |
 | `TW_ACCESS_SECRET` | Twitter API Access Secret. |
 | `ARB_HTTP_PROVIDER` | a valid Http provider to Arbitrum network (e.g. `https://arbitrum.infura.io/v3/<project-id>`). |
-| `ARB_REGISTRAR` | Contract address for the [Autism registration contract](https://github.com/autism-org/contracts). |
+| `ARB_REGISTRAR` | Contract address for the [registration contract](https://github.com/zkitter/contracts). |
 | `ARB_PRIVATE_KEY` | Private Key to the Arbitrum address to be used to fund onboarding. |
 | `ARB_ADDRESS` | The Arbitrum address to be used to fund onboarding. |
 | `MODERATORS` | Global moderations for the server. Defaults to `0x3F425586D68616A113C29c303766DAD444167EE8` and `0xd44a82dD160217d46D754a03C8f841edF06EBE3c` |

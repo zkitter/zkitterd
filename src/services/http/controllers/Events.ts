@@ -16,7 +16,6 @@ export class EventsController extends Controller {
       '/events',
       Router()
         .get('', this.all)
-        .use(json)
         .post('/:clientId', this.updateSSE)
         .get('/:clietnId/alive', this.keepAliveSSE)
         .get('/:clientId', this.terminateSSE)

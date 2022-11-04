@@ -22,7 +22,7 @@ export class ZkChatController extends Controller {
       '/zkchat',
       Router()
         .get('/users', this.users)
-        .post('/chat-messages', json, this.postMessage)
+        .post('/chat-messages', this.postMessage)
         .get('/chat-messages/dm/:sender/:receiver', this.getDirectmessage)
         .get('/chats/dm/:pubkey', this.getDirectChats)
         .get('/chats/search/:query?', this.searchChats)

@@ -18,10 +18,10 @@ export class InterepController extends Controller {
       '/interrep',
       Router()
         .get('/:identityCommitment', this.proof)
-        .post('/groups/:provider/:name/:identityCommitment', json, this.signUp)
+        .post('/groups/:provider/:name/:identityCommitment', this.signUp)
     );
 
-    this.router.get('/dev/interep/:identityCommitment', json, this.devProof);
+    this.router.get('/dev/interep/:identityCommitment', this.devProof);
   };
 
   proof = async (req: Request, res: Response) => {

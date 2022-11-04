@@ -1,10 +1,10 @@
-import { GenericService } from '../util/svc';
+import { GenericService } from '../../util/svc';
 import express, { Express, NextFunction, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import cors, { CorsOptions } from 'cors';
 import http from 'http';
-import config from '../util/config';
-import logger from '../util/logger';
+import config from '../../util/config';
+import logger from '../../util/logger';
 import path from 'path';
 import Web3 from 'web3';
 import { getLinkPreview } from 'link-preview-js';
@@ -24,17 +24,17 @@ import {
   TW_AUTH_URL,
   updateStatus,
   verifyCredential,
-} from '../util/twitter';
-import { verifySignatureP256 } from '../util/crypto';
-import { parseMessageId, PostMessageSubType } from '../util/message';
+} from '../../util/twitter';
+import { verifySignatureP256 } from '../../util/crypto';
+import { parseMessageId, PostMessageSubType } from '../../util/message';
 import multer from 'multer';
 import fs from 'fs';
 import { getFilesFromPath } from 'web3.storage';
-import { UploadModel } from '../models/uploads';
+import { UploadModel } from '../../models/uploads';
 import { genExternalNullifier, Semaphore, SemaphoreFullProof } from '@zk-kit/protocols';
-import vKey from '../../static/verification_key.json';
-import merkleRoot from '../models/merkle_root';
-import { sequelize } from '../util/sequelize';
+import vKey from '../../../static/verification_key.json';
+import merkleRoot from '../../models/merkle_root';
+import { sequelize } from '../../util/sequelize';
 import crypto from 'crypto';
 import {
   addConnection,
@@ -43,8 +43,7 @@ import {
   publishTopic,
   removeConnection,
   SSEType,
-} from '../util/sse';
-import { customGroupSQL } from './merkle';
+} from '../../util/sse';
 
 const jsonParser = bodyParser.json();
 const SequelizeStore = require('connect-session-sequelize')(session.Store);

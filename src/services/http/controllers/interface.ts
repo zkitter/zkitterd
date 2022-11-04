@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { json, Router } from 'express';
 import { GenericService } from '../../../util/svc';
 import { logAfter, logBefore } from '../middlewares/log';
 
@@ -6,7 +6,7 @@ export abstract class Controller extends GenericService {
   public router = Router();
 
   addPreMiddlewares() {
-    this.router.use(logBefore);
+    this.router.use(logBefore, json);
   }
 
   abstract addRoutes(): void;

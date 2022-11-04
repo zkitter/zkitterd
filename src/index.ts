@@ -12,6 +12,7 @@ import ZKChatService from './services/zkchat';
 import MerkleService from './services/merkle';
 import { ReputationService } from './services/reputation';
 import {
+  EventsController,
   PostsController,
   TagsController,
   UsersController,
@@ -34,7 +35,7 @@ import {
     main.add('postsController', new PostsController());
     main.add('tagsController', new TagsController());
     main.add('zkChatController', new ZkChatController());
-    // main.add('eventsController', new EventsController());
+    main.add('eventsController', new EventsController());
     // main.add('twitterController', new TwitterController());
     // main.add('githubController', new GithubController());
     // main.add('interepController', new InterepController());

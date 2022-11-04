@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { json, Request, Response } from 'express';
 import Web3 from 'web3';
 
 import { Controller } from './interface';
@@ -11,7 +11,7 @@ export class UsersController extends Controller {
   }
 
   addRoutes = () => {
-    this.router.route('/users').get(this.all).post(this.add);
+    this.router.route('/users').get(this.all).post(json, this.add);
     this.router.get('/users/:address', this.one);
     this.router.get('/:user/followers', this.followers);
     this.router.get('/:user/followings', this.followings);

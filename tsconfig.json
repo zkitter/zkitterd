@@ -14,9 +14,8 @@
     "isolatedModules": true,
     "sourceMap": true,
     "noEmit": true,
-    "useUnknownInCatchVariables": false
+    "useUnknownInCatchVariables": false,
+    "strictPropertyInitialization": false
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

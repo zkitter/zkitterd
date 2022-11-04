@@ -11,7 +11,12 @@ import IPFSService from './services/ipfs';
 import ZKChatService from './services/zkchat';
 import MerkleService from './services/merkle';
 import { ReputationService } from './services/reputation';
-import { PostsController, TagsController, UsersController } from './services/http/controllers';
+import {
+  PostsController,
+  TagsController,
+  UsersController,
+  ZkChatController,
+} from './services/http/controllers';
 
 (async function initApp() {
   try {
@@ -28,7 +33,7 @@ import { PostsController, TagsController, UsersController } from './services/htt
     main.add('usersController', new UsersController());
     main.add('postsController', new PostsController());
     main.add('tagsController', new TagsController());
-    // main.add('zkchatController', new ZkChatController());
+    main.add('zkChatController', new ZkChatController());
     // main.add('eventsController', new EventsController());
     // main.add('twitterController', new TwitterController());
     // main.add('githubController', new GithubController());

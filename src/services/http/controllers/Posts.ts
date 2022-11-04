@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import { makeResponse } from '../utils';
+
 import { Controller } from './interface';
+import { makeResponse } from '../utils';
 import { parseMessageId, PostMessageSubType } from '../../../util/message';
 import { getReplies } from '../../../util/twitter';
 

@@ -316,3 +316,27 @@ export const stubCall = (
     },
   ];
 };
+
+export const newRequest = (params?: any, body?: any, query?: any): any => {
+  return {
+    query: {
+      limit: 10,
+      offset: 0,
+      ...query,
+    },
+    params,
+    body,
+    header: () => null,
+    session: {},
+  };
+};
+
+export const newResponse = (): any => {
+  const ret: any = {
+    send: sinon.stub(),
+  };
+
+  ret.status = sinon.stub().returns(ret);
+
+  return ret;
+};

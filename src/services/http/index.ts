@@ -84,8 +84,8 @@ export default class HttpService extends GenericService {
         req.username = params[1];
       } else if (semaphoreProof) {
         const { proof, publicSignals } = JSON.parse(semaphoreProof) as SemaphoreFullProof;
-        const externalNullifier = await genExternalNullifier(await getExternalNullifer(req));
-        const signalHash = await Semaphore.genSignalHash(await getSignal(req));
+        const externalNullifier = genExternalNullifier(await getExternalNullifer(req));
+        const signalHash = Semaphore.genSignalHash(await getSignal(req));
         const matchNullifier =
           BigInt(externalNullifier).toString() === publicSignals.externalNullifier;
         const matchSignal = signalHash.toString() === publicSignals.signalHash;
@@ -480,10 +480,12 @@ export default class HttpService extends GenericService {
       rln,
     });
 
+    // await
     publishTopic(`ecdh:${data.sender_pubkey}`, {
       type: SSEType.NEW_CHAT_MESSAGE,
       message: data,
     });
+    // await?
     publishTopic(`ecdh:${data.receiver_pubkey}`, {
       type: SSEType.NEW_CHAT_MESSAGE,
       message: data,
@@ -1081,7 +1083,7 @@ export default class HttpService extends GenericService {
   }
 
   async start() {
-    this.merkleRoot = await merkleRoot(sequelize);
+    this.merkleRoot = merkleRoot(sequelize);
     const httpServer = http.createServer(this.app);
 
     this.app.set('trust proxy', 1);

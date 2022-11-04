@@ -1,6 +1,7 @@
 import logger from './logger';
 
 let callerId = 0;
+let getterId = 0;
 
 export class GenericService {
   name: string;
@@ -10,25 +11,38 @@ export class GenericService {
     this.name = '';
   }
 
+  get(name: string, propName: string) {
+    const id = getterId++;
+    if (this.main) {
+      const service: any = this.main.services[name];
+      const prop = service[propName];
+
+      if (prop) return prop;
+
+      logger.error(`${name}.${prop} does not exist`, {
+        origin: this.name,
+        id: id,
+      });
+      return Promise.reject(new Error(`${name}.${prop} does not exist`));
+    }
+
+    logger.error('main service not found', {
+      origin: this.name,
+      id: id,
+    });
+
+    return Promise.reject(new Error('Main service not found'));
+  }
+
   async call(name: string, methodName: string, ...args: any[]) {
     const id = callerId++;
-    // logger.debug(`called ${name}.${methodName}`, {
-    //     ...args,
-    //     origin: this.name,
-    //     id: id,
-    // });
 
     if (this.main) {
       const service: any = this.main.services[name];
       const method = service[methodName];
       if (typeof method === 'function') {
         try {
-          const resp = await method.apply(service, args);
-          // logger.debug(`handled ${name}.${methodName}`, {
-          //     origin: this.name,
-          //     id: id,
-          // });
-          return resp;
+          return method.apply(service, args);
         } catch (e) {
           logger.error(e.message, {
             method: `${name}.${methodName}`,

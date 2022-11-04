@@ -11,6 +11,7 @@ import IPFSService from './services/ipfs';
 import ZKChatService from './services/zkchat';
 import MerkleService from './services/merkle';
 import { ReputationService } from './services/reputation';
+import { UsersController } from './services/http/controllers/Users';
 
 (async function initApp() {
   try {
@@ -24,6 +25,14 @@ import { ReputationService } from './services/reputation';
     main.add('gun', new GunService());
     main.add('ipfs', new IPFSService());
     main.add('http', new HttpService());
+    main.add('usersController', new UsersController());
+    // main.add('postsController', new PostsController());
+    // main.add('tagsController', new TagsController());
+    // main.add('zkchatController', new ZkChatController());
+    // main.add('eventsController', new EventsController());
+    // main.add('twitterController', new TwitterController());
+    // main.add('githubController', new GithubController());
+    // main.add('interepController', new InterepController());
     main.add('reputation', new ReputationService());
     await main.start();
   } catch (e) {

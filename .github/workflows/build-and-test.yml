@@ -13,5 +13,8 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node }}
-      - run: npm install
-      - run: npm run test
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install --silent
+      - name: Test
+        run: npm run test

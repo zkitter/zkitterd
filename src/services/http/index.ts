@@ -858,6 +858,11 @@ export default class HttpService extends GenericService {
           userTokenSecret,
           userName,
           userId,
+        } as {
+          userToken: string;
+          userTokenSecret: string;
+          userName: string;
+          userId: string;
         });
 
         // @ts-ignore
@@ -950,7 +955,7 @@ export default class HttpService extends GenericService {
       this.wrapHandler(async (req, res) => {
         const { username } = req.query;
         const twitterAuthDB = await this.call('db', 'getTwitterAuth');
-        const user = await twitterAuthDB.findUserByUsername(username);
+        const user = await twitterAuthDB.findUserByUsername(username as string);
         res.send(makeResponse(user));
       })
     );

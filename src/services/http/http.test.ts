@@ -155,27 +155,6 @@ tape('HTTPService - handleGetReplies', async t => {
   t.end();
 });
 
-tape('HTTPService - handleGetPosts', async t => {
-  const http = new HttpService();
-  const [call, stubs] = stubCall(http);
-  const req = newRequest();
-  const res = newResponse();
-
-  stubs.posts.findAllPosts.returns(Promise.resolve([post]));
-
-  await http.handleGetPosts(req, res);
-
-  t.deepEqual(
-    stubs.posts.findAllPosts.args[0],
-    [undefined, undefined, 0, 10, undefined, false],
-    'should find all posts'
-  );
-
-  t.deepEqual(res.send.args[0], [{ payload: [post], error: undefined }], 'should return all posts');
-
-  t.end();
-});
-
 tape('HTTPService - handleGetPostsByTag', async t => {
   const http = new HttpService();
   const [call, stubs] = stubCall(http);
@@ -268,48 +247,6 @@ tape('HTTPService - handleGetUserLikes', async t => {
   t.end();
 });
 
-tape('HTTPService - handleGetHomefeed', async t => {
-  const http = new HttpService();
-  const [call, stubs] = stubCall(http);
-  const req = newRequest({
-    creator: '0xmyuser',
-  });
-  const res = newResponse();
-
-  stubs.posts.getHomeFeed.returns(Promise.resolve([post]));
-
-  await http.handleGetHomefeed(req, res);
-
-  t.deepEqual(stubs.posts.getHomeFeed.args[0], [undefined, 0, 10], 'should find home feed');
-
-  t.deepEqual(res.send.args[0], [{ payload: [post], error: undefined }], 'should return home feed');
-
-  t.end();
-});
-
-tape('HTTPService - handleGetPostByHash', async t => {
-  const http = new HttpService();
-  const [call, stubs] = stubCall(http);
-  const req = newRequest({
-    hash: '0xposthash',
-  });
-  const res = newResponse();
-
-  stubs.posts.findOne.returns(Promise.resolve(post));
-
-  await http.handleGetPostByHash(req, res);
-
-  t.deepEqual(stubs.posts.findOne.args[0], ['0xposthash', undefined], 'should find post by hash');
-
-  t.deepEqual(
-    res.send.args[0],
-    [{ payload: post, error: undefined }],
-    'should return post by hash'
-  );
-
-  t.end();
-});
-
 tape.skip('HTTPService - Interep Signup', async t => {
   const http = new HttpService();
   const [call, stubs] = stubCall(http);
@@ -379,7 +316,7 @@ tape.skip('HTTPService - get interep ID commitment', async t => {
 
   // http.addRoutes();
 
-  const interepGetIdParams = getStub.args[28];
+  const interepGetIdParams = getStub.args[27];
   // @ts-ignore
   const getIdHandler: any = interepGetIdParams[2];
   const getIdRequest = newRequest({
@@ -470,21 +407,8 @@ tape.skip('HTTPService - get preview', async t => {
   t.end();
 });
 
-tape('HttpService - list all users who liked a post', async t => {
-  const http = new HttpService();
-  const [, stubs] = stubCall(http);
-  const res = newResponse();
-  const likers = ['0xfoo/hash1', '0xbar/hash2'];
-
-  stubs.moderations.findAllLikesByReference.returns(Promise.resolve(likers));
-
-  await http.handleGetLikesByPost(newRequest({ hash: 'test' }, null, null), res);
-
-  t.deepEqual(res.send.args[0][0].payload, likers, 'should be equal');
-  t.end();
-});
-
 tape('HttpService - get followers per user', async t => {
+  // const route = '/v1/post/:hash/likes';
   const http = new HttpService();
   const [, stubs] = stubCall(http);
   const res = newResponse();
@@ -499,6 +423,7 @@ tape('HttpService - get followers per user', async t => {
 });
 
 tape('HttpService - get followings per user', async t => {
+  // const route = '/v1/post/:hash/likes';
   const http = new HttpService();
   const [, stubs] = stubCall(http);
   const res = newResponse();
@@ -512,7 +437,7 @@ tape('HttpService - get followings per user', async t => {
   t.end();
 });
 
-tape.skip('EXIT', t => {
+tape('EXIT', t => {
   t.end();
   process.exit(0);
 });

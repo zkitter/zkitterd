@@ -211,31 +211,8 @@ export default class HttpService extends GenericService {
     addConnection(clientId, res);
   };
 
-  handleUpdateSSEClient = async (req: Request, res: Response) => {
-    const { clientId } = req.params;
-    const { topics } = req.body;
-
-    for (const topic of topics) {
-      addTopic(clientId, topic);
-    }
-
-    res.send(makeResponse('ok'));
-  };
-
-  handleSSEKeepAlive = async (req: Request, res: Response) => {
-    const { clientId } = req.params;
-    keepAlive(clientId);
-    res.send(makeResponse('ok'));
-  };
-
-  handleSSETerminate = async (req: Request, res: Response) => {
-    const { clientId } = req.params;
-    removeConnection(clientId);
-    res.send(makeResponse('ok'));
-  };
-
   initControllers() {
-    ['users', 'posts', 'tags', 'zkChat'].forEach(controller => {
+    ['users', 'posts', 'tags', 'zkChat', 'events'].forEach(controller => {
       this.app.use('/v1', this.get(`${controller}Controller`, 'router'));
     });
   }
@@ -252,18 +229,6 @@ export default class HttpService extends GenericService {
     this.app.get('/v1/proofs/:idCommitment', this.wrapHandler(this.handleGetProofs));
     this.app.get('/v1/group_members/:group', this.wrapHandler(this.handleGetMembers));
     this.app.get('/v1/:address/groups', this.wrapHandler(this.handleGetGroupsByAddress));
-    this.app.get('/v1/events', this.wrapHandler(this.handleGetEvents));
-    this.app.post('/v1/events/:clientId', jsonParser, this.wrapHandler(this.handleUpdateSSEClient));
-    this.app.get(
-      '/v1/events/:clientId/alive',
-      jsonParser,
-      this.wrapHandler(this.handleSSEKeepAlive)
-    );
-    this.app.get(
-      '/v1/events/:clientId/terminate',
-      jsonParser,
-      this.wrapHandler(this.handleSSETerminate)
-    );
 
     this.app.post(
       '/interrep/groups/:provider/:name/:identityCommitment',

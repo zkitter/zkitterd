@@ -13,6 +13,7 @@ import MerkleService from './services/merkle';
 import { ReputationService } from './services/reputation';
 import {
   EventsController,
+  InterepController,
   PostsController,
   TagsController,
   UsersController,
@@ -36,9 +37,9 @@ import {
     main.add('tagsController', new TagsController());
     main.add('zkChatController', new ZkChatController());
     main.add('eventsController', new EventsController());
+    main.add('interepController', new InterepController());
     // main.add('twitterController', new TwitterController());
     // main.add('githubController', new GithubController());
-    // main.add('interepController', new InterepController());
     main.add('reputation', new ReputationService());
     await main.start();
   } catch (e) {

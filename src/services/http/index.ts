@@ -44,31 +44,11 @@ import {
   removeConnection,
   SSEType,
 } from '../../util/sse';
+import { makeResponse, upload } from './utils';
+import { corsOptions, JWT_SECRET, maxFileSize, maxPerUserSize } from './constants';
 
 const jsonParser = bodyParser.json();
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
-const upload = multer({
-  dest: './uploaded_files',
-});
-
-const corsOptions: CorsOptions = {
-  credentials: true,
-  origin: function (origin = '', callback) {
-    callback(null, true);
-  },
-};
-
-const JWT_SECRET = config.jwtSecret;
-const ONE_MB = 1048576;
-const maxFileSize = ONE_MB * 5;
-const maxPerUserSize = ONE_MB * 100;
-
-function makeResponse(payload: any, error?: boolean) {
-  return {
-    payload,
-    error,
-  };
-}
 
 export default class HttpService extends GenericService {
   app: Express;

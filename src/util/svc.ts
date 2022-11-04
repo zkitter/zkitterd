@@ -23,7 +23,8 @@ export class GenericService {
         origin: this.name,
         id: id,
       });
-      return Promise.reject(new Error(`${name}.${prop} does not exist`));
+
+      throw new Error(`${name}.${prop} does not exist`);
     }
 
     logger.error('main service not found', {
@@ -31,7 +32,7 @@ export class GenericService {
       id: id,
     });
 
-    return Promise.reject(new Error('Main service not found'));
+    throw new Error('Main service not found');
   }
 
   async call(name: string, methodName: string, ...args: any[]) {

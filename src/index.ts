@@ -16,6 +16,7 @@ import {
   InterepController,
   PostsController,
   TagsController,
+  TwitterController,
   UsersController,
   ZkChatController,
 } from './services/http/controllers';
@@ -38,7 +39,7 @@ import {
     main.add('zkChatController', new ZkChatController());
     main.add('eventsController', new EventsController());
     main.add('interepController', new InterepController());
-    // main.add('twitterController', new TwitterController());
+    main.add('twitterController', new TwitterController());
     // main.add('githubController', new GithubController());
     main.add('reputation', new ReputationService());
     await main.start();

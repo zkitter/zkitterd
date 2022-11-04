@@ -1,4 +1,4 @@
-import { Request, Response, Router } from 'express';
+import { Request, Response } from 'express';
 import { makeResponse } from '../utils';
 import { Controller } from './interface';
 import Web3 from 'web3';

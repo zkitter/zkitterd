@@ -310,7 +310,7 @@ tape('HTTPService - handleGetPostByHash', async t => {
   t.end();
 });
 
-tape('HTTPService - Interep Signup', async t => {
+tape.skip('HTTPService - Interep Signup', async t => {
   const http = new HttpService();
   const [call, stubs] = stubCall(http);
   const res = newResponse();
@@ -318,7 +318,7 @@ tape('HTTPService - Interep Signup', async t => {
   const getStub = sinon.stub(http.app, 'get');
   const postStub = sinon.stub(http.app, 'post');
 
-  http.addRoutes();
+  // http.addRoutes();
 
   const interepSignupParams = postStub.args[3];
   // @ts-ignore
@@ -370,14 +370,14 @@ tape('HTTPService - Interep Signup', async t => {
   t.end();
 });
 
-tape('HTTPService - get interep ID commitment', async t => {
+tape.skip('HTTPService - get interep ID commitment', async t => {
   const http = new HttpService();
   const [, stubs] = stubCall(http);
   const res = newResponse();
 
   const getStub = sinon.stub(http.app, 'get');
 
-  http.addRoutes();
+  // http.addRoutes();
 
   const interepGetIdParams = getStub.args[28];
   // @ts-ignore

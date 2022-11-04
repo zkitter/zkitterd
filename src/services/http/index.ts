@@ -162,32 +162,6 @@ export default class HttpService extends GenericService {
     };
   }
 
-  handleGetPostsByTag = async (req: Request, res: Response) => {
-    const limit = req.query.limit && Number(req.query.limit);
-    const offset = req.query.offset && Number(req.query.offset);
-    const tagName = req.params.tagName;
-    const context = req.header('x-contextual-name') || undefined;
-    const tagDB = await this.call('db', 'getTags');
-    const posts = await tagDB.getPostsByTag(tagName, context, offset, limit);
-    res.send(makeResponse(posts));
-  };
-
-  handleGetTags = async (req: Request, res: Response) => {
-    const limit = req.query.limit && Number(req.query.limit);
-    const offset = req.query.offset && Number(req.query.offset);
-    const db = await this.call('db', 'getMeta');
-    const tags = await db.findTags(offset, limit);
-    res.send(makeResponse(tags));
-  };
-
-  handleGetPostByHash = async (req: Request, res: Response) => {
-    const hash = req.params.hash;
-    const context = req.header('x-contextual-name') || undefined;
-    const postDB = await this.call('db', 'getPosts');
-    const post = await postDB.findOne(hash, context);
-    res.send(makeResponse(post));
-  };
-
   handleGetChatUsers = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
@@ -416,7 +390,7 @@ export default class HttpService extends GenericService {
   };
 
   initControllers() {
-    ['users', 'posts'].forEach(controller => {
+    ['users', 'posts', 'tags'].forEach(controller => {
       this.app.use('/v1', this.get(`${controller}Controller`, 'router'));
     });
   }
@@ -429,9 +403,6 @@ export default class HttpService extends GenericService {
         res.send(makeResponse('ok'));
       })
     );
-
-    this.app.get('/v1/tags/:tagName', this.wrapHandler(this.handleGetPostsByTag));
-    this.app.get('/v1/tags', this.wrapHandler(this.handleGetTags));
 
     this.app.get('/v1/zkchat/users', this.wrapHandler(this.handleGetChatUsers));
     this.app.post(

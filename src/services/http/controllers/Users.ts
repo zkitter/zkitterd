@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
-import { makeResponse } from '../utils';
-import { Controller } from './interface';
 import Web3 from 'web3';
+
+import { Controller } from './interface';
+import { makeResponse } from '../utils';
 
 export class UsersController extends Controller {
   constructor() {

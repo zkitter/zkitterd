@@ -162,39 +162,6 @@ export default class HttpService extends GenericService {
     };
   }
 
-  handleGetReplies = async (req: Request, res: Response) => {
-    const limit = req.query.limit && Number(req.query.limit);
-    const offset = req.query.offset && Number(req.query.offset);
-    const parent = req.query.parent;
-    const { hash } = parseMessageId(parent as string);
-    const context = req.header('x-contextual-name') || undefined;
-    const unmoderated = (req.header('x-unmoderated') || '') === 'true';
-    const postDB = await this.call('db', 'getPosts');
-    const parentPost = await postDB.findOne(hash, context);
-
-    let tweetId;
-
-    if (parentPost?.subtype === PostMessageSubType.MirrorPost) {
-      const tweetUrl = parentPost.payload.topic;
-      const [__, _, id] = tweetUrl.replace('https://twitter.com/', '').split('/');
-      tweetId = id;
-      const lastTweet = await postDB.findLastTweetInConversation(id);
-      const tweets = await getReplies(tweetUrl, lastTweet?.hash);
-      await postDB.createTwitterPosts(tweets);
-    }
-
-    const posts = await postDB.findAllReplies(
-      parent,
-      context,
-      offset,
-      limit,
-      'ASC',
-      tweetId,
-      unmoderated
-    );
-    res.send(makeResponse(posts));
-  };
-
   handleGetPostsByTag = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
@@ -211,53 +178,6 @@ export default class HttpService extends GenericService {
     const db = await this.call('db', 'getMeta');
     const tags = await db.findTags(offset, limit);
     res.send(makeResponse(tags));
-  };
-
-  handleGetUserReplies = async (req: Request, res: Response) => {
-    const limit = req.query.limit && Number(req.query.limit);
-    const offset = req.query.offset && Number(req.query.offset);
-    const creator = req.params.creator;
-    const context = req.header('x-contextual-name') || undefined;
-    const postDB = await this.call('db', 'getPosts');
-    const posts = await postDB.findAllRepliesFromCreator(creator, context, offset, limit);
-    res.send(makeResponse(posts));
-  };
-
-  handleGetUserLikes = async (req: Request, res: Response) => {
-    const limit = req.query.limit && Number(req.query.limit);
-    const offset = req.query.offset && Number(req.query.offset);
-    const creator = req.params.creator;
-    const context = req.header('x-contextual-name') || undefined;
-    const postDB = await this.call('db', 'getPosts');
-    const posts = await postDB.findAllLikedPostsByCreator(creator, context, offset, limit);
-    res.send(makeResponse(posts));
-  };
-
-  handleGetUserFollowers = async (req: Request, res: Response) => {
-    const limit = req.query.limit && Number(req.query.limit);
-    const offset = req.query.offset && Number(req.query.offset);
-    const user = req.params.user;
-    const connectionsDB = await this.call('db', 'getConnections');
-    const followers = await connectionsDB.findAllFollowersByName(user, offset, limit);
-    res.send(makeResponse(followers));
-  };
-
-  handleGetUserFollowings = async (req: Request, res: Response) => {
-    const limit = req.query.limit && Number(req.query.limit);
-    const offset = req.query.offset && Number(req.query.offset);
-    const user = req.params.user;
-    const connectionsDB = await this.call('db', 'getConnections');
-    const followings = await connectionsDB.findAllFollowingsByCreator(user, offset, limit);
-    res.send(makeResponse(followings));
-  };
-
-  handleGetHomefeed = async (req: Request, res: Response) => {
-    const limit = req.query.limit && Number(req.query.limit);
-    const offset = req.query.offset && Number(req.query.offset);
-    const context = req.header('x-contextual-name') || undefined;
-    const postDB = await this.call('db', 'getPosts');
-    const posts = await postDB.getHomeFeed(context, offset, limit);
-    res.send(makeResponse(posts));
   };
 
   handleGetPostByHash = async (req: Request, res: Response) => {
@@ -497,7 +417,7 @@ export default class HttpService extends GenericService {
 
   initControllers() {
     ['users', 'posts'].forEach(controller => {
-      this.app.use('/', this.get(`${controller}Controller`, 'router'));
+      this.app.use('/v1', this.get(`${controller}Controller`, 'router'));
     });
   }
 
@@ -509,13 +429,9 @@ export default class HttpService extends GenericService {
         res.send(makeResponse('ok'));
       })
     );
-    this.app.get('/v1/replies', this.wrapHandler(this.handleGetReplies));
+
     this.app.get('/v1/tags/:tagName', this.wrapHandler(this.handleGetPostsByTag));
     this.app.get('/v1/tags', this.wrapHandler(this.handleGetTags));
-    this.app.get('/v1/:creator/replies', this.wrapHandler(this.handleGetUserReplies));
-    this.app.get('/v1/:creator/likes', this.wrapHandler(this.handleGetUserLikes));
-    this.app.get('/v1/:user/followers', this.wrapHandler(this.handleGetUserFollowers));
-    this.app.get('/v1/:user/followings', this.wrapHandler(this.handleGetUserFollowings));
 
     this.app.get('/v1/zkchat/users', this.wrapHandler(this.handleGetChatUsers));
     this.app.post(

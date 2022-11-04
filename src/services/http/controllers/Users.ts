@@ -4,17 +4,19 @@ import { Controller } from './interface';
 import Web3 from 'web3';
 
 export class UsersController extends Controller {
-  public path = '/v1/users';
-
   constructor() {
     super();
     this.init();
   }
 
   addRoutes = () => {
-    this.router.route(this.path).get(this.all).post(this.add);
-    this.router.get(`${this.path}/search/:query?`, this.search);
-    this.router.get(`${this.path}/:address`, this.one);
+    this.router.route('/users').get(this.all).post(this.add);
+    this.router.get('/users/:address', this.one);
+    this.router.get('/:user/followers', this.followers);
+    this.router.get('/:user/followings', this.followings);
+    this.router.get('/:creator/replies', this.replies);
+    this.router.get('/:creator/likes', this.likes);
+    this.router.get('/users/search/:query?', this.search);
   };
 
   all = async (req: Request, res: Response) => {
@@ -107,5 +109,43 @@ export class UsersController extends Controller {
     const tx = await this.call('arbitrum', 'updateFor', account, publicKey, proof);
 
     res.send(makeResponse(tx));
+  };
+
+  followers = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const user = req.params.user;
+    const connectionsDB = await this.call('db', 'getConnections');
+    const followers = await connectionsDB.findAllFollowersByName(user, offset, limit);
+    res.send(makeResponse(followers));
+  };
+
+  followings = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const user = req.params.user;
+    const connectionsDB = await this.call('db', 'getConnections');
+    const followings = await connectionsDB.findAllFollowingsByCreator(user, offset, limit);
+    res.send(makeResponse(followings));
+  };
+
+  replies = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const creator = req.params.creator;
+    const context = req.header('x-contextual-name') || undefined;
+    const postDB = await this.call('db', 'getPosts');
+    const posts = await postDB.findAllRepliesFromCreator(creator, context, offset, limit);
+    res.send(makeResponse(posts));
+  };
+
+  likes = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const creator = req.params.creator;
+    const context = req.header('x-contextual-name') || undefined;
+    const postDB = await this.call('db', 'getPosts');
+    const posts = await postDB.findAllLikedPostsByCreator(creator, context, offset, limit);
+    res.send(makeResponse(posts));
   };
 }

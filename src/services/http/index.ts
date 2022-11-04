@@ -27,7 +27,6 @@ import {
 } from '../../util/twitter';
 import { verifySignatureP256 } from '../../util/crypto';
 import { parseMessageId, PostMessageSubType } from '../../util/message';
-import multer from 'multer';
 import fs from 'fs';
 import { getFilesFromPath } from 'web3.storage';
 import { UploadModel } from '../../models/uploads';
@@ -119,7 +118,7 @@ export default class HttpService extends GenericService {
           x_share: x_share,
         };
 
-        const { shares, isSpam, isDuplicate } = await this.call('zkchat', 'checkShare', share);
+        const { isSpam, isDuplicate } = await this.call('zkchat', 'checkShare', share);
 
         const group = await this.call(
           'merkle',
@@ -425,7 +424,7 @@ export default class HttpService extends GenericService {
         x_share: rln.x_share,
       };
 
-      const { shares, isSpam, isDuplicate } = await this.call('zkchat', 'checkShare', share);
+      const { isSpam, isDuplicate } = await this.call('zkchat', 'checkShare', share);
 
       if (isDuplicate) {
         throw new Error('duplicate message');
@@ -861,10 +860,8 @@ export default class HttpService extends GenericService {
           userId,
         });
 
-        const twitterToken = jwt.sign({ userToken }, JWT_SECRET);
-
         // @ts-ignore
-        req.session.twitterToken = twitterToken;
+        req.session.twitterToken = jwt.sign({ userToken }, JWT_SECRET);
 
         // @ts-ignore
         const redirectUrl = req.session.redirectUrl;
@@ -883,7 +880,7 @@ export default class HttpService extends GenericService {
         const twitterAuthDB = await this.call('db', 'getTwitterAuth');
         const userDB = await this.call('db', 'getUsers');
 
-        let token, secret, auth;
+        let auth;
 
         if (signature) {
           const [sig, address] = signature.split('.');
@@ -895,15 +892,14 @@ export default class HttpService extends GenericService {
 
               if (sigAuth) {
                 auth = sigAuth;
-                const twitterToken = jwt.sign(
+
+                // @ts-ignore
+                req.session.twitterToken = jwt.sign(
                   {
                     userToken: auth.user_token,
                   },
                   JWT_SECRET
                 );
-
-                // @ts-ignore
-                req.session.twitterToken = twitterToken;
               }
             }
           }

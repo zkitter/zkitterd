@@ -11,7 +11,7 @@ import IPFSService from './services/ipfs';
 import ZKChatService from './services/zkchat';
 import MerkleService from './services/merkle';
 import { ReputationService } from './services/reputation';
-import { UsersController } from './services/http/controllers/Users';
+import { PostsController, UsersController } from './services/http/controllers';
 
 (async function initApp() {
   try {
@@ -26,7 +26,7 @@ import { UsersController } from './services/http/controllers/Users';
     main.add('ipfs', new IPFSService());
     main.add('http', new HttpService());
     main.add('usersController', new UsersController());
-    // main.add('postsController', new PostsController());
+    main.add('postsController', new PostsController());
     // main.add('tagsController', new TagsController());
     // main.add('zkchatController', new ZkChatController());
     // main.add('eventsController', new EventsController());

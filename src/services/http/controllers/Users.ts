@@ -5,18 +5,17 @@ import Web3 from 'web3';
 
 export class UsersController extends Controller {
   public path = '/v1/users';
-  public router = Router();
 
   constructor() {
     super();
-    this.addRoutes();
+    this.init();
   }
 
-  public addRoutes() {
+  addRoutes = () => {
     this.router.route(this.path).get(this.all).post(this.add);
     this.router.get(`${this.path}/search/:query?`, this.search);
     this.router.get(`${this.path}/:address`, this.one);
-  }
+  };
 
   all = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);

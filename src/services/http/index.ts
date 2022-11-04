@@ -1,10 +1,10 @@
-import { GenericService } from '../util/svc';
+import { GenericService } from '../../util/svc';
 import express, { Express, NextFunction, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import cors, { CorsOptions } from 'cors';
 import http from 'http';
-import config from '../util/config';
-import logger from '../util/logger';
+import config from '../../util/config';
+import logger from '../../util/logger';
 import path from 'path';
 import Web3 from 'web3';
 import { getLinkPreview } from 'link-preview-js';
@@ -24,17 +24,17 @@ import {
   TW_AUTH_URL,
   updateStatus,
   verifyCredential,
-} from '../util/twitter';
-import { verifySignatureP256 } from '../util/crypto';
-import { parseMessageId, PostMessageSubType } from '../util/message';
+} from '../../util/twitter';
+import { verifySignatureP256 } from '../../util/crypto';
+import { parseMessageId, PostMessageSubType } from '../../util/message';
 import multer from 'multer';
 import fs from 'fs';
 import { getFilesFromPath } from 'web3.storage';
-import { UploadModel } from '../models/uploads';
+import { UploadModel } from '../../models/uploads';
 import { genExternalNullifier, Semaphore, SemaphoreFullProof } from '@zk-kit/protocols';
-import vKey from '../../static/verification_key.json';
-import merkleRoot from '../models/merkle_root';
-import { sequelize } from '../util/sequelize';
+import vKey from '../../../static/verification_key.json';
+import merkleRoot from '../../models/merkle_root';
+import { sequelize } from '../../util/sequelize';
 import crypto from 'crypto';
 import {
   addConnection,
@@ -43,8 +43,7 @@ import {
   publishTopic,
   removeConnection,
   SSEType,
-} from '../util/sse';
-import { customGroupSQL } from './merkle';
+} from '../../util/sse';
 
 const jsonParser = bodyParser.json();
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
@@ -516,19 +515,15 @@ export default class HttpService extends GenericService {
     const values = await sequelize.query(
       // prettier-ignore
       `
-            SELECT distinct zkc.receiver_pubkey as pubkey, zkc.receiver_address as address, null as group_id 
-            FROM zkchat_chats zkc
-            WHERE zkc.receiver_pubkey IN (
-                SELECT distinct receiver_pubkey FROM zkchat_chats WHERE sender_pubkey = :pubkey
-            )
-            UNION
-            SELECT distinct zkc.sender_pubkey as pubkey, zkc.sender_address as address, mr.group_id 
-            FROM zkchat_chats zkc
-            LEFT JOIN merkle_roots mr on mr.root_hash = zkc.rln_root
-            WHERE zkc.sender_pubkey IN (
-                SELECT distinct sender_pubkey FROM zkchat_chats WHERE receiver_pubkey = :pubkey
-            );
-        `,
+          SELECT distinct zkc.receiver_pubkey as pubkey, zkc.receiver_address as address, null as group_id
+          FROM zkchat_chats zkc
+          WHERE zkc.receiver_pubkey IN (SELECT distinct receiver_pubkey FROM zkchat_chats WHERE sender_pubkey = :pubkey)
+          UNION
+          SELECT distinct zkc.sender_pubkey as pubkey, zkc.sender_address as address, mr.group_id
+          FROM zkchat_chats zkc
+                   LEFT JOIN merkle_roots mr on mr.root_hash = zkc.rln_root
+          WHERE zkc.sender_pubkey IN (SELECT distinct sender_pubkey FROM zkchat_chats WHERE receiver_pubkey = :pubkey);
+      `,
       {
         type: QueryTypes.SELECT,
         replacements: {
@@ -578,16 +573,20 @@ export default class HttpService extends GenericService {
     const values = await sequelize.query(
       // prettier-ignore
       `
-            SELECT
-                u.name as address,
-                name.value as name,
-                idcommitment.value as idcommitment 
-            FROM users u
-            LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
-            JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
-            JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = u.name AND invite.name = :member_address
-            JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :member_address AND accept.name = u.name
-        `,
+          SELECT u.name             as address,
+                 name.value         as name,
+                 idcommitment.value as idcommitment
+          FROM users u
+                   LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId"
+                                                                  FROM profiles
+                                                                  WHERE creator = u.name
+                                                                    AND subtype = 'NAME'
+                                                                  ORDER BY "createdAt" DESC LIMIT 1)
+              JOIN profiles idcommitment
+          ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key ='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+              JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = u.name AND invite.name = :member_address
+              JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :member_address AND accept.name = u.name
+      `,
       {
         type: QueryTypes.SELECT,
         replacements: {

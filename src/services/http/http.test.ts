@@ -5,48 +5,6 @@ import HttpService from '.';
 import { newRequest, newResponse, stubCall, stubFetch } from '../../util/testUtils';
 import { post } from './_fixtures';
 
-tape('HTTPService - handleGetPostsByTag', async t => {
-  const http = new HttpService();
-  const [call, stubs] = stubCall(http);
-  const req = newRequest({ tagName: '#unittest' });
-  const res = newResponse();
-
-  stubs.tags.getPostsByTag.returns(Promise.resolve([post]));
-
-  await http.handleGetPostsByTag(req, res);
-
-  t.deepEqual(
-    stubs.tags.getPostsByTag.args[0],
-    ['#unittest', undefined, 0, 10],
-    'should find all posts'
-  );
-
-  t.deepEqual(res.send.args[0], [{ payload: [post], error: undefined }], 'should return all posts');
-
-  t.end();
-});
-
-tape('HTTPService - handleGetTags', async t => {
-  const http = new HttpService();
-  const [call, stubs] = stubCall(http);
-  const req = newRequest();
-  const res = newResponse();
-
-  stubs.meta.findTags.returns(Promise.resolve([{ tagName: '#test' }]));
-
-  await http.handleGetTags(req, res);
-
-  t.deepEqual(stubs.meta.findTags.args[0], [0, 10], 'should find all tags');
-
-  t.deepEqual(
-    res.send.args[0],
-    [{ payload: [{ tagName: '#test' }], error: undefined }],
-    'should return all tags'
-  );
-
-  t.end();
-});
-
 tape.skip('HTTPService - Interep Signup', async t => {
   const http = new HttpService();
   const [call, stubs] = stubCall(http);

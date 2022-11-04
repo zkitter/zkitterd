@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { makeResponse } from '../utils';
 import { Controller } from './interface';
+import { parseMessageId, PostMessageSubType } from '../../../util/message';
+import { getReplies } from '../../../util/twitter';
 
 export class PostsController extends Controller {
   constructor() {
@@ -9,10 +11,11 @@ export class PostsController extends Controller {
   }
 
   public addRoutes() {
-    this.router.get('/v1/homefeed', this.homefeed);
-    this.router.get('/v1/posts', this.all);
-    this.router.get('/v1/post/:hash', this.one);
-    this.router.get('/v1/post/:hash/likes', this.likes);
+    this.router.get('/homefeed', this.homefeed);
+    this.router.get('/posts', this.all);
+    this.router.get('/post/:hash', this.one);
+    this.router.get('/post/:hash/likes', this.likes);
+    this.router.get('/replies', this.replies);
   }
 
   all = async (req: Request, res: Response) => {
@@ -48,6 +51,39 @@ export class PostsController extends Controller {
     const context = req.header('x-contextual-name') || undefined;
     const postDB = await this.call('db', 'getPosts');
     const posts = await postDB.getHomeFeed(context, offset, limit);
+    res.send(makeResponse(posts));
+  };
+
+  replies = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const parent = req.query.parent;
+    const { hash } = parseMessageId(parent as string);
+    const context = req.header('x-contextual-name') || undefined;
+    const unmoderated = (req.header('x-unmoderated') || '') === 'true';
+    const postDB = await this.call('db', 'getPosts');
+    const parentPost = await postDB.findOne(hash, context);
+
+    let tweetId;
+
+    if (parentPost?.subtype === PostMessageSubType.MirrorPost) {
+      const tweetUrl = parentPost.payload.topic;
+      const [__, _, id] = tweetUrl.replace('https://twitter.com/', '').split('/');
+      tweetId = id;
+      const lastTweet = await postDB.findLastTweetInConversation(id);
+      const tweets = await getReplies(tweetUrl, lastTweet?.hash);
+      await postDB.createTwitterPosts(tweets);
+    }
+
+    const posts = await postDB.findAllReplies(
+      parent,
+      context,
+      offset,
+      limit,
+      'ASC',
+      tweetId,
+      unmoderated
+    );
     res.send(makeResponse(posts));
   };
 }

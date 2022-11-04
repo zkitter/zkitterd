@@ -1,7 +1,8 @@
 import tape from 'tape';
 
 import { PostsController } from './Posts';
-import { newRequest, newResponse, stubCall } from '../../../util/testUtils';
+import { newRequest, newResponse, stubCall, stubFetch } from '../../../util/testUtils';
+import { post } from '../../http/_fixtures';
 
 let controller: PostsController;
 let call: ReturnType<typeof stubCall>[0];
@@ -18,36 +19,6 @@ const init = (...params: Parameters<typeof newRequest>) => {
   res = newResponse();
 };
 
-const post = {
-  type: 'POST',
-  subtype: '',
-  messageId:
-    '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6',
-  hash: '67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6',
-  createdAt: '1648260542270',
-  payload: { topic: '', title: '', content: 'auti.sm is a pwa ', reference: '', attachment: '' },
-  meta: {
-    replyCount: 2,
-    likeCount: 2,
-    repostCount: 0,
-    liked: null,
-    reposted: null,
-    blocked: null,
-    interepProvider: null,
-    interepGroup: null,
-    rootId:
-      '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6',
-    moderation: 'THREAD_HIDE_BLOCK',
-    modblockedctx: null,
-    modfollowedctx: null,
-    modmentionedctx: null,
-    modLikedPost: null,
-    modBlockedPost: null,
-    modBlockedUser: null,
-    modFollowerUser: null,
-  },
-};
-
 tape('PostsController', t => {
   t.test('GET /v1/posts', async t => {
     init();
@@ -60,7 +31,6 @@ tape('PostsController', t => {
       [undefined, undefined, 0, 10, undefined, false],
       'should find all posts'
     );
-
     t.deepEqual(
       res.send.args[0],
       [{ payload: [post], error: undefined }],
@@ -96,6 +66,119 @@ tape('PostsController', t => {
     await controller.likes(newRequest({ hash: 'test' }, null, null), res);
 
     t.deepEqual(res.send.args[0][0].payload, likers, 'should be equal');
+    t.end();
+  });
+
+  t.test('GET /v1/replies', async t => {
+    init(null, null, {
+      parent: '0xparenthash/67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6',
+    });
+    stubs.posts.findOne.returns(
+      Promise.resolve({
+        subtype: '',
+        payload: {},
+      })
+    );
+    stubs.posts.findAllReplies.returns(Promise.resolve([{ hash: '0xposthash' }]));
+
+    await controller.replies(req, res);
+
+    t.deepEqual(
+      stubs.posts.findAllReplies.args[0],
+      [
+        '0xparenthash/67e929dd44b631b80e22bd0f94b1b75812e0159117d24bbfba592c9340804fa6',
+        undefined,
+        0,
+        10,
+        'ASC',
+        undefined,
+        false,
+      ],
+      'should find all replies'
+    );
+    t.deepEqual(
+      res.send.args[0],
+      [
+        {
+          payload: [
+            {
+              hash: '0xposthash',
+            },
+          ],
+          error: undefined,
+        },
+      ],
+      'should return replies'
+    );
+
+    stubs.posts.findOne.returns(
+      Promise.resolve({
+        subtype: 'M_POST',
+        payload: {
+          topic: 'https://twitter.com/0xTsukino/status/1465780936314740736',
+        },
+      })
+    );
+    stubs.posts.findAllReplies.returns(Promise.resolve([{ hash: '0xposthash' }]));
+    stubs.posts.findLastTweetInConversation.returns(Promise.resolve({ hash: '0xtweethash' }));
+    const fetch = stubFetch();
+    fetch.reset();
+    fetch.returns(
+      Promise.resolve({
+        json: async () => ({
+          data: [
+            {
+              author_id: 'yagami',
+              created_at: '1234',
+              coversation_id: 'threadid',
+              in_reply_to_user_id: 'replyid',
+              text: 'hello!',
+              id: '',
+              referenced_tweets: [],
+            },
+          ],
+        }),
+      })
+    );
+
+    await controller.replies(req, res);
+
+    t.deepEqual(
+      fetch.args[0],
+      [
+        'https://api.twitter.com/2/tweets/search/recent?query=conversation_id:1465780936314740736&since_id=0xtweethash&max_results=100&expansions=author_id,in_reply_to_user_id&tweet.fields=referenced_tweets,in_reply_to_user_id,author_id,created_at,conversation_id&user.fields=name,username',
+        {
+          method: 'GET',
+          headers: {
+            Authorization: 'Bearer twBearerToken',
+          },
+        },
+      ],
+      'should fetch twitter replies'
+    );
+    t.deepEqual(
+      stubs.posts.createTwitterPosts.args[0],
+      [
+        [
+          {
+            messageId: '',
+            hash: '',
+            creator: 'yagami',
+            type: '@TWEET@',
+            subtype: '',
+            createdAt: -23225875200000,
+            topic: '',
+            title: '',
+            content: 'hello!',
+            reference: '1465780936314740736',
+            attachment: '',
+          },
+        ],
+      ],
+      'should create twitter replies'
+    );
+
+    fetch.reset();
     t.end();
   });
 });

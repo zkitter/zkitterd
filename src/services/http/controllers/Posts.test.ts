@@ -58,14 +58,31 @@ tape('PostsController', t => {
     t.end();
   });
 
-  t.test('GET /v1/post/:hash:likes', async t => {
+  t.test('GET /v1/post/:hash/likes', async t => {
     init({ hash: 'test' });
     const likers = ['0xfoo/hash1', '0xbar/hash2'];
     stubs.moderations.findAllLikesByReference.returns(Promise.resolve(likers));
 
     await controller.getLikes(newRequest({ hash: 'test' }, null, null), res);
 
-    t.deepEqual(res.send.args[0][0].payload, likers, 'should be equal');
+    t.deepEqual(res.send.args[0][0].payload, likers, 'should return all users who liked a post');
+
+    t.end();
+  });
+
+  t.test('GET /v1/post/:hash/retweets', async t => {
+    init({ hash: 'test' });
+    const retweets = ['0xfoo/hash1', '0xbar/hash2'];
+    stubs.moderations.findAllLikesByReference.returns(Promise.resolve(retweets));
+
+    await controller.getLikes(newRequest({ hash: 'test' }, null, null), res);
+
+    t.deepEqual(
+      res.send.args[0][0].payload,
+      retweets,
+      'should return all users who retweeted a post'
+    );
+
     t.end();
   });
 

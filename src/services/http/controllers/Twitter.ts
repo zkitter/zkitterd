@@ -1,5 +1,5 @@
 import { calculateReputation, OAuthProvider } from '@interep/reputation';
-import { json, Request, Response, Router } from 'express';
+import { Request, Response, Router } from 'express';
 import jwt from 'jsonwebtoken';
 import queryString from 'querystring';
 

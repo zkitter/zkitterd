@@ -1,7 +1,6 @@
 import { BIGINT, Op, QueryTypes, Sequelize, STRING, where } from 'sequelize';
 import { MessageType, PostJSON, PostMessageSubType } from '../util/message';
 import { Mutex } from 'async-mutex';
-import bodyParser from 'body-parser';
 import {
   globalModClause,
   globalVisibilityClause,

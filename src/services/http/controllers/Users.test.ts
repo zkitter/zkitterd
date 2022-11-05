@@ -199,7 +199,7 @@ tape('UsersController', t => {
 
     await controller.getFollowers(newRequest({ user: '0xr1oga' }, null, null), res);
 
-    t.deepEqual(res.send.args[0][0].payload, followers, 'should be equal');
+    t.deepEqual(res.send.args[0][0].payload, followers, 'should return users that follow a user');
 
     t.end();
   });
@@ -211,7 +211,7 @@ tape('UsersController', t => {
 
     await controller.getFollowings(newRequest({ user: '0xr1oga' }, null, null), res);
 
-    t.deepEqual(res.send.args[0][0].payload, followings, 'should be equal');
+    t.deepEqual(res.send.args[0][0].payload, followings, 'should return users a user follows');
 
     t.end();
   });

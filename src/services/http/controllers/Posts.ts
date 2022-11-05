@@ -16,6 +16,7 @@ export class PostsController extends Controller {
     this.router.get('/posts', this.getMany);
     this.router.get('/post/:hash', this.getOne);
     this.router.get('/post/:hash/likes', this.getLikes);
+    this.router.get('/post/:hash/retweets', this.getRetweets);
     this.router.get('/replies', this.getReplies);
   }
 
@@ -53,6 +54,15 @@ export class PostsController extends Controller {
     const moderationsDB = await this.call('db', 'getModerations');
     const likers = await moderationsDB.findAllLikesByReference(hash, offset, limit);
     res.send(makeResponse(likers));
+  };
+
+  getRetweets = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const hash = req.params.hash;
+    const postsDB = await this.call('db', 'getPosts');
+    const retweets = await postsDB.findAllRetweets(hash, offset, limit);
+    res.send(makeResponse(retweets));
   };
 
   getReplies = async (req: Request, res: Response) => {

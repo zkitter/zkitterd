@@ -6,7 +6,7 @@ export abstract class Controller extends GenericService {
   public router = Router();
 
   addPreMiddlewares() {
-    this.router.use(logBefore, json);
+    this.router.use(logBefore, json());
   }
 
   abstract addRoutes(): void;

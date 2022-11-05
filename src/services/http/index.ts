@@ -1,28 +1,14 @@
 import { GenericService } from '../../util/svc';
 import express, { Express, NextFunction, Request, Response } from 'express';
-import bodyParser from 'body-parser';
 import cors from 'cors';
 import http from 'http';
 import config from '../../util/config';
 import logger from '../../util/logger';
 import path from 'path';
 import { getLinkPreview } from 'link-preview-js';
-import queryString from 'querystring';
 import session from 'express-session';
-import jwt from 'jsonwebtoken';
 import { QueryTypes } from 'sequelize';
-import { calculateReputation, OAuthProvider } from '@interep/reputation';
-import {
-  accessToken,
-  createHeader,
-  getBotometerScore,
-  getUser,
-  requestToken,
-  showStatus,
-  TW_AUTH_URL,
-  updateStatus,
-  verifyCredential,
-} from '../../util/twitter';
+
 import { verifySignatureP256 } from '../../util/crypto';
 import fs from 'fs';
 import { getFilesFromPath } from 'web3.storage';
@@ -31,11 +17,10 @@ import { genExternalNullifier, Semaphore, SemaphoreFullProof } from '@zk-kit/pro
 import vKey from '../../../static/verification_key.json';
 import { sequelize } from '../../util/sequelize';
 import crypto from 'crypto';
-import { addConnection, addTopic, keepAlive, removeConnection } from '../../util/sse';
+import { addConnection } from '../../util/sse';
 import { makeResponse, upload } from './utils';
-import { corsOptions, JWT_SECRET, maxFileSize, maxPerUserSize } from './constants';
+import { corsOptions, maxFileSize, maxPerUserSize } from './constants';
 
-const jsonParser = bodyParser.json();
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
 export default class HttpService extends GenericService {

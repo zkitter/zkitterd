@@ -21,15 +21,15 @@ export class ZkChatController extends Controller {
     this.router.use(
       '/zkchat',
       Router()
-        .get('/users', this.users)
+        .get('/users', this.getUsers)
         .post('/chat-messages', this.postMessage)
-        .get('/chat-messages/dm/:sender/:receiver', this.getDirectmessage)
+        .get('/chat-messages/dm/:sender/:receiver', this.getDirectMessage)
         .get('/chats/dm/:pubkey', this.getDirectChats)
         .get('/chats/search/:query?', this.searchChats)
     );
   };
 
-  users = async (req: Request, res: Response) => {
+  getUsers = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
     const users = await this.call('zkchat', 'getAllUsers', offset, limit);
@@ -123,7 +123,7 @@ export class ZkChatController extends Controller {
     res.send(makeResponse(data));
   };
 
-  getDirectmessage = async (req: Request, res: Response) => {
+  getDirectMessage = async (req: Request, res: Response) => {
     const { sender, receiver } = req.params;
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);

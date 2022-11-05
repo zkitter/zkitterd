@@ -15,14 +15,14 @@ export class EventsController extends Controller {
     this.router.use(
       '/events',
       Router()
-        .get('', this.all)
+        .get('', this.getMany)
         .post('/:clientId', this.updateSSE)
         .get('/:clietnId/alive', this.keepAliveSSE)
         .get('/:clientId', this.terminateSSE)
     );
   };
 
-  all = async (req: Request, res: Response) => {
+  getMany = async (req: Request, res: Response) => {
     const headers = {
       'Content-Type': 'text/event-stream',
       Connection: 'keep-alive',

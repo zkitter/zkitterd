@@ -13,38 +13,11 @@ export class PostsController extends Controller {
 
   public addRoutes() {
     this.router.get('/homefeed', this.homefeed);
-    this.router.get('/posts', this.all);
-    this.router.get('/post/:hash', this.one);
-    this.router.get('/post/:hash/likes', this.likes);
-    this.router.get('/replies', this.replies);
+    this.router.get('/posts', this.getMany);
+    this.router.get('/post/:hash', this.getOne);
+    this.router.get('/post/:hash/likes', this.getLikes);
+    this.router.get('/replies', this.getReplies);
   }
-
-  all = async (req: Request, res: Response) => {
-    const limit = req.query.limit && Number(req.query.limit);
-    const offset = req.query.offset && Number(req.query.offset);
-    const creator = req.query.creator;
-    const context = req.header('x-contextual-name') || undefined;
-    const postDB = await this.call('db', 'getPosts');
-    const posts = await postDB.findAllPosts(creator, context, offset, limit, undefined, !!creator);
-    res.send(makeResponse(posts));
-  };
-
-  one = async (req: Request, res: Response) => {
-    const hash = req.params.hash;
-    const context = req.header('x-contextual-name') || undefined;
-    const postDB = await this.call('db', 'getPosts');
-    const post = await postDB.findOne(hash, context);
-    res.send(makeResponse(post));
-  };
-
-  likes = async (req: Request, res: Response) => {
-    const limit = req.query.limit && Number(req.query.limit);
-    const offset = req.query.offset && Number(req.query.offset);
-    const hash = req.params.hash;
-    const moderationsDB = await this.call('db', 'getModerations');
-    const likers = await moderationsDB.findAllLikesByReference(hash, offset, limit);
-    res.send(makeResponse(likers));
-  };
 
   homefeed = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
@@ -55,7 +28,34 @@ export class PostsController extends Controller {
     res.send(makeResponse(posts));
   };
 
-  replies = async (req: Request, res: Response) => {
+  getMany = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const creator = req.query.creator;
+    const context = req.header('x-contextual-name') || undefined;
+    const postDB = await this.call('db', 'getPosts');
+    const posts = await postDB.findAllPosts(creator, context, offset, limit, undefined, !!creator);
+    res.send(makeResponse(posts));
+  };
+
+  getOne = async (req: Request, res: Response) => {
+    const hash = req.params.hash;
+    const context = req.header('x-contextual-name') || undefined;
+    const postDB = await this.call('db', 'getPosts');
+    const post = await postDB.findOne(hash, context);
+    res.send(makeResponse(post));
+  };
+
+  getLikes = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const hash = req.params.hash;
+    const moderationsDB = await this.call('db', 'getModerations');
+    const likers = await moderationsDB.findAllLikesByReference(hash, offset, limit);
+    res.send(makeResponse(likers));
+  };
+
+  getReplies = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
     const parent = req.query.parent;

@@ -11,16 +11,16 @@ export class UsersController extends Controller {
   }
 
   addRoutes = () => {
-    this.router.route('/users').get(this.all).post(this.add);
-    this.router.get('/users/:address', this.one);
-    this.router.get('/:user/followers', this.followers);
-    this.router.get('/:user/followings', this.followings);
-    this.router.get('/:creator/replies', this.replies);
-    this.router.get('/:creator/likes', this.likes);
+    this.router.route('/users').get(this.getMany).post(this.addOne);
+    this.router.get('/users/:address', this.getOne);
+    this.router.get('/:user/followers', this.getFollowers);
+    this.router.get('/:user/followings', this.getFollowings);
+    this.router.get('/:creator/replies', this.getReplies);
+    this.router.get('/:creator/likes', this.getLikes);
     this.router.get('/users/search/:query?', this.search);
   };
 
-  all = async (req: Request, res: Response) => {
+  getMany = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
     const context = req.header('x-contextual-name') || undefined;
@@ -37,50 +37,7 @@ export class UsersController extends Controller {
     res.send(makeResponse(result));
   };
 
-  search = async (req: Request, res: Response) => {
-    const limit = req.query.limit && Number(req.query.limit);
-    const offset = req.query.offset && Number(req.query.offset);
-    const query = req.params.query;
-    const context = req.header('x-contextual-name') || undefined;
-    const usersDB = await this.call('db', 'getUsers');
-    const users = await usersDB.search(query || '', context, offset, limit);
-    const result = [];
-
-    for (let user of users) {
-      const ens = await this.call('ens', 'fetchNameByAddress', user.username);
-      result.push({ ens, ...user });
-    }
-
-    res.send(makeResponse(result));
-  };
-
-  one = async (req: Request, res: Response) => {
-    const usersDB = await this.call('db', 'getUsers');
-
-    let address = req.params.address;
-
-    try {
-      address = Web3.utils.toChecksumAddress(address);
-    } catch (e) {}
-
-    if (!Web3.utils.isAddress(address)) {
-      address = await this.call('ens', 'fetchAddressByName', address);
-    }
-
-    const context = req.header('x-contextual-name') || undefined;
-    const user = await usersDB.findOneByName(address, context);
-    const ens = await this.call('ens', 'fetchNameByAddress', address);
-    res.send(
-      makeResponse({
-        ...user,
-        ens: ens,
-        address: address,
-        username: address,
-      })
-    );
-  };
-
-  add = async (req: Request, res: Response) => {
+  addOne = async (req: Request, res: Response) => {
     const { account, publicKey, proof } = req.body;
 
     if (!account || !Web3.utils.isAddress(account)) {
@@ -112,7 +69,33 @@ export class UsersController extends Controller {
     res.send(makeResponse(tx));
   };
 
-  followers = async (req: Request, res: Response) => {
+  getOne = async (req: Request, res: Response) => {
+    const usersDB = await this.call('db', 'getUsers');
+
+    let address = req.params.address;
+
+    try {
+      address = Web3.utils.toChecksumAddress(address);
+    } catch (e) {}
+
+    if (!Web3.utils.isAddress(address)) {
+      address = await this.call('ens', 'fetchAddressByName', address);
+    }
+
+    const context = req.header('x-contextual-name') || undefined;
+    const user = await usersDB.findOneByName(address, context);
+    const ens = await this.call('ens', 'fetchNameByAddress', address);
+    res.send(
+      makeResponse({
+        ...user,
+        ens: ens,
+        address: address,
+        username: address,
+      })
+    );
+  };
+
+  getFollowers = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
     const user = req.params.user;
@@ -121,7 +104,7 @@ export class UsersController extends Controller {
     res.send(makeResponse(followers));
   };
 
-  followings = async (req: Request, res: Response) => {
+  getFollowings = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
     const user = req.params.user;
@@ -130,7 +113,7 @@ export class UsersController extends Controller {
     res.send(makeResponse(followings));
   };
 
-  replies = async (req: Request, res: Response) => {
+  getReplies = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
     const creator = req.params.creator;
@@ -140,7 +123,7 @@ export class UsersController extends Controller {
     res.send(makeResponse(posts));
   };
 
-  likes = async (req: Request, res: Response) => {
+  getLikes = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
     const creator = req.params.creator;
@@ -148,5 +131,22 @@ export class UsersController extends Controller {
     const postDB = await this.call('db', 'getPosts');
     const posts = await postDB.findAllLikedPostsByCreator(creator, context, offset, limit);
     res.send(makeResponse(posts));
+  };
+
+  search = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const query = req.params.query;
+    const context = req.header('x-contextual-name') || undefined;
+    const usersDB = await this.call('db', 'getUsers');
+    const users = await usersDB.search(query || '', context, offset, limit);
+    const result = [];
+
+    for (let user of users) {
+      const ens = await this.call('ens', 'fetchNameByAddress', user.username);
+      result.push({ ens, ...user });
+    }
+
+    res.send(makeResponse(result));
   };
 }

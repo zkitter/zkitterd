@@ -10,11 +10,11 @@ export class TagsController extends Controller {
   }
 
   addRoutes = () => {
-    this.router.get('/tags', this.all);
-    this.router.get('/tags.:tagName', this.postsByTagName);
+    this.router.get('/tags', this.getMany);
+    this.router.get('/tags.:tagName', this.getPostsByTagName);
   };
 
-  all = async (req: Request, res: Response) => {
+  getMany = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
     const db = await this.call('db', 'getMeta');
@@ -22,7 +22,7 @@ export class TagsController extends Controller {
     res.send(makeResponse(tags));
   };
 
-  postsByTagName = async (req: Request, res: Response) => {
+  getPostsByTagName = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
     const tagName = req.params.tagName;

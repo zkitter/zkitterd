@@ -24,7 +24,7 @@ tape('TagsController', t => {
     init();
     stubs.meta.findTags.returns(Promise.resolve([{ tagName: '#test' }]));
 
-    await controller.all(req, res);
+    await controller.getMany(req, res);
 
     t.deepEqual(stubs.meta.findTags.args[0], [0, 10], 'should find all tags');
     t.deepEqual(
@@ -40,7 +40,7 @@ tape('TagsController', t => {
     init({ tagName: '#unittest' });
     stubs.tags.getPostsByTag.returns(Promise.resolve([post]));
 
-    await controller.postsByTagName(req, res);
+    await controller.getPostsByTagName(req, res);
 
     t.deepEqual(
       stubs.tags.getPostsByTag.args[0],

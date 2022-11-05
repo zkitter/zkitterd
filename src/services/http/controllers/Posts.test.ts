@@ -24,7 +24,7 @@ tape('PostsController', t => {
     init();
     stubs.posts.findAllPosts.returns(Promise.resolve([post]));
 
-    await controller.all(req, res);
+    await controller.getMany(req, res);
 
     t.deepEqual(
       stubs.posts.findAllPosts.args[0],
@@ -63,7 +63,7 @@ tape('PostsController', t => {
     const likers = ['0xfoo/hash1', '0xbar/hash2'];
     stubs.moderations.findAllLikesByReference.returns(Promise.resolve(likers));
 
-    await controller.likes(newRequest({ hash: 'test' }, null, null), res);
+    await controller.getLikes(newRequest({ hash: 'test' }, null, null), res);
 
     t.deepEqual(res.send.args[0][0].payload, likers, 'should be equal');
     t.end();
@@ -81,7 +81,7 @@ tape('PostsController', t => {
     );
     stubs.posts.findAllReplies.returns(Promise.resolve([{ hash: '0xposthash' }]));
 
-    await controller.replies(req, res);
+    await controller.getReplies(req, res);
 
     t.deepEqual(
       stubs.posts.findAllReplies.args[0],
@@ -141,7 +141,7 @@ tape('PostsController', t => {
       })
     );
 
-    await controller.replies(req, res);
+    await controller.getReplies(req, res);
 
     t.deepEqual(
       fetch.args[0],

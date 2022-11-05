@@ -27,7 +27,7 @@ tape('UsersController', t => {
     );
     call.withArgs('ens', 'fetchNameByAddress').returns(Promise.resolve(''));
 
-    await controller.all(req, res);
+    await controller.getMany(req, res);
 
     t.deepEqual(
       stubs.users.readAll.args[0],
@@ -91,7 +91,7 @@ tape('UsersController', t => {
     );
     call.withArgs('ens', 'fetchNameByAddress').returns(Promise.resolve(''));
 
-    await controller.one(req, res);
+    await controller.getOne(req, res);
 
     t.deepEqual(
       stubs.users.findOneByName.args[0],
@@ -133,7 +133,7 @@ tape('UsersController', t => {
       .returns(Promise.resolve('0xd44a82dD160217d46D754a03C8f841edF06EBE3c'));
     call.withArgs('arbitrum', 'updateFor').returns(Promise.resolve('0xtxhash'));
 
-    await controller.add(req, res);
+    await controller.addOne(req, res);
 
     t.deepEqual(
       call.args[1],
@@ -167,14 +167,14 @@ tape('UsersController', t => {
       'should return tx hash'
     );
 
-    await controller.add(newRequest(null, {}), res);
-    await controller.add(
+    await controller.addOne(newRequest(null, {}), res);
+    await controller.addOne(
       newRequest(null, {
         account: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
       }),
       res
     );
-    await controller.add(
+    await controller.addOne(
       newRequest(null, {
         account: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
         publicKey: '0xpubkey',
@@ -197,7 +197,7 @@ tape('UsersController', t => {
     const followers = ['0xfoo', '0xbar'];
     stubs.connections.findAllFollowersByName.returns(Promise.resolve(followers));
 
-    await controller.followers(newRequest({ user: '0xr1oga' }, null, null), res);
+    await controller.getFollowers(newRequest({ user: '0xr1oga' }, null, null), res);
 
     t.deepEqual(res.send.args[0][0].payload, followers, 'should be equal');
 
@@ -209,7 +209,7 @@ tape('UsersController', t => {
     const followings = ['0xfoo', '0xbar'];
     stubs.connections.findAllFollowingsByCreator.returns(Promise.resolve(followings));
 
-    await controller.followings(newRequest({ user: '0xr1oga' }, null, null), res);
+    await controller.getFollowings(newRequest({ user: '0xr1oga' }, null, null), res);
 
     t.deepEqual(res.send.args[0][0].payload, followings, 'should be equal');
 
@@ -222,7 +222,7 @@ tape('UsersController', t => {
     });
     stubs.posts.findAllRepliesFromCreator.returns(Promise.resolve([post]));
 
-    await controller.replies(req, res);
+    await controller.getReplies(req, res);
 
     t.deepEqual(
       stubs.posts.findAllRepliesFromCreator.args[0],
@@ -244,7 +244,7 @@ tape('UsersController', t => {
     });
     stubs.posts.findAllLikedPostsByCreator.returns(Promise.resolve([post]));
 
-    await controller.likes(req, res);
+    await controller.getLikes(req, res);
 
     t.deepEqual(
       stubs.posts.findAllLikedPostsByCreator.args[0],

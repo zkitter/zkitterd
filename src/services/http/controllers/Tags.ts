@@ -4,14 +4,16 @@ import { Controller } from './interface';
 import { makeResponse } from '../utils';
 
 export class TagsController extends Controller {
+  prefix = '/v1';
+
   constructor() {
     super();
     this.init();
   }
 
   addRoutes = () => {
-    this.router.get('/tags', this.getMany);
-    this.router.get('/tags.:tagName', this.getPostsByTagName);
+    this._router.get('/tags', this.getMany);
+    this._router.get('/tags.:tagName', this.getPostsByTagName);
   };
 
   getMany = async (req: Request, res: Response) => {

@@ -3,16 +3,21 @@ import { GenericService } from '../../../util/svc';
 import { logAfter, logBefore } from '../middlewares/log';
 
 export abstract class Controller extends GenericService {
-  public router = Router();
+  protected _router = Router();
+  prefix: string | undefined;
+
+  get router() {
+    return this.prefix ? Router().use(this.prefix, this._router) : this._router;
+  }
 
   addPreMiddlewares() {
-    this.router.use(logBefore, json());
+    this._router.use(logBefore, json());
   }
 
   abstract addRoutes(): void;
 
   addPostMiddlewares() {
-    this.router.use(logAfter);
+    this._router.use(logAfter);
   }
 
   init() {

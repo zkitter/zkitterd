@@ -1,5 +1,5 @@
 import { GenericService } from '../../util/svc';
-import express, { Express, NextFunction, Request, Response } from 'express';
+import express, { Express, json, NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import http from 'http';
 import config from '../../util/config';
@@ -20,6 +20,7 @@ import crypto from 'crypto';
 import { addConnection } from '../../util/sse';
 import { makeResponse, upload } from './utils';
 import { corsOptions, maxFileSize, maxPerUserSize } from './constants';
+import { logAfter, logBefore } from './middlewares/log';
 
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
@@ -197,9 +198,11 @@ export default class HttpService extends GenericService {
   };
 
   initControllers() {
+    this.app.use(logBefore, json());
     ['users', 'posts', 'tags', 'zkChat', 'events', 'interep', 'twitter'].forEach(controller => {
       this.app.use(this.get(`${controller}Controller`, 'router'));
     });
+    this.app.use(logAfter);
   }
 
   addRoutes() {

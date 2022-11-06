@@ -22,28 +22,23 @@ tape.skip('ZkChatController', t => {
   t.test('GET /v1/zkchat/users', async t => {
     init();
     t.equal('TODO', 'TODO', 'TODO');
-    t.end();
   });
 
   t.test('POST /v1/zkchat/chat-message', async t => {
     init();
     t.equal('TODO', 'TODO', 'TODO');
-    t.end();
   });
 
   t.test('GET /v1/zkchat/chat-messages/dm/:sender/:receiver', async t => {
     init();
     t.equal('TODO', 'TODO', 'TODO');
-    t.end();
   });
   t.test('GET /v1/zkchat/chats/dm/:pubkey', async t => {
     init();
     t.equal('TODO', 'TODO', 'TODO');
-    t.end();
   });
   t.test('GET /v1/zkchat/chats/search/:query?', async t => {
     init();
     t.equal('TODO', 'TODO', 'TODO');
-    t.end();
   });
 });

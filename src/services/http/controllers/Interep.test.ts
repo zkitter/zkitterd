@@ -55,7 +55,6 @@ tape('InterepController', t => {
     );
 
     fetchStub.reset();
-    t.end();
   });
 
   t.test('GET /v1/interrep/:identityCommitment', async t => {
@@ -100,6 +99,5 @@ tape('InterepController', t => {
     );
 
     fetchStub.reset();
-    t.end();
   });
 });

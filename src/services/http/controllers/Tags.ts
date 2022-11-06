@@ -8,7 +8,7 @@ export class TagsController extends Controller {
 
   constructor() {
     super();
-    this.init();
+    this.addRoutes();
   }
 
   addRoutes = () => {

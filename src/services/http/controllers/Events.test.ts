@@ -18,7 +18,7 @@ const init = (...params: Parameters<typeof newRequest>) => {
   res = newResponse();
 };
 
-tape.skip('EventsController', t => {
+tape('EventsController', t => {
   t.test('GET /v1/events', async t => {
     init();
     t.equal('TODO', 'TODO', 'TODO');

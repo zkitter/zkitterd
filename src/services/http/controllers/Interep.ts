@@ -10,7 +10,7 @@ import config from '../../../util/config';
 export class InterepController extends Controller {
   constructor() {
     super();
-    this.init();
+    this.addRoutes();
   }
 
   addRoutes = () => {

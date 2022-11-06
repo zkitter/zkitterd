@@ -10,7 +10,7 @@ export class PostsController extends Controller {
 
   constructor() {
     super();
-    this.init();
+    this.addRoutes();
   }
 
   public addRoutes() {

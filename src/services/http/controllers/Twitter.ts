@@ -21,7 +21,7 @@ import { verifySignatureP256 } from '../../../util/crypto';
 export class TwitterController extends Controller {
   constructor() {
     super();
-    this.init();
+    this.addRoutes();
   }
 
   addRoutes = () => {

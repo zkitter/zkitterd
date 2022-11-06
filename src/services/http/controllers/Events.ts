@@ -10,7 +10,7 @@ export class EventsController extends Controller {
 
   constructor() {
     super();
-    this.init();
+    this.addRoutes();
   }
 
   addRoutes = () => {
@@ -19,7 +19,7 @@ export class EventsController extends Controller {
       Router()
         .get('', this.getMany)
         .post('/:clientId', this.updateSSE)
-        .get('/:clietnId/alive', this.keepAliveSSE)
+        .get('/:clientId/alive', this.keepAliveSSE)
         .get('/:clientId', this.terminateSSE)
     );
   };

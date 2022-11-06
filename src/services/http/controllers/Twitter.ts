@@ -71,7 +71,7 @@ export class TwitterController extends Controller {
     }
 
     const twitterAuthDB = await this.call('db', 'getTwitterAuth');
-    await twitterAuthDB.updateUserToken({
+    await twitterAuthDB.upsertUserToken({
       userToken,
       userTokenSecret,
       userName,

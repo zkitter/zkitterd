@@ -1,5 +1,6 @@
 import { Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+
 const mutex = new Mutex();
 
 type TwitterAuthModel = {
@@ -112,30 +113,15 @@ const twitterAuth = (sequelize: Sequelize) => {
     });
   };
 
-  const updateUserToken = async (data: TwitterAuthModel) => {
-    return mutex.runExclusive(async () => {
-      const result = await model.findOne({
-        where: {
-          username: data.userName,
-        },
-      });
-
-      if (result) {
-        return result.update({
-          user_token: data.userToken,
-          user_token_secret: data.userTokenSecret,
-          username: data.userName,
-          user_id: data.userId,
-        });
-      }
-
-      return model.create({
+  const upsertUserToken = async (data: TwitterAuthModel) => {
+    return mutex.runExclusive(async () =>
+      model.upsert({
         user_token: data.userToken,
         user_token_secret: data.userTokenSecret,
         username: data.userName,
         user_id: data.userId,
-      });
-    });
+      })
+    );
   };
 
   return {
@@ -144,7 +130,7 @@ const twitterAuth = (sequelize: Sequelize) => {
     findUserByToken,
     findUserByAccount,
     findUserByUsername,
-    updateUserToken,
+    upsertUserToken,
   };
 };
 

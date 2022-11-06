@@ -20,6 +20,7 @@ import {
   UsersController,
   ZkChatController,
 } from './services/http/controllers';
+import { PassportService } from './services/http/Passport';
 
 (async function initApp() {
   try {
@@ -42,6 +43,7 @@ import {
     main.add('twitterController', new TwitterController());
     // main.add('githubController', new GithubController());
     main.add('reputation', new ReputationService());
+    main.add('passport', new PassportService());
     await main.start();
   } catch (e) {
     logger.error(e.message, { stack: e.stack });

@@ -43,8 +43,3 @@ tape.skip('HTTPService - get preview', async t => {
 
   t.end();
 });
-
-// tape('EXIT', t => {
-//   t.end();
-//   process.exit(0);
-// });

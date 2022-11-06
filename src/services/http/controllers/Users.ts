@@ -5,19 +5,21 @@ import { Controller } from './interface';
 import { makeResponse } from '../utils';
 
 export class UsersController extends Controller {
+  prefix = '/v1';
+
   constructor() {
     super();
     this.init();
   }
 
   addRoutes = () => {
-    this.router.route('/users').get(this.getMany).post(this.addOne);
-    this.router.get('/users/:address', this.getOne);
-    this.router.get('/:user/followers', this.getFollowers);
-    this.router.get('/:user/followings', this.getFollowings);
-    this.router.get('/:creator/replies', this.getReplies);
-    this.router.get('/:creator/likes', this.getLikes);
-    this.router.get('/users/search/:query?', this.search);
+    this._router.route('/users').get(this.getMany).post(this.addOne);
+    this._router.get('/users/:address', this.getOne);
+    this._router.get('/:user/followers', this.getFollowers);
+    this._router.get('/:user/followings', this.getFollowings);
+    this._router.get('/:creator/replies', this.getReplies);
+    this._router.get('/:creator/likes', this.getLikes);
+    this._router.get('/users/search/:query?', this.search);
   };
 
   getMany = async (req: Request, res: Response) => {

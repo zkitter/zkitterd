@@ -6,18 +6,20 @@ import { parseMessageId, PostMessageSubType } from '../../../util/message';
 import { getReplies } from '../../../util/twitter';
 
 export class PostsController extends Controller {
+  prefix = '/v1';
+
   constructor() {
     super();
     this.init();
   }
 
   public addRoutes() {
-    this.router.get('/homefeed', this.homefeed);
-    this.router.get('/posts', this.getMany);
-    this.router.get('/post/:hash', this.getOne);
-    this.router.get('/post/:hash/likes', this.getLikes);
-    this.router.get('/post/:hash/retweets', this.getRetweets);
-    this.router.get('/replies', this.getReplies);
+    this._router.get('/homefeed', this.homefeed);
+    this._router.get('/posts', this.getMany);
+    this._router.get('/post/:hash', this.getOne);
+    this._router.get('/post/:hash/likes', this.getLikes);
+    this._router.get('/post/:hash/retweets', this.getRetweets);
+    this._router.get('/replies', this.getReplies);
   }
 
   homefeed = async (req: Request, res: Response) => {

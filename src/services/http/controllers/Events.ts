@@ -6,13 +6,15 @@ import { makeResponse } from '../utils';
 import { addConnection, addTopic, keepAlive, removeConnection } from '../../../util/sse';
 
 export class EventsController extends Controller {
+  prefix = '/v1';
+
   constructor() {
     super();
     this.init();
   }
 
   addRoutes = () => {
-    this.router.use(
+    this._router.use(
       '/events',
       Router()
         .get('', this.getMany)

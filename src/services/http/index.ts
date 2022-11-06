@@ -198,7 +198,7 @@ export default class HttpService extends GenericService {
 
   initControllers() {
     ['users', 'posts', 'tags', 'zkChat', 'events', 'interep', 'twitter'].forEach(controller => {
-      this.app.use('/v1', this.get(`${controller}Controller`, 'router'));
+      this.app.use(this.get(`${controller}Controller`, 'router'));
     });
   }
 

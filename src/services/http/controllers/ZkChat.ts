@@ -10,6 +10,7 @@ import { QueryTypes } from 'sequelize';
 
 export class ZkChatController extends Controller {
   merkleRoot?: ReturnType<typeof merkleRoot>;
+  prefix = '/v1';
 
   constructor() {
     super();
@@ -18,7 +19,7 @@ export class ZkChatController extends Controller {
   }
 
   addRoutes = () => {
-    this.router.use(
+    this._router.use(
       '/zkchat',
       Router()
         .get('/users', this.getUsers)

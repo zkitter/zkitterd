@@ -14,14 +14,14 @@ export class InterepController extends Controller {
   }
 
   addRoutes = () => {
-    this.router.use(
+    this._router.use(
       '/interrep',
       Router()
         .get('/:identityCommitment', this.proof)
         .post('/groups/:provider/:name/:identityCommitment', this.signUp)
     );
 
-    this.router.get('/dev/interep/:identityCommitment', this.devProof);
+    this._router.get('/dev/interep/:identityCommitment', this.devProof);
   };
 
   proof = async (req: Request, res: Response) => {

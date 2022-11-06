@@ -25,7 +25,7 @@ export class TwitterController extends Controller {
   }
 
   addRoutes = () => {
-    this.router.use(
+    this._router.use(
       '/twitter',
       Router()
         .get('', this.requestToken)
@@ -36,7 +36,7 @@ export class TwitterController extends Controller {
         .get('/user/:username', this.user)
         .post('/update', this.update)
     );
-    this.router.get('/oauth/reset', this.reset);
+    this._router.get('/oauth/reset', this.reset);
   };
 
   requestToken = async (req: Request, res: Response) => {

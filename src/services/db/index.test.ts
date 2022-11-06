@@ -1401,8 +1401,3 @@ tape('DBService', async t => {
   if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
   t.end();
 });
-
-tape('EXIT', t => {
-  t.end();
-  process.exit(0);
-});

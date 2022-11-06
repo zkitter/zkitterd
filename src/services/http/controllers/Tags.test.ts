@@ -32,8 +32,6 @@ tape('TagsController', t => {
       [{ payload: [{ tagName: '#test' }], error: undefined }],
       'should return all tags'
     );
-
-    t.end();
   });
 
   t.test('GET /v1/tags/:tagName', async t => {
@@ -52,7 +50,5 @@ tape('TagsController', t => {
       [{ payload: [post], error: undefined }],
       'should return all posts'
     );
-
-    t.end();
   });
 });

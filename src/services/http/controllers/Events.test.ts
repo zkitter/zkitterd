@@ -18,28 +18,24 @@ const init = (...params: Parameters<typeof newRequest>) => {
   res = newResponse();
 };
 
-tape('EventsController', t => {
+tape.skip('EventsController', t => {
   t.test('GET /v1/events', async t => {
     init();
     t.equal('TODO', 'TODO', 'TODO');
-    t.end();
   });
 
   t.test('POST /v1/events/:clientID', async t => {
     init();
     t.equal('TODO', 'TODO', 'TODO');
-    t.end();
   });
 
   t.test('GET /v1/events/:clientId/alive', async t => {
     init();
     t.equal('TODO', 'TODO', 'TODO');
-    t.end();
   });
 
   t.test('GET /v1/events/:clientID/terminate', async t => {
     init();
     t.equal('TODO', 'TODO', 'TODO');
-    t.end();
   });
 });

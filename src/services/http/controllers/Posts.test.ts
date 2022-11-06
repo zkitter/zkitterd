@@ -36,8 +36,6 @@ tape('PostsController', t => {
       [{ payload: [post], error: undefined }],
       'should return all posts'
     );
-
-    t.end();
   });
 
   t.test('GET /v1/homefeed', async t => {
@@ -54,8 +52,6 @@ tape('PostsController', t => {
       [{ payload: [post], error: undefined }],
       'should return home feed'
     );
-
-    t.end();
   });
 
   t.test('GET /v1/post/:hash/likes', async t => {
@@ -66,8 +62,6 @@ tape('PostsController', t => {
     await controller.getLikes(newRequest({ hash: 'test' }, null, null), res);
 
     t.deepEqual(res.send.args[0][0].payload, likers, 'should return all users who liked a post');
-
-    t.end();
   });
 
   t.test('GET /v1/post/:hash/retweets', async t => {
@@ -82,8 +76,6 @@ tape('PostsController', t => {
       retweets,
       'should return all users who retweeted a post'
     );
-
-    t.end();
   });
 
   t.test('GET /v1/replies', async t => {
@@ -196,6 +188,5 @@ tape('PostsController', t => {
     );
 
     fetch.reset();
-    t.end();
   });
 });

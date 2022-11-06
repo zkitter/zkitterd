@@ -47,8 +47,6 @@ tape('UsersController', t => {
       ],
       'should return list of users'
     );
-
-    t.end();
   });
 
   t.test('GET /v1/users/search/query?', async t => {
@@ -78,8 +76,6 @@ tape('UsersController', t => {
       ],
       'should return list of users'
     );
-
-    t.end();
   });
 
   t.test('GET /v1/users/:address', async t => {
@@ -112,8 +108,6 @@ tape('UsersController', t => {
       ],
       'should return user'
     );
-
-    t.end();
   });
 
   t.test('POST /v1/users', async t => {
@@ -188,8 +182,6 @@ tape('UsersController', t => {
     t.equal(res.send.args[2][0].payload, 'invalid publicKey', 'should return error message');
     t.equal(res.status.args[2][0], 400, 'should return error code');
     t.equal(res.send.args[3][0].payload, 'invalid proof', 'should return error message');
-
-    t.end();
   });
 
   t.test('GET /v1/:user/followers', async t => {
@@ -200,8 +192,6 @@ tape('UsersController', t => {
     await controller.getFollowers(newRequest({ user: '0xr1oga' }, null, null), res);
 
     t.deepEqual(res.send.args[0][0].payload, followers, 'should return users that follow a user');
-
-    t.end();
   });
 
   t.test('Get /v1/:user/followings', async t => {
@@ -212,8 +202,6 @@ tape('UsersController', t => {
     await controller.getFollowings(newRequest({ user: '0xr1oga' }, null, null), res);
 
     t.deepEqual(res.send.args[0][0].payload, followings, 'should return users a user follows');
-
-    t.end();
   });
 
   t.test('GET /v1/:creator/replies', async t => {
@@ -234,8 +222,6 @@ tape('UsersController', t => {
       [{ payload: [post], error: undefined }],
       'should return all replies'
     );
-
-    t.end();
   });
 
   t.test('GET /v1/:creator/likes', async t => {
@@ -256,7 +242,5 @@ tape('UsersController', t => {
       [{ payload: [post], error: undefined }],
       'should return all likes'
     );
-
-    t.end();
   });
 });

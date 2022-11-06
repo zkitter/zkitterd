@@ -14,8 +14,8 @@ export class ZkChatController extends Controller {
 
   constructor() {
     super();
-    this.init();
     this.merkleRoot = merkleRoot(sequelize);
+    this.addRoutes();
   }
 
   addRoutes = () => {

@@ -41,24 +41,23 @@ export class TwitterController extends Controller {
 
   requestToken = async (req: Request, res: Response) => {
     const text = await requestToken();
-    const { oauth_token: token, oauth_token_secret: tokenSecret } = queryString.parse(text);
+    const { oauth_token, oauth_token_secret } = queryString.parse(text);
 
-    // @ts-ignore
-    req.session.tokenSecret = tokenSecret;
-    // @ts-ignore
+    req.session.oauth_token_secret = oauth_token_secret;
     req.session.redirectUrl = req.query.redirectUrl;
-    res.send(makeResponse(`${TW_AUTH_URL}?${queryString.stringify({ oauth_token: token })}`));
+    res.send(makeResponse(`${TW_AUTH_URL}?${queryString.stringify({ oauth_token })}`));
   };
 
   callback = async (req: Request, res: Response) => {
-    // @ts-ignore
-    const { oauth_token: token, oauth_verifier: verifier } = req.query;
-    // @ts-ignore
-    const tokenSecret = req.session.tokenSecret;
-    // @ts-ignore
-    delete req.session.tokenSecret;
+    const { oauth_token, oauth_verifier } = req.query;
+    const { oauth_token_secret } = req.session;
+    delete req.session.oauth_token_secret;
 
-    const text = await accessToken(token as string, verifier as string, tokenSecret);
+    const text = await accessToken(
+      oauth_token as string,
+      oauth_verifier as string,
+      oauth_token_secret as string
+    );
     const {
       oauth_token: userToken,
       oauth_token_secret: userTokenSecret,
@@ -83,13 +82,10 @@ export class TwitterController extends Controller {
       userId: string;
     });
 
-    // @ts-ignore
     req.session.twitterToken = jwt.sign({ userToken }, JWT_SECRET);
-
-    // @ts-ignore
     const redirectUrl = req.session.redirectUrl;
-    // @ts-ignore
     delete req.session.redirectUrl;
+
     res.redirect(redirectUrl);
   };
 
@@ -101,7 +97,6 @@ export class TwitterController extends Controller {
   };
 
   session = async (req: Request, res: Response) => {
-    // @ts-ignore
     const { twitterToken } = req.session;
     const signature = req.header('X-SIGNED-ADDRESS');
     const twitterAuthDB = await this.call('db', 'getTwitterAuth');
@@ -120,7 +115,6 @@ export class TwitterController extends Controller {
           if (sigAuth) {
             auth = sigAuth;
 
-            // @ts-ignore
             req.session.twitterToken = jwt.sign(
               {
                 userToken: auth.user_token,
@@ -133,7 +127,8 @@ export class TwitterController extends Controller {
     }
 
     if (!auth) {
-      const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
+      // FIXME
+      const jwtData: any = await jwt.verify(twitterToken!, JWT_SECRET);
       auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
     }
 
@@ -186,10 +181,10 @@ export class TwitterController extends Controller {
   };
 
   update = async (req: Request, res: Response) => {
-    // @ts-ignore
     const { twitterToken } = req.session;
     const { status, in_reply_to_status_id } = req.body;
-    const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
+    // FIXME
+    const jwtData: any = await jwt.verify(twitterToken!, JWT_SECRET);
     const twitterAuthDB = await this.call('db', 'getTwitterAuth');
     const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
     const json = await updateStatus(

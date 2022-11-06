@@ -59,9 +59,8 @@ export class InterepController extends Controller {
     const provider = req.params.provider;
     const name = req.params.name;
 
-    // @ts-ignore
     const { twitterToken } = req.session;
-    const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
+    const jwtData: any = await jwt.verify(twitterToken!, JWT_SECRET);
     const twitterAuthDB = await this.call('db', 'getTwitterAuth');
     const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
 

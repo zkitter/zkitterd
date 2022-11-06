@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { URLSearchParams } from 'url';
 import { PostModel } from '../models/posts';
 import config from './config';
+
 const { Botometer } = require('botometer');
 const OAuth = require('oauth-1.0a');
 
@@ -35,15 +36,13 @@ const oauth = OAuth({
   },
 });
 
-export const createHeader = (requestData: any, key: string, secret: string) => {
-  const headers = oauth.toHeader(
+export const createHeader = (requestData: any, key: string, secret: string) =>
+  oauth.toHeader(
     oauth.authorize(requestData, {
       key: key,
       secret: secret,
     })
   );
-  return headers;
-};
 
 export const requestToken = async (): Promise<string> => {
   const requestData = {
@@ -66,17 +65,21 @@ export const requestToken = async (): Promise<string> => {
 
   if (resp.status !== 200) throw new Error(resp.statusText);
 
-  return await resp.text();
+  return resp.text();
 };
 
-export const accessToken = async (token: string, verifier: string, tokenSecret: string) => {
+export const accessToken = async (
+  oauth_token: string,
+  oauth_verifier: string,
+  oauth_token_secret: string
+) => {
   const requestData = {
     url: TW_ACCESS_TOKEN_URL,
     method: 'POST',
     data: {
-      oauth_token: token,
-      oauth_verifier: verifier,
-      oauth_token_secret: tokenSecret,
+      oauth_token,
+      oauth_verifier,
+      oauth_token_secret,
     },
   };
 
@@ -109,7 +112,6 @@ export const verifyCredential = async (key: string, secret: string) => {
     )
   );
 
-  // @ts-ignore
   const resp = await fetch(`https://api.twitter.com/1.1/account/verify_credentials.json`, {
     headers: headers,
   });
@@ -144,7 +146,6 @@ export const updateStatus = async (
     })
   );
 
-  // @ts-ignore
   const resp = await fetch(requestData.url, {
     method: requestData.method,
     body: new URLSearchParams(requestData.data).toString(),
@@ -174,7 +175,6 @@ export async function showStatus(id: string, key?: string, secret?: string) {
     })
   );
 
-  // @ts-ignore
   const resp = await fetch(requestData.url, {
     method: requestData.method,
     headers: {
@@ -198,7 +198,6 @@ export async function getReplies(tweetUrl: string, lastTweetHash?: string): Prom
   const qs =
     '&max_results=100&expansions=author_id,in_reply_to_user_id&tweet.fields=referenced_tweets,in_reply_to_user_id,author_id,created_at,conversation_id&user.fields=name,username';
 
-  // @ts-ignore
   const resp = await fetch(
     `https://api.twitter.com/2/tweets/search/recent?query=conversation_id:${tweetId}${sinceId}${qs}`,
     {
@@ -255,7 +254,6 @@ export async function getUser(username: string): Promise<{
 } | null> {
   const qs = '?user.fields=name,username,profile_image_url';
 
-  // @ts-ignore
   const resp = await fetch(`https://api.twitter.com/2/users/by/username/${username}${qs}`, {
     method: 'GET',
     headers: {

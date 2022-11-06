@@ -1,5 +1,6 @@
 import { GenericService } from '../../util/svc';
 import express, { Express, json, NextFunction, Request, Response } from 'express';
+import 'express-async-errors';
 import cors from 'cors';
 import http from 'http';
 import config from '../../util/config';

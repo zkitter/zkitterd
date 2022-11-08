@@ -4,7 +4,7 @@ import 'express-async-errors';
 import session from 'express-session';
 import http from 'http';
 
-import { corsOptions } from './constants';
+import { CORS_OPTIONS, SESSION_OPTIONS } from './constants';
 import { staticRouter } from './controllers';
 import { logAfter, logBefore } from './middlewares/log';
 import { GenericService } from '../../util/svc';
@@ -50,20 +50,8 @@ export default class HttpService extends GenericService {
 
     this.app.set('trust proxy', 1);
 
-    this.app.use(cors(corsOptions));
-    this.app.use(
-      session({
-        proxy: true,
-        secret: 'autistic cat',
-        resave: false,
-        saveUninitialized: false,
-        store: sessionStore,
-        cookie: {
-          secure: false,
-          maxAge: 30 * 24 * 60 * 60 * 1000,
-        },
-      })
-    );
+    this.app.use(cors(CORS_OPTIONS));
+    this.app.use(session({ ...SESSION_OPTIONS, store: sessionStore }));
 
     sessionStore.sync();
 

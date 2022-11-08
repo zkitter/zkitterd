@@ -18,7 +18,7 @@ const githubAuth = (sequelize: Sequelize) => {
       displayName: { type: STRING },
       followers: { type: INTEGER },
       receivedStars: { type: INTEGER },
-      plan: { type: BOOLEAN },
+      proPlan: { type: BOOLEAN },
     },
     {
       indexes: [

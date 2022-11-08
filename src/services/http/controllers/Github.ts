@@ -7,10 +7,13 @@ import { Controller } from './interface';
 import config from '../../../util/config';
 import { getReceivedStars } from '../../../util/github';
 
-const options = {
-  clientID: config.ghClientId,
-  clientSecret: config.ghClientSecret,
-  callbackURL: config.ghCallbackUrl,
+type GhUser = {
+  id: number;
+  username: string;
+  _json: {
+    followers: number;
+    plan: { name: string };
+  };
 };
 
 export class GithubController extends Controller {
@@ -18,9 +21,19 @@ export class GithubController extends Controller {
     super();
     passport.use(
       new GhStrategy(
-        options,
-        // @ts-ignore
-        async (accessToken, refreshToken, profile, done) => {
+        {
+          clientID: config.ghClientId,
+          clientSecret: config.ghClientSecret,
+          callbackURL: config.ghCallbackUrl,
+          passReqToCallback: true,
+        },
+        async (
+          req: Request,
+          accessToken: string,
+          refreshToken: string,
+          profile: GhUser,
+          done: any
+        ) => {
           const {
             id: userId,
             username,

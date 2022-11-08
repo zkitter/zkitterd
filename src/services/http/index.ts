@@ -35,14 +35,10 @@ export default class HttpService extends GenericService {
     this.app = express();
   }
 
-  initControllers() {
+  addRoutes() {
     this.controllers.forEach(controller => {
       this.app.use(this.get(`${controller}Controller`, 'router'));
     });
-  }
-
-  addRoutes() {
-    this.initControllers();
     this.app.use(staticRouter);
   }
 

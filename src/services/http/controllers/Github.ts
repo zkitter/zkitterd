@@ -63,6 +63,7 @@ export class GithubController extends Controller {
           //   receivedStars,
           // });
 
+          req.redirectUrl = req.params.redirectUrl;
           return done(null, {
             userId,
             username,
@@ -81,13 +82,13 @@ export class GithubController extends Controller {
       Router()
         .get('', passport.authenticate('github', { scope: ['read:user', 'read:org'] }))
         .get('/callback', passport.authenticate('github', { failWithError: true }), this.callback)
-        .get('/test', (req, res) => {
-          res.json(req.user);
-        })
+      // .get('/test', (req, res) => {
+      //   res.json(req.user);
+      // })
     );
   };
 
   callback = (req: Request, res: Response) => {
-    res.send('gh callback');
+    res.redirect(req.redirectUrl);
   };
 }

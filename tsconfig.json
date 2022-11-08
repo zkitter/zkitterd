@@ -17,5 +17,5 @@
     "useUnknownInCatchVariables": false,
     "strictPropertyInitialization": false
   },
-  "include": ["src"]
+  "include": ["src", "types"]
 }

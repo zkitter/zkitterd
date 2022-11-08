@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import passport from 'passport';
 import { Strategy as GhStrategy } from 'passport-github2';
+import { calculateReputation, OAuthProvider } from '@interep/reputation';
 
 import { Controller } from './interface';
 import config from '../../../util/config';
@@ -23,34 +24,36 @@ export class GithubController extends Controller {
           const {
             id: userId,
             username,
-            displayName,
             _json: {
               followers,
-              plan: { name },
+              plan: { name: planName },
             },
           } = profile;
 
-          const proPlan = name === 'pro';
+          const proPlan = planName === 'pro';
           const receivedStars = await getReceivedStars(username);
-
-          const githubAuthDB = await this.call('db', 'getGithubAuth');
-
-          await githubAuthDB.upsertOne({
-            userId,
-            username,
-            displayName,
+          const reputation = calculateReputation(OAuthProvider.GITHUB, {
             followers,
-            proPlan,
             receivedStars,
+            proPlan,
           });
+
+          // TODO: need for github_auths DB operation here?
+          // const githubAuthDB = await this.call('db', 'getGithubAuth');
+          //
+          // await githubAuthDB.upsertOne({
+          //   userId,
+          //   username,
+          //   displayName,
+          //   followers,
+          //   proPlan,
+          //   receivedStars,
+          // });
 
           return done(null, {
             userId,
             username,
-            displayName,
-            followers,
-            proPlan,
-            receivedStars,
+            reputation,
           });
         }
       )

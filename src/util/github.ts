@@ -1,16 +1,21 @@
-import config from '../util/config';
+type Node = { stargazers: { totalCount: number } };
+type Repositories = {
+  nodes: Node[];
+  pageInfo: {
+    hasNextPage: boolean;
+    endCursor: string;
+  };
+};
 
-const request = async (data: any) =>
-  (
-    await fetch('https://api.github.com/graphql', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      headers: {
-        Authorization: `Bearer ${process.env.GH_PAT}`,
-        'Content-Type': 'application/json',
-      },
-    })
-  ).json();
+const request = async (data: any): Promise<Repositories> =>
+  fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    headers: {
+      Authorization: `Bearer ${process.env.GH_PAT}`,
+      'Content-Type': 'application/json',
+    },
+  }).then(res => res.json().then(res => res.data.user.repositories));
 
 const query = `
       query userInfo($username: String!, $after: String) {
@@ -31,8 +36,7 @@ const query = `
       }
       `;
 
-// @ts-ignore
-export const getRepos = async (username: string, after = null) =>
+export const getRepos = async (username: string, after: string | null = null) =>
   request({ query, variables: { username, after } });
 
 /**
@@ -46,15 +50,14 @@ export const getReceivedStars = async (username: string): Promise<number> => {
   let endCursor = null;
 
   while (hasNextPage) {
-    // @ts-ignore
-    let res = await getRepos(username, endCursor);
-    const allNodes = res.data.user.repositories.nodes;
-    // @ts-ignore
+    const repositories: Repositories = await getRepos(username, endCursor);
+    const allNodes = repositories.nodes;
     const nodesWithStars = allNodes.filter(node => node.stargazers.totalCount !== 0);
+
     nodes.push(...nodesWithStars);
 
-    hasNextPage = res.data.user.repositories.pageInfo.hasNextPage;
-    endCursor = res.data.user.repositories.pageInfo.endCursor;
+    hasNextPage = repositories.pageInfo.hasNextPage;
+    endCursor = repositories.pageInfo.endCursor;
   }
 
   return nodes.reduce((prev, curr) => prev + curr.stargazers.totalCount, 0);

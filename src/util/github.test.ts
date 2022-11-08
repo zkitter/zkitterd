@@ -6,7 +6,7 @@ tape('util/github.ts', async t => {
   const fetchStub = stubFetch();
 
   t.test('getRepos', async t => {
-    fetchStub.resolves({ json: async () => ['repo'] });
+    fetchStub.resolves({ json: async () => ({ data: { user: { repositories: ['repo'] } } }) });
     const repos = await getRepos('foo');
 
     t.equal(

@@ -21,6 +21,7 @@ export default class HttpService extends GenericService {
 
   controllers = [
     'events',
+    'github',
     'interep',
     'merkle',
     'misc',

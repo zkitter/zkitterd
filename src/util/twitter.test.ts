@@ -1,18 +1,11 @@
-// @ts-ignore
-import 'isomorphic-fetch';
 import tape from 'tape';
-import { accessToken, createHeader, requestToken, verifyCredential } from './twitter';
+import { accessToken, requestToken, verifyCredential } from './twitter';
 import { stubFetch } from './testUtils';
 
 const fetchStub = stubFetch();
 
 tape('twitter - requestToken', async t => {
-  fetchStub.returns(
-    Promise.resolve({
-      status: 200,
-      text: async () => 'token',
-    })
-  );
+  fetchStub.resolves({ status: 200, text: async () => 'token' });
 
   const ret = await requestToken();
 
@@ -21,20 +14,13 @@ tape('twitter - requestToken', async t => {
     'https://api.twitter.com/oauth/request_token',
     'should request token from twitter'
   );
-
   t.equal(ret, 'token', 'should return text');
 
   fetchStub.reset();
-  t.end();
 });
 
 tape('twitter - accessToken', async t => {
-  fetchStub.returns(
-    Promise.resolve({
-      status: 200,
-      text: async () => 'token',
-    })
-  );
+  fetchStub.resolves({ status: 200, text: async () => 'token' });
 
   const ret = await accessToken('1', '2', '3');
 
@@ -43,20 +29,16 @@ tape('twitter - accessToken', async t => {
     'https://api.twitter.com/oauth/access_token',
     'should access token from twitter'
   );
-
   t.equal(ret, 'token', 'should return text');
 
   fetchStub.reset();
-  t.end();
 });
 
 tape('twitter - verifyCredential', async t => {
-  fetchStub.returns(
-    Promise.resolve({
-      status: 200,
-      json: async () => 'token',
-    })
-  );
+  fetchStub.resolves({
+    status: 200,
+    json: async () => 'token',
+  });
 
   const ret = await verifyCredential('1', '2');
 
@@ -65,9 +47,7 @@ tape('twitter - verifyCredential', async t => {
     'https://api.twitter.com/1.1/account/verify_credentials.json',
     'should access token from twitter'
   );
-
   t.equal(ret, 'token', 'should return text');
 
   fetchStub.reset();
-  t.end();
 });

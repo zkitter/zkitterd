@@ -1,10 +1,12 @@
-import { INTEGER, Sequelize, STRING } from 'sequelize';
+import { BOOLEAN, INTEGER, Sequelize, STRING } from 'sequelize';
 
 export type GithubAuthModel = {
   userId: string;
   username: string;
   displayName: string | null;
   followers: number;
+  receivedStars: number;
+  plan: boolean;
 };
 
 const githubAuth = (sequelize: Sequelize) => {
@@ -15,6 +17,8 @@ const githubAuth = (sequelize: Sequelize) => {
       username: { type: STRING },
       displayName: { type: STRING },
       followers: { type: INTEGER },
+      receivedStars: { type: INTEGER },
+      plan: { type: BOOLEAN },
     },
     {
       indexes: [

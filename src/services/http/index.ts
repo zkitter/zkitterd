@@ -1,27 +1,25 @@
-import { GenericService } from '../../util/svc';
+import cors from 'cors';
 import express, { Express, json, NextFunction, Request, Response } from 'express';
 import 'express-async-errors';
-import cors from 'cors';
-import http from 'http';
-import config from '../../util/config';
-import logger from '../../util/logger';
-import path from 'path';
-import { getLinkPreview } from 'link-preview-js';
 import session from 'express-session';
-import { QueryTypes } from 'sequelize';
-
-import { verifySignatureP256 } from '../../util/crypto';
+import { getLinkPreview } from 'link-preview-js';
 import fs from 'fs';
+import http from 'http';
+import path from 'path';
 import { getFilesFromPath } from 'web3.storage';
-import { UploadModel } from '../../models/uploads';
 import { genExternalNullifier, Semaphore, SemaphoreFullProof } from '@zk-kit/protocols';
-import vKey from '../../../static/verification_key.json';
-import { sequelize } from '../../util/sequelize';
-import crypto from 'crypto';
-import { addConnection } from '../../util/sse';
-import { makeResponse, upload } from './utils';
+
 import { corsOptions, maxFileSize, maxPerUserSize } from './constants';
+import { staticRouter } from './controllers';
 import { logAfter, logBefore } from './middlewares/log';
+import { UploadModel } from '../../models/uploads';
+import vKey from '../../../static/verification_key.json';
+import { GenericService } from '../../util/svc';
+import logger from '../../util/logger';
+import config from '../../util/config';
+import { verifySignatureP256 } from '../../util/crypto';
+import { sequelize } from '../../util/sequelize';
+import { makeResponse, upload } from './utils';
 
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 

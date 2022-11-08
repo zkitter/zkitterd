@@ -111,86 +111,100 @@ export default class HttpService extends GenericService {
       next();
     };
 
-  wrapHandler(handler: (req: Request, res: Response) => Promise<any>) {
-    return async (req: Request, res: Response) => {
-      logger.info('received request', {
-        url: req.url,
-      });
+  preview = async (req: Request, res: Response) => {
+    const linkDB = await this.call('db', 'getLinkPreview');
 
-      try {
-        await handler(req, res);
-        logger.info('handled request', {
-          url: req.url,
-        });
-      } catch (e) {
-        console.log(e);
-        logger.info('error handling request', {
-          message: e.message,
-          url: req.url,
-        });
+    if (typeof req.query.link !== 'string') {
+      res.status(400).send(makeResponse(`link must be present in query string.`, true));
+      return;
+    }
 
-        res.status(500).send({
-          payload: e.message,
-          error: true,
-        });
-      }
+    const url = decodeURI(req.query.link);
+
+    const model = await linkDB.read(url);
+
+    if (model && model.updatedAt.getTime() + 1000 * 60 * 60 * 24 > new Date().getTime()) {
+      res.send(makeResponse(model));
+      return;
+    }
+
+    const preview: any = await getLinkPreview(url);
+    const data = {
+      link: preview.url,
+      mediaType: preview.mediaType || '',
+      contentType: preview.contentType || '',
+      title: preview.title || '',
+      description: preview.description || '',
+      image: preview.images ? preview.images[0] : '',
+      favicon: preview.favicon || '',
     };
-  }
+
+    await linkDB.update(data);
+    res.send(makeResponse(data));
+  };
+
+  ipfsUpload = async (req: Request, res: Response) => {
+    if (!req.files) throw new Error('file missing from formdata');
+
+    // @ts-ignore
+    const username = req.username;
+
+    // @ts-ignore
+    const { path: relPath, filename, size, mimetype } = req.files[0];
+    const uploadDB = await this.call('db', 'getUploads');
+    const filepath = path.join(process.cwd(), relPath);
+
+    if (size > maxFileSize) {
+      fs.unlinkSync(filepath);
+      throw new Error('file must be less than 5MB');
+    }
+
+    if (username) {
+      const existingSize = await uploadDB.getTotalUploadByUser(username);
+      if (existingSize + size > maxPerUserSize) {
+        fs.unlinkSync(filepath);
+        throw new Error('account is out of space');
+      }
+    }
+
+    const files = await getFilesFromPath(filepath);
+
+    const cid = await this.call('ipfs', 'store', files);
+    fs.unlinkSync(filepath);
+
+    if (username) {
+      const uploadData: UploadModel = {
+        cid,
+        mimetype,
+        size,
+        filename,
+        username: username,
+      };
+      await uploadDB.addUploadData(uploadData);
+    }
+
+    res.send(
+      makeResponse({
+        cid,
+        filename,
+        url: `https://${cid}.ipfs.dweb.link/${filename}`,
+      })
+    );
+  };
 
   initControllers() {
-    this.app.use(logBefore, json());
     ['events', 'interep', 'merkle', 'posts', 'tags', 'twitter', 'users', 'zkChat'].forEach(
       controller => {
         this.app.use(this.get(`${controller}Controller`, 'router'));
       }
     );
-    this.app.use(logAfter);
   }
 
   addRoutes() {
     this.initControllers();
-    this.app.get(
-      '/healthcheck',
-      this.wrapHandler(async (req, res) => {
-        res.send(makeResponse('ok'));
-      })
-    );
-
-    this.app.get(
-      '/preview',
-      this.wrapHandler(async (req, res) => {
-        const linkDB = await this.call('db', 'getLinkPreview');
-
-        if (typeof req.query.link !== 'string') {
-          res.status(400).send(makeResponse(`link must be present in query string.`, true));
-          return;
-        }
-
-        const url = decodeURI(req.query.link);
-
-        const model = await linkDB.read(url);
-
-        if (model && model.updatedAt.getTime() + 1000 * 60 * 60 * 24 > new Date().getTime()) {
-          res.send(makeResponse(model));
-          return;
-        }
-
-        const preview: any = await getLinkPreview(url);
-        const data = {
-          link: preview.url,
-          mediaType: preview.mediaType || '',
-          contentType: preview.contentType || '',
-          title: preview.title || '',
-          description: preview.description || '',
-          image: preview.images ? preview.images[0] : '',
-          favicon: preview.favicon || '',
-        };
-
-        await linkDB.update(data);
-        res.send(makeResponse(data));
-      })
-    );
-
+    this.app.use(staticRouter);
+    this.app.get('/healthcheck', async (req, res) => res.send(makeResponse('ok')));
+    this.app.get('/preview', this.preview);
     this.app.post(
       '/ipfs/upload',
       upload.any(),
@@ -204,67 +218,19 @@ export default class HttpService extends GenericService {
           fs.unlinkSync(filepath);
         }
       ),
-      this.wrapHandler(async (req, res) => {
-        if (!req.files) throw new Error('file missing from formdata');
-
-        // @ts-ignore
-        const username = req.username;
-
-        // @ts-ignore
-        const { path: relPath, filename, size, mimetype } = req.files[0];
-        const uploadDB = await this.call('db', 'getUploads');
-        const filepath = path.join(process.cwd(), relPath);
-
-        if (size > maxFileSize) {
-          fs.unlinkSync(filepath);
-          throw new Error('file must be less than 5MB');
-        }
-
-        if (username) {
-          const existingSize = await uploadDB.getTotalUploadByUser(username);
-          if (existingSize + size > maxPerUserSize) {
-            fs.unlinkSync(filepath);
-            throw new Error('account is out of space');
-          }
-        }
-
-        const files = await getFilesFromPath(filepath);
-
-        const cid = await this.call('ipfs', 'store', files);
-        fs.unlinkSync(filepath);
-
-        if (username) {
-          const uploadData: UploadModel = {
-            cid,
-            mimetype,
-            size,
-            filename,
-            username: username,
-          };
-          await uploadDB.addUploadData(uploadData);
-        }
-
-        res.send(
-          makeResponse({
-            cid,
-            filename,
-            url: `https://${cid}.ipfs.dweb.link/${filename}`,
-          })
-        );
-      })
+      this.ipfsUpload
     );
   }
 
   async start() {
     const httpServer = http.createServer(this.app);
-
-    this.app.set('trust proxy', 1);
-    this.app.use(cors(corsOptions));
-
     const sessionStore = new SequelizeStore({
       db: sequelize,
     });
 
+    this.app.set('trust proxy', 1);
+
+    this.app.use(cors(corsOptions));
     this.app.use(
       session({
         proxy: true,
@@ -281,44 +247,9 @@ export default class HttpService extends GenericService {
 
     sessionStore.sync();
 
-    this.app.use(
-      '/dev/semaphore_wasm',
-      express.static(path.join(process.cwd(), 'static', 'semaphore.wasm'))
-    );
-    this.app.use(
-      '/dev/semaphore_final_zkey',
-      express.static(path.join(process.cwd(), 'static', 'semaphore_final.zkey'))
-    );
-    this.app.use(
-      '/dev/semaphore_vkey',
-      express.static(path.join(process.cwd(), 'static', 'verification_key.json'))
-    );
-
-    this.app.use(
-      '/circuits/semaphore/wasm',
-      express.static(path.join(process.cwd(), 'static', 'semaphore', 'semaphore.wasm'))
-    );
-    this.app.use(
-      '/circuits/semaphore/zkey',
-      express.static(path.join(process.cwd(), 'static', 'semaphore', 'semaphore_final.zkey'))
-    );
-    this.app.use(
-      '/circuits/semaphore/vkey',
-      express.static(path.join(process.cwd(), 'static', 'semaphore', 'verification_key.json'))
-    );
-    this.app.use(
-      '/circuits/rln/wasm',
-      express.static(path.join(process.cwd(), 'static', 'rln', 'rln.wasm'))
-    );
-    this.app.use(
-      '/circuits/rln/zkey',
-      express.static(path.join(process.cwd(), 'static', 'rln', 'rln_final.zkey'))
-    );
-    this.app.use(
-      '/circuits/rln/vkey',
-      express.static(path.join(process.cwd(), 'static', 'rln', 'verification_key.json'))
-    );
+    this.app.use(logBefore, json());
     this.addRoutes();
+    this.app.use(logAfter);
 
     this.httpServer = httpServer.listen(config.port);
     logger.info(`api server listening at ${config.port}...`);

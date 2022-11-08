@@ -6,7 +6,7 @@ export type GithubAuthModel = {
   displayName: string | null;
   followers: number;
   receivedStars: number;
-  plan: boolean;
+  proPlan: boolean;
 };
 
 const githubAuth = (sequelize: Sequelize) => {

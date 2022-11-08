@@ -15,6 +15,7 @@ import {
   EventsController,
   InterepController,
   MerkleController,
+  MiscController,
   PostsController,
   TagsController,
   TwitterController,
@@ -37,6 +38,7 @@ import {
     main.add('interepController', new InterepController());
     main.add('eventsController', new EventsController());
     main.add('merkleController', new MerkleController());
+    main.add('miscController', new MiscController());
     main.add('postsController', new PostsController());
     main.add('usersController', new UsersController());
     main.add('tagsController', new TagsController());

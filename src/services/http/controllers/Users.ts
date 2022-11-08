@@ -1,8 +1,10 @@
 import { json, Request, Response } from 'express';
+import { QueryTypes } from 'sequelize';
 import Web3 from 'web3';
 
 import { Controller } from './interface';
 import { makeResponse } from '../utils';
+import { sequelize } from '../../../util/sequelize';
 
 export class UsersController extends Controller {
   prefix = '/v1';
@@ -19,6 +21,7 @@ export class UsersController extends Controller {
     this._router.get('/:user/followings', this.getFollowings);
     this._router.get('/:creator/replies', this.getReplies);
     this._router.get('/:creator/likes', this.getLikes);
+    this._router.get('/:address/groups', this.getGroups);
     this._router.get('/users/search/:query?', this.search);
   };
 
@@ -133,6 +136,34 @@ export class UsersController extends Controller {
     const postDB = await this.call('db', 'getPosts');
     const posts = await postDB.findAllLikedPostsByCreator(creator, context, offset, limit);
     res.send(makeResponse(posts));
+  };
+
+  getGroups = async (req: Request, res: Response) => {
+    const { address } = req.params;
+    const values = await sequelize.query(
+      `
+          SELECT u.name             as address,
+                 name.value         as name,
+                 idcommitment.value as idcommitment
+          FROM users u
+                   LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId"
+                                                                  FROM profiles
+                                                                  WHERE creator = u.name
+                                                                    AND subtype = 'NAME'
+                                                                  ORDER BY "createdAt" DESC LIMIT 1)
+              JOIN profiles idcommitment
+          ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key ='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+              JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = u.name AND invite.name = :member_address
+              JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :member_address AND accept.name = u.name
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          member_address: address,
+        },
+      }
+    );
+    res.send(makeResponse(values));
   };
 
   search = async (req: Request, res: Response) => {

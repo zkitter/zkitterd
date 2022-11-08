@@ -4,5 +4,6 @@ export * from './Merkle';
 export * from './Posts';
 export * from './Tags';
 export * from './Twitter';
+export * from './static';
 export * from './Users';
 export * from './ZkChat';

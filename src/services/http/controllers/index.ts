@@ -1,6 +1,7 @@
 export * from './Events';
 export * from './Interep';
 export * from './Merkle';
+export * from './Misc';
 export * from './Posts';
 export * from './Tags';
 export * from './Twitter';

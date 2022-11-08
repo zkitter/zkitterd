@@ -155,49 +155,6 @@ export default class HttpService extends GenericService {
     res.send(makeResponse(leaves));
   };
 
-  handleGetGroupsByAddress = async (req: Request, res: Response) => {
-    const { address } = req.params;
-    const values = await sequelize.query(
-      // prettier-ignore
-      `
-          SELECT u.name             as address,
-                 name.value         as name,
-                 idcommitment.value as idcommitment
-          FROM users u
-                   LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId"
-                                                                  FROM profiles
-                                                                  WHERE creator = u.name
-                                                                    AND subtype = 'NAME'
-                                                                  ORDER BY "createdAt" DESC LIMIT 1)
-              JOIN profiles idcommitment
-          ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key ='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
-              JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = u.name AND invite.name = :member_address
-              JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :member_address AND accept.name = u.name
-      `,
-      {
-        type: QueryTypes.SELECT,
-        replacements: {
-          member_address: address,
-        },
-      }
-    );
-    res.send(makeResponse(values));
-  };
-
-  handleGetEvents = async (req: Request, res: Response) => {
-    const headers = {
-      'Content-Type': 'text/event-stream',
-      Connection: 'keep-alive',
-      'Cache-Control': 'no-cache',
-    };
-
-    res.writeHead(200, headers);
-
-    const clientId = crypto.randomBytes(16).toString('hex');
-
-    addConnection(clientId, res);
-  };
-
   initControllers() {
     this.app.use(logBefore, json());
     ['users', 'posts', 'tags', 'zkChat', 'events', 'interep', 'twitter'].forEach(controller => {
@@ -217,7 +174,6 @@ export default class HttpService extends GenericService {
 
     this.app.get('/v1/proofs/:idCommitment', this.wrapHandler(this.handleGetProofs));
     this.app.get('/v1/group_members/:group', this.wrapHandler(this.handleGetMembers));
-    this.app.get('/v1/:address/groups', this.wrapHandler(this.handleGetGroupsByAddress));
 
     this.app.get(
       '/preview',

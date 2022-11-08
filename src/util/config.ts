@@ -49,7 +49,6 @@ try {
   json = parsed;
 } catch (e) {}
 
-console.log(process.env.GH_PAT);
 const rapidAPIKey = json.rapidAPIKey || process.env.RAPIDAPI_KEY;
 const ghPat = json.ghPat || process.env.GH_PAT;
 const ghCallbackUrl = json.ghCallbackUrl || process.env.GH_CALLBACK_URL;

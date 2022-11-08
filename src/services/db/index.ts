@@ -14,6 +14,7 @@ import tags from '../../models/tags';
 import linkPreview from '../../models/linkPreview';
 import ens from '../../models/ens';
 import twitterAuth from '../../models/twitterAuth';
+import githubAuth from '../../models/githubAuth';
 import interepGroups from '../../models/interepGroups';
 import semaphoreCreators from '../../models/semaphore_creators';
 import threads from '../../models/thread';
@@ -40,6 +41,7 @@ export default class DBService extends GenericService {
   meta?: ReturnType<typeof meta>;
   userMeta?: ReturnType<typeof userMeta>;
   twitterAuth?: ReturnType<typeof twitterAuth>;
+  githubAuth?: ReturnType<typeof githubAuth>;
   interepGroups?: ReturnType<typeof interepGroups>;
   semaphoreCreators?: ReturnType<typeof semaphoreCreators>;
   threads?: ReturnType<typeof threads>;
@@ -133,6 +135,13 @@ export default class DBService extends GenericService {
     return this.twitterAuth;
   }
 
+  async getGithubAuth() {
+    if (!this.githubAuth) {
+      return Promise.reject(new Error('githubAuth is not initialized'));
+    }
+    return this.githubAuth;
+  }
+
   async getApp(): Promise<ReturnType<typeof app>> {
     if (!this.app) {
       return Promise.reject(new Error('app is not initialized'));
@@ -204,6 +213,7 @@ export default class DBService extends GenericService {
     this.semaphore = semaphore(this.sequelize);
     this.ens = ens(this.sequelize);
     this.twitterAuth = twitterAuth(this.sequelize);
+    this.githubAuth = githubAuth(this.sequelize);
     this.interepGroups = interepGroups(this.sequelize);
     this.semaphoreCreators = semaphoreCreators(this.sequelize);
     this.threads = threads(this.sequelize);
@@ -228,6 +238,7 @@ export default class DBService extends GenericService {
     await this.meta?.model.sync({ force: !!process.env.FORCE });
     await this.ens?.model.sync({ force: !!process.env.FORCE });
     await this.twitterAuth?.model.sync({ force: !!process.env.FORCE });
+    await this.githubAuth?.model.sync({ force: !!process.env.FORCE });
     await this.interepGroups?.model.sync({ force: !!process.env.FORCE });
     await this.semaphoreCreators?.model.sync({ force: !!process.env.FORCE });
     await this.threads?.model.sync({ force: !!process.env.FORCE });

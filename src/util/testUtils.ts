@@ -116,9 +116,6 @@ export const stubCall = (
       read: SinonStub;
       update: SinonStub;
     };
-    merkle: {
-      getGroupByRoot: SinonStub;
-    };
     zkchat: {
       verifyRLNProof: SinonStub;
       checkShare: SinonStub;
@@ -245,10 +242,6 @@ export const stubCall = (
     update: sinon.stub(),
   };
 
-  const merkle = {
-    getGroupByRoot: sinon.stub(),
-  };
-
   const zkchat = {
     verifyRLNProof: sinon.stub(),
     checkShare: sinon.stub(),
@@ -287,8 +280,6 @@ export const stubCall = (
     .returns(Promise.resolve(app))
     .withArgs('db', 'getLinkPreview')
     .returns(Promise.resolve(link))
-    .withArgs('db', 'getMerkle')
-    .returns(Promise.resolve(merkle))
     .withArgs('db', 'getZKChat')
     .returns(Promise.resolve(zkchat));
 
@@ -311,7 +302,6 @@ export const stubCall = (
       profiles,
       twitterAuths,
       link,
-      merkle,
       zkchat,
     },
   ];

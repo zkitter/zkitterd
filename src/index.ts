@@ -14,6 +14,7 @@ import { ReputationService } from './services/reputation';
 import {
   EventsController,
   InterepController,
+  MerkleController,
   PostsController,
   TagsController,
   TwitterController,
@@ -33,13 +34,14 @@ import {
     main.add('gun', new GunService());
     main.add('ipfs', new IPFSService());
     main.add('http', new HttpService());
-    main.add('usersController', new UsersController());
-    main.add('postsController', new PostsController());
-    main.add('tagsController', new TagsController());
-    main.add('zkChatController', new ZkChatController());
-    main.add('eventsController', new EventsController());
     main.add('interepController', new InterepController());
+    main.add('eventsController', new EventsController());
+    main.add('merkleController', new MerkleController());
+    main.add('postsController', new PostsController());
+    main.add('usersController', new UsersController());
+    main.add('tagsController', new TagsController());
     main.add('twitterController', new TwitterController());
+    main.add('zkChatController', new ZkChatController());
     // main.add('githubController', new GithubController());
     main.add('reputation', new ReputationService());
     await main.start();

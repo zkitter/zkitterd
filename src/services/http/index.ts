@@ -137,29 +137,13 @@ export default class HttpService extends GenericService {
     };
   }
 
-  handleGetProofs = async (req: Request, res: Response) => {
-    const { idCommitment } = req.params;
-    const { group = '', proofType = '' } = req.query;
-    const proof = await this.call('merkle', 'findProof', idCommitment, group, proofType);
-
-    res.send(
-      makeResponse({
-        data: proof,
-      })
-    );
-  };
-
-  handleGetMembers = async (req: Request, res: Response) => {
-    const { group } = req.params;
-    const leaves = await this.call('merkle', 'getAllLeaves', group);
-    res.send(makeResponse(leaves));
-  };
-
   initControllers() {
     this.app.use(logBefore, json());
-    ['users', 'posts', 'tags', 'zkChat', 'events', 'interep', 'twitter'].forEach(controller => {
-      this.app.use(this.get(`${controller}Controller`, 'router'));
-    });
+    ['events', 'interep', 'merkle', 'posts', 'tags', 'twitter', 'users', 'zkChat'].forEach(
+      controller => {
+        this.app.use(this.get(`${controller}Controller`, 'router'));
+      }
+    );
     this.app.use(logAfter);
   }
 
@@ -171,9 +155,6 @@ export default class HttpService extends GenericService {
         res.send(makeResponse('ok'));
       })
     );
-
-    this.app.get('/v1/proofs/:idCommitment', this.wrapHandler(this.handleGetProofs));
-    this.app.get('/v1/group_members/:group', this.wrapHandler(this.handleGetMembers));
 
     this.app.get(
       '/preview',

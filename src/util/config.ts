@@ -24,6 +24,7 @@ let json: {
   gunPeers?: string[];
   moderators?: string[];
   jwtSecret?: string;
+  ghPat?: string;
   ghCallbackUrl?: string;
   ghClientId?: string;
   ghClientSecret?: string;
@@ -48,7 +49,9 @@ try {
   json = parsed;
 } catch (e) {}
 
+console.log(process.env.GH_PAT);
 const rapidAPIKey = json.rapidAPIKey || process.env.RAPIDAPI_KEY;
+const ghPat = json.ghPat || process.env.GH_PAT;
 const ghCallbackUrl = json.ghCallbackUrl || process.env.GH_CALLBACK_URL;
 const ghClientId = json.ghClientId || process.env.GH_CLIENT_ID;
 const ghClientSecret = json.ghClientSecret || process.env.GH_CLIENT_SECRET;
@@ -94,6 +97,7 @@ if (!arbitrumRegistrar) throw new Error('ARB_REGISTRAR is not valid');
 if (!arbitrumPrivateKey) throw new Error('ARB_PRIVATE_KEY is not valid');
 if (!arbitrumAddress) throw new Error('ARB_ADDRESS is not valid');
 if (!jwtSecret) throw new Error('JWT_SECRET is not valid');
+if (!ghPat) throw new Error('Github Personal Access Token config missing');
 if (!ghCallbackUrl) throw new Error(`ghCallbackUrl config missing`);
 if (!ghClientId) throw new Error(`ghClientId config missing`);
 if (!ghClientSecret) throw new Error(`ghClientSecret config missing`);
@@ -128,6 +132,7 @@ const config = {
   gunPort: gunPort ? Number(gunPort) : 8765,
   gunPeers,
   jwtSecret,
+  ghPat,
   ghCallbackUrl,
   ghClientId,
   ghClientSecret,

@@ -5,7 +5,7 @@ import { getLinkPreview } from 'link-preview-js';
 import path from 'path';
 import { getFilesFromPath } from 'web3.storage';
 
-import { maxFileSize, maxPerUserSize } from '../constants';
+import { MAX_FILE_SIZE, MAX_PER_USER_SIZE } from '../constants';
 import { Controller } from './interface';
 import { UploadModel } from '../../../models/uploads';
 import { makeResponse, upload } from '../utils';
@@ -83,14 +83,14 @@ export class MiscController extends Controller {
     const uploadDB = await this.call('db', 'getUploads');
     const filepath = path.join(process.cwd(), relPath);
 
-    if (size > maxFileSize) {
+    if (size > MAX_FILE_SIZE) {
       fs.unlinkSync(filepath);
       throw new Error('file must be less than 5MB');
     }
 
     if (username) {
       const existingSize = await uploadDB.getTotalUploadByUser(username);
-      if (existingSize + size > maxPerUserSize) {
+      if (existingSize + size > MAX_PER_USER_SIZE) {
         fs.unlinkSync(filepath);
         throw new Error('account is out of space');
       }

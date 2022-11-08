@@ -1,4 +1,3 @@
-import 'isomorphic-fetch';
 import tape from 'tape';
 import { getReceivedStars, getRepos } from './github';
 import { stubFetch } from './testUtils';

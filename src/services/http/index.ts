@@ -60,6 +60,13 @@ export default class HttpService extends GenericService {
     this.app.use(passport.initialize());
     this.app.use(passport.session());
 
+    passport.serializeUser((user, done) => {
+      done(null, user);
+    });
+    passport.deserializeUser<any>((obj, done) => {
+      done(null, obj);
+    });
+
     this.app.use(logBefore, json());
     this.addRoutes();
     this.app.use(logAfter);

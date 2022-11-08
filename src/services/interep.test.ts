@@ -8,7 +8,7 @@ const interrep = new InterrepService();
 
 const [callStub, { semaphore, interepGroups }] = stubCall(interrep);
 
-tape('InterepService.start', async (t: any) => {
+tape.skip('InterepService.start', async (t: any) => {
   const datas = [
     [
       {
@@ -99,7 +99,7 @@ tape('InterepService.start', async (t: any) => {
 //     t.end();
 // });
 
-tape('InterepService.getBatchFromRootHash', async t => {
+tape.skip('InterepService.getBatchFromRootHash', async t => {
   fetchStub.returns(
     Promise.resolve({
       json: async () => ({

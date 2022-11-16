@@ -20,5 +20,11 @@ jobs:
           npm pkg delete scripts.prepare
           npm ci --silent
 
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Format
+        run: npm run format:check
+
       - name: Test
         run: npm run test

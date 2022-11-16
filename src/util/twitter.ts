@@ -57,9 +57,9 @@ export const requestToken = async (): Promise<string> => {
     },
   };
 
-  // @ts-ignore
   const resp = await fetch(requestData.url, {
     method: requestData.method,
+    // @ts-ignore
     form: requestData.data,
     headers: {
       ...oauth.toHeader(oauth.authorize(requestData)),
@@ -83,9 +83,9 @@ export const accessToken = async (token: string, verifier: string, tokenSecret: 
     },
   };
 
-  // @ts-ignore
   const resp = await fetch(requestData.url, {
     method: requestData.method,
+    // @ts-ignore
     form: requestData.data,
     headers: {
       ...oauth.toHeader(oauth.authorize(requestData)),

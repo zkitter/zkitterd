@@ -2,7 +2,7 @@ import * as csv from 'csv';
 import fs from 'fs';
 import path from 'path';
 
-import DBService from '../services/db';
+import DBService from '@services/db';
 
 const gunpath = path.join(process.cwd(), 'gun.test.db');
 

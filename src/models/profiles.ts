@@ -1,5 +1,4 @@
 import { BIGINT, Sequelize, STRING } from 'sequelize';
-import { ProfileMessageSubType } from '../util/message';
 
 type ProfileModel = {
   messageId: string;

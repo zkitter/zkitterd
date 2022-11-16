@@ -1,5 +1,5 @@
 import { BIGINT, Sequelize, STRING } from 'sequelize';
-import { ConnectionMessageSubType } from '../util/message';
+import { ConnectionMessageSubType } from '@util/message';
 
 type ConnectionModel = {
   messageId: string;

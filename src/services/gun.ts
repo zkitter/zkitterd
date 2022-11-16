@@ -1,9 +1,9 @@
-import { GenericService } from '../util/svc';
+import { GenericService } from '@util/svc';
 import Gun from 'gun';
 import { IGunChainReference } from 'gun/types/chain';
 import express from 'express';
-import config from '../util/config';
-import logger from '../util/logger';
+import config from '@util/config';
+import logger from '@util/logger';
 import {
   Connection,
   ConnectionMessageSubType,
@@ -16,19 +16,19 @@ import {
   PostMessageSubType,
   Profile,
   ProfileMessageSubType,
-} from '../util/message';
+} from '@util/message';
 import { Mutex } from 'async-mutex';
-import { UserModel } from '../models/users';
-import { HASHTAG_REGEX, MENTION_REGEX } from '../util/regex';
-import vKey from '../../static/verification_key.json';
-import { showStatus } from '../util/twitter';
+import { UserModel } from '@models/users';
+import { HASHTAG_REGEX, MENTION_REGEX } from '@util/regex';
+import vKey from '#/verification_key.json';
+import { showStatus } from '@util/twitter';
 import { Semaphore } from '@zk-kit/protocols';
-import merkleRoot from '../models/merkle_root';
-import { sequelize } from '../util/sequelize';
+import merkleRoot from '@models/merkle_root';
+import { sequelize } from '@util/sequelize';
 
-const Graph = require('../../lib/gun/graph.js');
-const State = require('../../lib/gun/state.js');
-const Val = require('../../lib/gun/val.js');
+const Graph = require('~/gun/graph.js');
+const State = require('~/gun/state.js');
+const Val = require('~/gun/val.js');
 
 const getMutex = new Mutex();
 const putMutex = new Mutex();

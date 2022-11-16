@@ -1,14 +1,13 @@
-import { BIGINT, Op, QueryTypes, Sequelize, STRING, where } from 'sequelize';
-import { MessageType, PostJSON, PostMessageSubType } from '../util/message';
+import { BIGINT, Op, QueryTypes, Sequelize, STRING } from 'sequelize';
+import { MessageType, PostJSON, PostMessageSubType } from '@util/message';
 import { Mutex } from 'async-mutex';
-import bodyParser from 'body-parser';
 import {
   globalModClause,
   globalVisibilityClause,
   notBlockedClause,
   replyModerationClause,
-} from '../util/sql';
-import config from '../util/config';
+} from '@util/sql';
+import config from '@util/config';
 
 const mutex = new Mutex();
 

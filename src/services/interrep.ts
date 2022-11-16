@@ -1,8 +1,8 @@
-import { GenericService } from '../util/svc';
-import config from '../util/config';
-import interepGroups from '../models/interepGroups';
-import { sequelize } from '../util/sequelize';
-import semaphore from '../models/semaphore';
+import { GenericService } from '@util/svc';
+import config from '@util/config';
+import interepGroups from '@models/interepGroups';
+import { sequelize } from '@util/sequelize';
+import semaphore from '@models/semaphore';
 
 export type InterepGroup = {
   provider: 'twitter' | 'github' | 'reddit';

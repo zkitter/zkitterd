@@ -1,6 +1,6 @@
 import tape from 'tape';
 import sinon from 'sinon';
-import { stubCall } from '../util/testUtils';
+import { stubCall } from '@util/testUtils';
 import ArbitrumService from './arbitrum';
 
 tape.skip('ArbitrumService', async t => {

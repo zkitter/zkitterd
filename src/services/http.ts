@@ -1,18 +1,20 @@
-import { GenericService } from '@util/svc';
+import http from 'http';
+import path from 'path';
+import queryString from 'querystring';
+import fs from 'fs';
+import crypto from 'crypto';
+
 import express, { Express, NextFunction, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import cors, { CorsOptions } from 'cors';
-import http from 'http';
-import config from '@util/config';
-import logger from '@util/logger';
-import path from 'path';
 import Web3 from 'web3';
 import { getLinkPreview } from 'link-preview-js';
-import queryString from 'querystring';
 import session from 'express-session';
 import jwt from 'jsonwebtoken';
 import { QueryTypes } from 'sequelize';
 import { calculateReputation, OAuthProvider } from '@interep/reputation';
+
+import multer from 'multer';
 import {
   accessToken,
   createHeader,
@@ -27,15 +29,19 @@ import {
 } from '@util/twitter';
 import { verifySignatureP256 } from '@util/crypto';
 import { parseMessageId, PostMessageSubType } from '@util/message';
-import multer from 'multer';
-import fs from 'fs';
+
 import { getFilesFromPath } from 'web3.storage';
+
 import { UploadModel } from '@models/uploads';
+
 import { genExternalNullifier, Semaphore, SemaphoreFullProof } from '@zk-kit/protocols';
+
+import logger from '@util/logger';
+import config from '@util/config';
+import { GenericService } from '@util/svc';
 import vKey from '#/verification_key.json';
 import merkleRoot from '@models/merkle_root';
 import { sequelize } from '@util/sequelize';
-import crypto from 'crypto';
 import {
   addConnection,
   addTopic,
@@ -47,6 +53,7 @@ import {
 
 const jsonParser = bodyParser.json();
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
+
 const upload = multer({
   dest: './uploaded_files',
 });
@@ -192,7 +199,7 @@ export default class HttpService extends GenericService {
 
     const result = [];
 
-    for (let user of users) {
+    for (const user of users) {
       const ens = await this.call('ens', 'fetchNameByAddress', user.username);
       result.push({ ens, ...user });
     }
@@ -209,7 +216,7 @@ export default class HttpService extends GenericService {
     const users = await usersDB.search(query || '', context, offset, limit);
     const result = [];
 
-    for (let user of users) {
+    for (const user of users) {
       const ens = await this.call('ens', 'fetchNameByAddress', user.username);
       result.push({ ens, ...user });
     }

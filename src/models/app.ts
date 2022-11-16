@@ -1,4 +1,4 @@
-import { Sequelize, BIGINT } from 'sequelize';
+import { BIGINT, Sequelize } from 'sequelize';
 import { Mutex } from 'async-mutex';
 
 const mutex = new Mutex();
@@ -32,7 +32,7 @@ const app = (sequelize: Sequelize) => {
 
   const read = async (): Promise<AppModel> => {
     return mutex.runExclusive(async () => {
-      let result = await model.findOne();
+      const result = await model.findOne();
       return result?.toJSON() as AppModel;
     });
   };

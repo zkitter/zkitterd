@@ -1,7 +1,10 @@
-import { GenericService } from '@util/svc';
 import Gun from 'gun';
 import { IGunChainReference } from 'gun/types/chain';
 import express from 'express';
+import { Mutex } from 'async-mutex';
+import { Semaphore } from '@zk-kit/protocols';
+
+import { GenericService } from '@util/svc';
 import config from '@util/config';
 import logger from '@util/logger';
 import {
@@ -17,12 +20,10 @@ import {
   Profile,
   ProfileMessageSubType,
 } from '@util/message';
-import { Mutex } from 'async-mutex';
 import { UserModel } from '@models/users';
 import { HASHTAG_REGEX, MENTION_REGEX } from '@util/regex';
 import vKey from '#/verification_key.json';
 import { showStatus } from '@util/twitter';
-import { Semaphore } from '@zk-kit/protocols';
 import merkleRoot from '@models/merkle_root';
 import { sequelize } from '@util/sequelize';
 
@@ -709,7 +710,7 @@ export default class GunService extends GenericService {
             node = State.to(node, field);
           } else {
             const records = await recordDB.findAll(soul);
-            for (let record of records) {
+            for (const record of records) {
               const { state, value, relation } = record;
               const val = relation ? Val.rel.ify(relation) : value;
               node = State.ify(node, record.field, state, val, soul);

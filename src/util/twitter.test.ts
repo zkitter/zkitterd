@@ -1,7 +1,8 @@
 // @ts-ignore
 import 'isomorphic-fetch';
 import tape from 'tape';
-import { accessToken, createHeader, requestToken, verifyCredential } from './twitter';
+
+import { accessToken, requestToken, verifyCredential } from './twitter';
 import { stubFetch } from './testUtils';
 
 const fetchStub = stubFetch();

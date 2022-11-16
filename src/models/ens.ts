@@ -1,4 +1,4 @@
-import { Sequelize, BIGINT, STRING } from 'sequelize';
+import { Sequelize, STRING } from 'sequelize';
 
 type ENSModel = {
   ens: string;
@@ -32,14 +32,14 @@ const ens = (sequelize: Sequelize) => {
   );
 
   const readByAddress = async (address: string): Promise<ENSModel> => {
-    let result = await model.findOne({
+    const result = await model.findOne({
       where: { address },
     });
     return result?.toJSON() as ENSModel;
   };
 
   const readByENS = async (ens: string): Promise<ENSModel> => {
-    let result = await model.findOne({
+    const result = await model.findOne({
       where: { ens },
     });
     return result?.toJSON() as ENSModel;

@@ -1,7 +1,9 @@
 import tape from 'tape';
 import sinon from 'sinon';
 import { Semaphore } from '@zk-kit/protocols';
+
 import GunService from './gun';
+
 import { stubCall, stubFetch } from '@util/testUtils';
 
 const fetchStub = stubFetch();

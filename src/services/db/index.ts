@@ -1,5 +1,6 @@
-import { GenericService } from '@util/svc';
 import { Sequelize } from 'sequelize';
+
+import { GenericService } from '@util/svc';
 import app from '@models/app';
 import users from '@models/users';
 import records from '@models/records';

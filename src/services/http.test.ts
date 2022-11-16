@@ -1,7 +1,9 @@
 import 'isomorphic-fetch';
 import tape from 'tape';
 import sinon from 'sinon';
+
 import HttpService from './http';
+
 import { stubCall, stubFetch } from '@util/testUtils';
 
 const post = {

@@ -1,7 +1,9 @@
 import tape from 'tape';
 import sinon from 'sinon';
-import { stubCall } from '@util/testUtils';
+
 import ArbitrumService from './arbitrum';
+
+import { stubCall } from '@util/testUtils';
 
 tape.skip('ArbitrumService', async t => {
   const arb = new ArbitrumService();

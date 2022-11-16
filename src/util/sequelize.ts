@@ -1,5 +1,6 @@
-import config from './config';
 import { Dialect, Sequelize } from 'sequelize';
+
+import config from './config';
 
 const options =
   process.env.NODE_ENV === 'test'

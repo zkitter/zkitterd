@@ -1,7 +1,8 @@
-import { GenericService } from '@util/svc';
 import { BindOrReplacements, QueryOptions, QueryTypes } from 'sequelize';
 import { generateMerkleTree } from '@zk-kit/protocols';
 import { IncrementalMerkleTree, MerkleProof } from '@zk-kit/incremental-merkle-tree';
+
+import { GenericService } from '@util/svc';
 import merkleRoot from '@models/merkle_root';
 import { sequelize } from '@util/sequelize';
 import semaphore from '@models/semaphore';

@@ -54,7 +54,7 @@ export default class InterrepService extends GenericService {
       const json = await resp.json();
       const groups = json.data;
       if (groups?.length) {
-        for (let group of groups) {
+        for (const group of groups) {
           const { root, provider, name } = group;
           const existing = await this.interepGroups!.getGroup(provider, name);
           if (existing?.root_hash !== root) {

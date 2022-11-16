@@ -1,6 +1,7 @@
-import { GenericService } from '@util/svc';
 import { Contract } from 'web3-eth-contract';
 import Web3 from 'web3';
+
+import { GenericService } from '@util/svc';
 import config from '@util/config';
 import logger from '@util/logger';
 import { arbRegistrarABI } from '@util/abi';
@@ -53,7 +54,7 @@ export default class ArbitrumService extends GenericService {
         toBlock: toBlock,
       });
 
-      for (let event of events) {
+      for (const event of events) {
         const tx = await this.web3.eth.getTransaction(event.transactionHash);
         const block = await this.web3.eth.getBlock(event.blockNumber);
 

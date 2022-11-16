@@ -61,7 +61,7 @@ const meta = (sequelize: Sequelize) => {
 
     const values: any[] = [];
 
-    for (let r of result) {
+    for (const r of result) {
       const row = r as any;
       const meta = {
         liked: row.liked,

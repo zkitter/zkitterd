@@ -1,7 +1,9 @@
 import crypto from 'crypto';
 import { URLSearchParams } from 'url';
-import { PostModel } from '@models/posts';
+
 import config from './config';
+
+import { PostModel } from '@models/posts';
 
 const { Botometer } = require('botometer');
 const OAuth = require('oauth-1.0a');

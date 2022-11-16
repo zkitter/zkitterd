@@ -37,7 +37,7 @@ const interepGroups = (sequelize: Sequelize) => {
   );
 
   const findOneByHash = async (root_hash: string): Promise<InterepGroupModel | null> => {
-    let result = await model.findOne({
+    const result = await model.findOne({
       where: {
         root_hash,
       },

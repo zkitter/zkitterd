@@ -1,7 +1,7 @@
 import 'isomorphic-fetch';
 import tape from 'tape';
 import ENSService from './ens';
-import { stubCall } from '../util/testUtils';
+import { stubCall } from '@util/testUtils';
 
 tape.skip('ENSService', async t => {
   const ens = new ENSService();

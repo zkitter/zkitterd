@@ -1,9 +1,9 @@
-import { Sequelize, BIGINT, STRING, QueryTypes } from 'sequelize';
+import { QueryTypes, Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
-import { PostJSON } from '../util/message';
+import { PostJSON } from '@util/message';
 import { inflateResultToPostJSON } from './posts';
-import { globalModClause, globalVisibilityClause, replyModerationClause } from '../util/sql';
-import config from '../util/config';
+import { globalModClause, replyModerationClause } from '@util/sql';
+import config from '@util/config';
 
 type TagModel = {
   tag_name: string;

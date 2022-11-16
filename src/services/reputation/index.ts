@@ -1,4 +1,4 @@
-import { GenericService } from '../../util/svc';
+import { GenericService } from '@util/svc';
 import Group42 from './group42';
 
 export class ReputationService extends GenericService {

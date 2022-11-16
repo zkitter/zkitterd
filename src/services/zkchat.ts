@@ -1,9 +1,9 @@
-import { GenericService } from '../util/svc';
-import { ZKChat } from '../../lib/zk-chat-server/src';
-import { ChatMessage } from '../../lib/zk-chat-server/src/services/chat.service';
+import { GenericService } from '@util/svc';
+import { ZKChat } from '~/zk-chat-server/src';
+import { ChatMessage } from '~/zk-chat-server/src/services/chat.service';
 import { Dialect, QueryTypes, Sequelize } from 'sequelize';
-import config from '../../lib/zk-chat-server/src/utils/config';
-import { RLN, RLNFullProof, SemaphoreFullProof } from '@zk-kit/protocols';
+import config from '~/zk-chat-server/src/utils/config';
+import { RLNFullProof, SemaphoreFullProof } from '@zk-kit/protocols';
 
 export default class ZKChatService extends GenericService {
   zkchat: ZKChat;

@@ -1,7 +1,8 @@
 import 'isomorphic-fetch';
 import tape from 'tape';
 import InterrepService from './interrep';
-import { stubCall, stubFetch } from '../util/testUtils';
+import { stubCall, stubFetch } from '@util/testUtils';
+
 const fetchStub = stubFetch();
 
 const interrep = new InterrepService();

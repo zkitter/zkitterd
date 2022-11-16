@@ -3,7 +3,7 @@ import path from 'path';
 import tape from 'tape';
 
 import DBService from './index';
-import { getMockDB } from '../../util/test';
+import { getMockDB } from '@util/test';
 
 const gunpath = path.join(process.cwd(), 'gun.test.db');
 
@@ -872,7 +872,7 @@ tape('DBService', async t => {
     soul: '#soul',
     field: '!field',
     value: '@value',
-    relation: '~relation',
+    relation: '@utilrelation',
     state: 1,
   });
 
@@ -880,7 +880,7 @@ tape('DBService', async t => {
     soul: '#soul2',
     field: '!field2',
     value: '@value2',
-    relation: '~relation2',
+    relation: '@utilrelation2',
     state: 2,
   });
 
@@ -888,7 +888,7 @@ tape('DBService', async t => {
   const { updatedAt, createdAt, ...record1 } = await db.records!.findOne('#soul', '!field');
   t.deepEqual(
     record1,
-    { id: 1, soul: '#soul', field: '!field', value: '@value', relation: '~relation', state: 1 },
+    { id: 1, soul: '#soul', field: '!field', value: '@value', relation: '@utilrelation', state: 1 },
     'should return one record'
   );
 

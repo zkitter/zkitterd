@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { URLSearchParams } from 'url';
-import { PostModel } from '../models/posts';
+import { PostModel } from '@models/posts';
 import config from './config';
 
 const { Botometer } = require('botometer');

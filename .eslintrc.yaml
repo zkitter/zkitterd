@@ -1,0 +1,26 @@
+plugins: ['@typescript-eslint', 'sort']
+extends:
+  [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:import/recommended',
+    'plugin:sort/recommended',
+    'prettier',
+  ]
+parser: '@typescript-eslint/parser'
+parserOptions:
+  project: ['tsconfig.json']
+root: true
+settings:
+  import/resolver:
+    - typescript
+rules:
+  '@typescript-eslint/ban-ts-comment': warn
+  '@typescript-eslint/explicit-function-return-type': off
+  '@typescript-eslint/return-await': off
+  import/order:
+    - warn
+    - newlines-between: always
+  import/newline-after-import: warn
+  no-console: warn
+  no-useless-constructor: warn

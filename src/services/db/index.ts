@@ -20,6 +20,7 @@ import threads from '../../models/thread';
 import uploads from '../../models/uploads';
 import merkleRoot from '../../models/merkle_root';
 import { sequelize } from '../../util/sequelize';
+import config from '../../util/config';
 
 export default class DBService extends GenericService {
   sequelize: Sequelize;
@@ -220,6 +221,7 @@ export default class DBService extends GenericService {
     await this.connections?.model.sync({ force: !!process.env.FORCE });
     await this.profiles?.model.sync({ force: !!process.env.FORCE });
     await this.posts?.model.sync({ force: !!process.env.FORCE });
+    await this.posts.vectorizeContent();
     await this.tags?.model.sync({ force: !!process.env.FORCE });
 
     await this.userMeta?.model.sync({ force: !!process.env.FORCE });
@@ -237,7 +239,7 @@ export default class DBService extends GenericService {
     if (!appData) {
       await this.app?.updateLastENSBlock(12957300);
       await this.app?.updateLastInterrepBlock(28311377);
-      await this.app?.updateLastArbitrumBlock(2193241);
+      await this.app?.updateLastArbitrumBlock(config?.lastArbitrumBlock || 2193241);
       await this.app?.updateLastGroup42BlockScanned(7660170);
     }
 

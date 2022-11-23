@@ -9,6 +9,7 @@ let json: {
   arbitrumRegistrar?: string;
   arbitrumPrivateKey?: string;
   arbitrumAddress?: string;
+  lastArbitrumBlock?: string;
   ensResolver?: string;
   interrepContract?: string;
   dbDialect?: string;
@@ -58,6 +59,7 @@ const goerliHttpProvider = json.goerliHttpProvider || process.env.GOERLI_HTTP_PR
 const arbitrumRegistrar = json.arbitrumRegistrar || process.env.ARB_REGISTRAR;
 const arbitrumPrivateKey = json.arbitrumPrivateKey || process.env.ARB_PRIVATE_KEY;
 const arbitrumAddress = json.arbitrumAddress || process.env.ARB_ADDRESS;
+const lastArbitrumBlock = json.lastArbitrumBlock || process.env.LAST_ARBITRUM_BLOCK;
 const dbDialect = json.dbDialect || process.env.DB_DIALECT;
 const dbStorage = json.dbStorage || process.env.DB_STORAGE;
 const dbName = json.dbName || process.env.DB_NAME;
@@ -103,6 +105,7 @@ const config = {
   arbitrumRegistrar,
   arbitrumPrivateKey,
   arbitrumAddress,
+  lastArbitrumBlock: Number(lastArbitrumBlock),
   ensResolver,
   interrepContract,
   dbDialect,

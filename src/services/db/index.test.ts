@@ -151,7 +151,6 @@ tape('DBService', async t => {
     'should return thread moderation'
   );
 
-  // @ts-ignore
   const mod3 = await db.moderations!.findAllByReference(
     '0x3aec555a667EF810C4B0a0D064D6Fb7c66161360/899e3621100ce2d3411431ca777cea7fa0223fccec9ab073181bd7ee65a64456'
   );
@@ -164,7 +163,6 @@ tape('DBService', async t => {
     'should return all moderation'
   );
 
-  // @ts-ignore
   const post1 = await db.posts!.findRoot(
     '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/1b18998ef35ecbb35760e71f6531f75912f79a9162eadfae90bb4e8740aa132b'
   );
@@ -174,7 +172,6 @@ tape('DBService', async t => {
     'should return root'
   );
 
-  // @ts-ignore
   const post2 = await db.posts!.findOne(
     'd0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
     '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb'
@@ -221,7 +218,6 @@ tape('DBService', async t => {
     'should return post'
   );
 
-  // @ts-ignore
   const post3 = await db.posts!.findAllPosts(
     '',
     '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
@@ -408,7 +404,6 @@ tape('DBService', async t => {
     'should return all posts'
   );
 
-  // @ts-ignore
   const post4 = await db.posts!.findAllRepliesFromCreator(
     '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
     '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
@@ -499,7 +494,6 @@ tape('DBService', async t => {
     'should return replies from creator'
   );
 
-  // @ts-ignore
   const post5 = await db.posts!.getHomeFeed('0xd44a82dD160217d46D754a03C8f841edF06EBE3c', 2, 2);
   t.deepEqual(
     post5,
@@ -910,15 +904,6 @@ tape('DBService', async t => {
     'should return all records'
   );
 
-  // // @ts-ignore
-  // const sema1 = await db.semaphore!.findOneByCommitment('11478604443530795445406842905228486956674818902660313591870165575138495663261');
-  // t.deepEqual(
-  //     sema1!.provider,
-  //     'twitter',
-  //     'should return one semaphore row',
-  // );
-
-  // @ts-ignore
   const sema2 = await db.semaphore!.findAllByCommitment(
     '11478604443530795445406842905228486956674818902660313591870165575138495663261'
   );
@@ -928,7 +913,6 @@ tape('DBService', async t => {
     'should return all semaphore rows'
   );
 
-  // @ts-ignore
   const tag1 = await db.tags!.getPostsByTag(
     '#test',
     '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
@@ -1014,7 +998,7 @@ tape('DBService', async t => {
     '#test',
     '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a'
   );
-  // @ts-ignore
+
   const tag2 = await db.tags!.getPostsByTag(
     '#test',
     '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
@@ -1199,7 +1183,6 @@ tape('DBService', async t => {
     'should return user by pubkey'
   );
 
-  // @ts-ignore
   const user3 = await db.users!.readAll('0x3F425586D68616A113C29c303766DAD444167EE8', 0, 5);
   t.deepEqual(
     user3,
@@ -1370,7 +1353,6 @@ tape('DBService', async t => {
     'should return all users'
   );
 
-  // @ts-ignore
   const user4 = await db.users!.search('yaga', '0x3F425586D68616A113C29c303766DAD444167EE8', 0, 2);
   t.deepEqual(
     user4,
@@ -1411,6 +1393,9 @@ tape('DBService', async t => {
     ],
     'should search user by name'
   );
+
+  const searchResults = await db.posts!.search('test');
+  t.equal(searchResults.length, 20, 'should search post by text content');
 
   await db.stop();
   if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);

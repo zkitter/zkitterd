@@ -81,7 +81,6 @@ export class GithubController extends Controller {
           passport.authenticate('github', { scope: ['read:user', 'read:org'] })
         )
         .get('/callback', passport.authenticate('github'), this.callback)
-        .get('/session', this.session)
     );
   };
 
@@ -92,13 +91,5 @@ export class GithubController extends Controller {
   storeRedirectUrl: RequestHandler<{}, {}, {}, { redirectUrl: string }> = (req, res, next) => {
     this.redirectUrl = req.query.redirectUrl;
     next();
-  };
-
-  session = (req: Request, res: Response) => {
-    if (req.user) {
-      res.status(200).json({ payload: req.user });
-    } else {
-      res.status(401).json({ error: 'not authenticated' });
-    }
   };
 }

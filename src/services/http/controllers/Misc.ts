@@ -21,6 +21,7 @@ export class MiscController extends Controller {
   addRoutes = () => {
     this._router.get('/healthcheck', this.healthcheck);
     this._router.get('/preview', this.preview);
+    this._router.get('/session', this.session);
     this._router.post(
       '/ipfs/upload',
       upload.any(),
@@ -119,6 +120,14 @@ export class MiscController extends Controller {
         url: `https://${cid}.ipfs.dweb.link/${filename}`,
       })
     );
+  };
+
+  session = (req: Request, res: Response) => {
+    if (req.user) {
+      res.status(200).json({ payload: req.user });
+    } else {
+      res.status(401).json({ error: 'not authenticated' });
+    }
   };
 
   verifyAuth =

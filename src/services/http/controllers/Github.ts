@@ -59,6 +59,7 @@ export class GithubController extends Controller {
           // });
 
           return done(null, {
+            provider: 'github',
             userId,
             username,
             reputation,

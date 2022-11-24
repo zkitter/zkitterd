@@ -5,5 +5,9 @@ declare global {
     export interface Request {
       redirectUrl: string;
     }
+
+    export interface User {
+      userId: string
+    }
   }
 }

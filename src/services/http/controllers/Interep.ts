@@ -80,9 +80,11 @@ export class InterepController extends Controller {
     }
 
     if (provider === 'github') {
+      // @ts-ignore
       if (!req.user?.userId) throw new Error('not authenticated');
 
       const githubAuthDb = await this.call('db', 'getGithubAuth');
+      // @ts-ignore
       const { accessToken } = await githubAuthDb.findUserById(req.user.userId);
 
       headers = { Authorization: `token ${accessToken}` };

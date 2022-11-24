@@ -8,7 +8,7 @@ import config from '../../../util/config';
 import { getReceivedStars } from '../../../util/github';
 
 type GhUser = {
-  id: number;
+  id: string;
   username: string;
   _json: {
     followers: number;
@@ -46,17 +46,9 @@ export class GithubController extends Controller {
             proPlan,
           });
 
-          // TODO: need for github_auths DB operation here?
-          // const githubAuthDB = await this.call('db', 'getGithubAuth');
-          //
-          // await githubAuthDB.upsertOne({
-          //   userId,
-          //   username,
-          //   displayName,
-          //   followers,
-          //   proPlan,
-          //   receivedStars,
-          // });
+          const githubAuthDB = await this.call('db', 'getGithubAuth');
+
+          await githubAuthDB.upsertOne({ userId, accessToken });
 
           return done(null, {
             provider: 'github',

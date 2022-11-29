@@ -9,7 +9,6 @@ import { getReceivedStars } from '../../../util/github';
 import { makeResponse } from '../utils';
 
 type GhUser = {
-  id: string;
   username: string;
   _json: {
     followers: number;
@@ -31,7 +30,6 @@ export class GithubController extends Controller {
         },
         async (accessToken: string, refreshToken: string, profile: GhUser, done: any) => {
           const {
-            id: userId,
             username,
             _json: {
               followers,
@@ -49,11 +47,10 @@ export class GithubController extends Controller {
 
           const githubAuthDB = await this.call('db', 'getGithubAuth');
 
-          await githubAuthDB.upsertOne({ userId, accessToken });
+          await githubAuthDB.upsertOne({ username, token: accessToken });
 
           return done(null, {
             provider: 'github',
-            userId,
             username,
             reputation,
           });
@@ -74,7 +71,9 @@ export class GithubController extends Controller {
           passport.authenticate('github', { scope: ['read:user', 'read:org'] })
         )
         .get('/callback', passport.authenticate('github'), this.callback)
-        .get('/logout', this.logout)
+        .get('/test', (req, res) => {
+          res.json(req.user);
+        })
     );
   };
 
@@ -85,13 +84,5 @@ export class GithubController extends Controller {
   storeRedirectUrl: RequestHandler<{}, {}, {}, { redirectUrl: string }> = (req, res, next) => {
     this.redirectUrl = req.query.redirectUrl;
     next();
-  };
-
-  logout = (req: Request, res: Response, next: NextFunction) => {
-    // @ts-ignore
-    req.logout(err => {
-      if (err) return next(err);
-      res.send(makeResponse('ok'));
-    });
   };
 }

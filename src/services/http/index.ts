@@ -63,9 +63,24 @@ export default class HttpService extends GenericService {
     passport.serializeUser((user, done) => {
       done(null, user);
     });
-    passport.deserializeUser<any>((obj, done) => {
-      done(null, obj);
-    });
+    passport.deserializeUser(
+      (user: { username: string; provider: string; reputation: string }, done) => {
+        this.call('db', 'getAuthDb', user.provider)
+          .then(db => {
+            db.findTokenByUsername(user.username)
+              .then((token: string | undefined) => {
+                // @ts-ignore
+                done(null, { token, ...user });
+              })
+              .catch((e: any) => {
+                done(e, null);
+              });
+          })
+          .catch(e => {
+            done(e, null);
+          });
+      }
+    );
 
     this.app.use(logBefore, json());
     this.addRoutes();

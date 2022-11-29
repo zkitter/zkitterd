@@ -141,6 +141,13 @@ export default class DBService extends GenericService {
     return this.githubAuth;
   }
 
+  async getAuthDb(provider: 'github' /* 'twitter' | 'reddit' */) {
+    switch (provider) {
+      case 'github':
+        return this.getGithubAuth();
+    }
+  }
+
   async getApp(): Promise<ReturnType<typeof app>> {
     if (!this.app) {
       return Promise.reject(new Error('app is not initialized'));
@@ -248,7 +255,8 @@ export default class DBService extends GenericService {
     if (!appData) {
       await this.app?.updateLastENSBlock(12957300);
       await this.app?.updateLastInterrepBlock(28311377);
-      await this.app?.updateLastArbitrumBlock(2193241);
+      // await this.app?.updateLastArbitrumBlock(2193241);
+      await this.app?.updateLastArbitrumBlock(837465);
       await this.app?.updateLastGroup42BlockScanned(7660170);
     }
 

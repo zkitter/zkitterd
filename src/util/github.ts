@@ -1,3 +1,5 @@
+import config from './config';
+
 type Node = { stargazers: { totalCount: number } };
 type Repositories = {
   nodes: Node[];
@@ -12,7 +14,7 @@ const request = async (data: any): Promise<Repositories> =>
     method: 'POST',
     body: JSON.stringify(data),
     headers: {
-      Authorization: `Bearer ${process.env.GH_PAT}`,
+      Authorization: `Bearer ${config.ghPat}`,
       'Content-Type': 'application/json',
     },
   }).then(res => res.json().then(res => res.data.user.repositories));

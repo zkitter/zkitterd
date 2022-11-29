@@ -19,24 +19,26 @@ export class MiscController extends Controller {
   }
 
   addRoutes = () => {
-    this._router.get('/healthcheck', this.healthcheck);
-    this._router.get('/preview', this.preview);
-    this._router.get('/session', this.session);
-    this._router.post(
-      '/ipfs/upload',
-      upload.any(),
-      this.verifyAuth(
-        async () => 'FILE_UPLOAD',
-        // @ts-ignore
-        async req => req.files[0].originalname.slice(0, 16),
-        req => {
+    this._router
+      .get('/healthcheck', this.healthcheck)
+      .get('/preview', this.preview)
+      .get('/session', this.session)
+      .get('/logout', this.logout)
+      .post(
+        '/ipfs/upload',
+        upload.any(),
+        this.verifyAuth(
+          async () => 'FILE_UPLOAD',
           // @ts-ignore
-          const filepath = path.join(process.cwd(), req.files[0].path);
-          fs.unlinkSync(filepath);
-        }
-      ),
-      this.ipfsUpload
-    );
+          async req => req.files[0].originalname.slice(0, 16),
+          req => {
+            // @ts-ignore
+            const filepath = path.join(process.cwd(), req.files[0].path);
+            fs.unlinkSync(filepath);
+          }
+        ),
+        this.ipfsUpload
+      );
   };
 
   healthcheck = async (req: Request, res: Response) => res.send(makeResponse('ok'));
@@ -128,6 +130,14 @@ export class MiscController extends Controller {
     } else {
       res.status(401).json({ error: 'not authenticated' });
     }
+  };
+
+  logout = (req: Request, res: Response, next: NextFunction) => {
+    // @ts-ignore
+    req.logout(err => {
+      if (err) return next(err);
+      res.send(makeResponse('ok'));
+    });
   };
 
   verifyAuth =

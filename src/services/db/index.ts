@@ -142,6 +142,13 @@ export default class DBService extends GenericService {
     return this.githubAuth;
   }
 
+  async getAuthDb(provider: 'github' /* 'twitter' | 'reddit' */) {
+    switch (provider) {
+      case 'github':
+        return this.getGithubAuth();
+    }
+  }
+
   async getApp(): Promise<ReturnType<typeof app>> {
     if (!this.app) {
       return Promise.reject(new Error('app is not initialized'));

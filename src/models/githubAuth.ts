@@ -1,31 +1,32 @@
 import { Sequelize, STRING } from 'sequelize';
 
 export type GithubAuthModel = {
-  userId: string;
-  accessToken: string;
+  username: string;
+  token: string;
 };
 
 const githubAuth = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'github_auth',
     {
-      userId: { type: STRING },
-      accessToken: { type: STRING },
+      username: { type: STRING },
+      token: { type: STRING },
     },
     {
-      indexes: [{ unique: true, fields: ['userId'] }],
+      indexes: [{ unique: true, fields: ['username'] }],
     }
   );
 
-  const findUserById = async (userId: string) =>
-    (
-      await model.findOne({ where: { userId }, attributes: ['accessToken'] })
-    )?.toJSON() as GithubAuthModel;
+  const findTokenByUsername = async (username: string) => {
+    const record = await model.findOne({ where: { username }, attributes: ['token'] });
+    return (record?.toJSON() as GithubAuthModel | undefined)?.token;
+  };
+
   const upsertOne = async (data: GithubAuthModel) => (await model.upsert(data))[0];
 
   return {
     model,
-    findUserById,
+    findTokenByUsername,
     upsertOne,
   };
 };

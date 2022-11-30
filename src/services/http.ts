@@ -645,33 +645,110 @@ export default class HttpService extends GenericService {
     res.send(makeResponse('ok'));
   };
 
-  handleGetNotifications = async (req: Request, res: Response) => {
-    const {address} = req.params;
+  handleGetUnreadNotificationCounts = async (req: Request, res: Response) => {
+    const lastRead = req.query.lastRead && Number(req.query.lastRead);
+    const { address } = req.params;
     const values = await sequelize.query(
-        // prettier-ignore
-        `
-            SELECT zkc.message_id, zkc.type, zkc.timestamp, zkc.sender_address as creator, zkc.sender_pubkey as sender_pubkey FROM zkchat_chats zkc
-            WHERE zkc.receiver_address = :address
-            UNION
-            SELECT p."messageId" as message_id, m.subtype as type, m."createdAt" as timestamp,  m.creator as creator, null as sender_pubkey FROM moderations m
-            JOIN posts p on p."messageId" = m.reference
-            WHERE m.subtype = 'LIKE'
-            AND p.creator = :address
-            UNION
-            SELECT p."messageId" as message_id, p.subtype as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM posts p
-            JOIN posts op on op."messageId" = p.reference AND p.subtype = 'REPLY'
-            AND op.creator = :address
-            ORDER BY timestamp DESC
-        `,
-        {
-          type: QueryTypes.SELECT,
-          replacements: {
-            address: address,
-          },
-        }
+      `
+        SELECT tem.type, COUNT(*)
+        FROM (
+          SELECT p."messageId" as message_id, m.subtype as type, m."createdAt" as timestamp,  m.creator as creator, null as sender_pubkey FROM moderations m
+          JOIN posts p on p."messageId" = m.reference
+          WHERE m.subtype = 'LIKE'
+          AND p.creator = :address
+          AND m."createdAt" > :lastRead
+          UNION
+          SELECT p."messageId" as message_id, p.subtype as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM posts p
+          JOIN posts op on op."messageId" = p.reference AND p.subtype = 'REPLY'
+          AND op.creator = :address
+          AND p."createdAt" > :lastRead
+          UNION
+          SELECT p."messageId" as message_id, p.subtype as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM posts p
+          JOIN posts op on op."messageId" = p.reference AND p.subtype = 'REPOST'
+          AND op.creator = :address
+          AND p."createdAt" > :lastRead
+          UNION
+          SELECT invite."messageId" as message_id, invite.subtype as type, invite."createdAt" as timestamp, invite.creator as creator, null as sender_pubkey FROM users u
+          LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+          JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+          JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = u.name AND invite.name = :address
+          LEFT JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :address AND accept.name = u.name
+          WHERE invite."createdAt" > :lastRead
+          UNION
+          SELECT accept."messageId" as message_id, accept.subtype as type, accept."createdAt" as timestamp, accept.creator as creator, null as sender_pubkey FROM users u
+          LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+          JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+          JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = :address AND invite.name = u.name
+          JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = u.name AND accept.name = :address
+          WHERE accept."createdAt" > :lastRead
+        ) AS tem
+        GROUP BY type
+        ORDER BY type
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          address: address,
+          lastRead,
+        },
+      }
+    );
+    res.send(
+      makeResponse(
+        values.reduce((map: any, val: any) => {
+          map[val.type] = Number(val.count);
+          map.TOTAL = map.TOTAL || 0;
+          map.TOTAL += Number(val.count);
+          return map;
+        }, {})
+      )
+    );
+  };
+
+  handleGetNotifications = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const { address } = req.params;
+    const values = await sequelize.query(
+      `
+        SELECT p."messageId" as message_id, m.subtype as type, m."createdAt" as timestamp,  m.creator as creator, null as sender_pubkey FROM moderations m
+        JOIN posts p on p."messageId" = m.reference
+        WHERE m.subtype = 'LIKE'
+        AND p.creator = :address
+        UNION
+        SELECT p."messageId" as message_id, p.subtype as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM posts p
+        JOIN posts op on op."messageId" = p.reference AND p.subtype = 'REPLY'
+        AND op.creator = :address
+        UNION
+        SELECT p."messageId" as message_id, p.subtype as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM posts p
+        JOIN posts op on op."messageId" = p.reference AND p.subtype = 'REPOST'
+        AND op.creator = :address
+        UNION
+        SELECT invite."messageId" as message_id, invite.subtype as type, invite."createdAt" as timestamp, invite.creator as creator, null as sender_pubkey FROM users u
+        LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+        JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+        JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = u.name AND invite.name = :address
+        LEFT JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :address AND accept.name = u.name
+        UNION
+        SELECT accept."messageId" as message_id, accept.subtype as type, accept."createdAt" as timestamp, accept.creator as creator, null as sender_pubkey FROM users u
+        LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+        JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+        JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = :address AND invite.name = u.name
+        JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = u.name AND accept.name = :address
+        ORDER BY timestamp DESC
+        LIMIT :limit OFFSET :offset
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          address: address,
+          limit,
+          offset,
+        },
+      }
     );
     res.send(makeResponse(values));
-  }
+  };
 
   addRoutes() {
     this.app.get(
@@ -715,6 +792,10 @@ export default class HttpService extends GenericService {
     this.app.get('/v1/group_members/:group', this.wrapHandler(this.handleGetMembers));
     this.app.get('/v1/:address/groups', this.wrapHandler(this.handleGetGroupsByAddress));
     this.app.get('/v1/events', this.wrapHandler(this.handleGetEvents));
+    this.app.get(
+      '/v1/:address/notifications/unread',
+      this.wrapHandler(this.handleGetUnreadNotificationCounts)
+    );
     this.app.get('/v1/:address/notifications', this.wrapHandler(this.handleGetNotifications));
     this.app.post('/v1/events/:clientId', jsonParser, this.wrapHandler(this.handleUpdateSSEClient));
     this.app.get(

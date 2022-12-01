@@ -29,6 +29,8 @@ let json: {
   ghClientSecret?: string;
   twCallbackUrl?: string;
   twConsumerKey?: string;
+  twClientId?: string; // OAuth 2.0 Client ID in twitter dev portal
+  twClientSecret?: string; // OAuth 2.0 Client Secret in twitter dev portal
   twConsumerSecret?: string;
   twBearerToken?: string;
   twAccessKey?: string;
@@ -54,6 +56,8 @@ const ghCallbackUrl = json.ghCallbackUrl || process.env.GH_CALLBACK_URL;
 const ghClientId = json.ghClientId || process.env.GH_CLIENT_ID;
 const ghClientSecret = json.ghClientSecret || process.env.GH_CLIENT_SECRET;
 const twCallbackUrl = json.twCallbackUrl || process.env.TW_CALLBACK_URL;
+const twClientId = json.twClientId || process.env.TW_CLIENT_ID;
+const twClientSecret = json.twClientSecret || process.env.TW_CLIENT_SECRET;
 const twConsumerKey = json.twConsumerKey || process.env.TW_CONSUMER_KEY;
 const twConsumerSecret = json.twConsumerSecret || process.env.TW_CONSUMER_SECRET;
 const twBearerToken = json.twBearerToken || process.env.TW_BEARER_TOKEN;
@@ -99,6 +103,8 @@ if (!ghCallbackUrl) throw new Error(`ghCallbackUrl config missing`);
 if (!ghClientId) throw new Error(`ghClientId config missing`);
 if (!ghClientSecret) throw new Error(`ghClientSecret config missing`);
 if (!twCallbackUrl) throw new Error(`twCallbackUrl is not valid`);
+if (!twClientId) throw new Error(`twClientId is not valid`);
+if (!twClientSecret) throw new Error(`twClientSecret is not valid`);
 if (!twConsumerKey) throw new Error(`twConsumerKey is not valid`);
 if (!twConsumerSecret) throw new Error(`twConsumerSecret is not valid`);
 if (!twBearerToken) throw new Error(`twBearerToken is not valid`);
@@ -133,6 +139,8 @@ const config = {
   ghClientId,
   ghClientSecret,
   twCallbackUrl,
+  twClientId,
+  twClientSecret,
   twConsumerKey,
   twConsumerSecret,
   twBearerToken,

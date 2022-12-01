@@ -681,6 +681,11 @@ export default class HttpService extends GenericService {
           JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = :address AND invite.name = u.name
           JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = u.name AND accept.name = :address
           WHERE accept."createdAt" > :lastRead
+          UNION
+          SELECT p."messageId" as message_id, 'MENTION' as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM tags t
+          JOIN posts p ON p."messageId" = t.message_id
+          WHERE t.tag_name = '@'||:address
+          AND p."createdAt" > :lastRead
         ) AS tem
         GROUP BY type
         ORDER BY type
@@ -735,6 +740,10 @@ export default class HttpService extends GenericService {
         JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
         JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = :address AND invite.name = u.name
         JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = u.name AND accept.name = :address
+        UNION
+        SELECT p."messageId" as message_id, 'MENTION' as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM tags t
+        JOIN posts p ON p."messageId" = t.message_id
+        WHERE t.tag_name = '@'||:address
         ORDER BY timestamp DESC
         LIMIT :limit OFFSET :offset
       `,

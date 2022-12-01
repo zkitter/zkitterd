@@ -22,6 +22,8 @@
   "dependencies": {
     "@ensdomains/ensjs": "^2.0.1",
     "@interep/reputation": "^0.4.0",
+    "@superfaceai/passport-twitter-oauth2": "^1.2.0",
+    "@types/passport-twitter": "^1.0.37",
     "@zk-kit/identity": "^1.4.1",
     "@zk-kit/protocols": "^1.11.1",
     "async-mutex": "^0.3.1",

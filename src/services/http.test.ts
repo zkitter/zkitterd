@@ -594,7 +594,7 @@ tape('HTTPService - get interep ID commitment', async t => {
 
   http.addRoutes();
 
-  const interepGetIdParams = getStub.args[28];
+  const interepGetIdParams = getStub.args[30];
   // @ts-ignore
   const getIdHandler: any = interepGetIdParams[2];
   const getIdRequest = newRequest({

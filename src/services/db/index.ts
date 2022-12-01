@@ -15,6 +15,7 @@ import linkPreview from '../../models/linkPreview';
 import ens from '../../models/ens';
 import twitterAuth from '../../models/twitterAuth';
 import githubAuth from '../../models/githubAuth';
+import auth from '../../models/auth';
 import interepGroups from '../../models/interepGroups';
 import semaphoreCreators from '../../models/semaphore_creators';
 import threads from '../../models/thread';
@@ -40,6 +41,7 @@ export default class DBService extends GenericService {
   semaphore?: ReturnType<typeof semaphore>;
   meta?: ReturnType<typeof meta>;
   userMeta?: ReturnType<typeof userMeta>;
+  auth?: ReturnType<typeof auth>;
   twitterAuth?: ReturnType<typeof twitterAuth>;
   githubAuth?: ReturnType<typeof githubAuth>;
   interepGroups?: ReturnType<typeof interepGroups>;
@@ -142,11 +144,11 @@ export default class DBService extends GenericService {
     return this.githubAuth;
   }
 
-  async getAuthDb(provider: 'github' /* 'twitter' | 'reddit' */) {
-    switch (provider) {
-      case 'github':
-        return this.getGithubAuth();
+  async getAuth() {
+    if (!this.auth) {
+      return Promise.reject(new Error('auth is not initialized'));
     }
+    return this.auth;
   }
 
   async getApp(): Promise<ReturnType<typeof app>> {
@@ -221,6 +223,7 @@ export default class DBService extends GenericService {
     this.ens = ens(this.sequelize);
     this.twitterAuth = twitterAuth(this.sequelize);
     this.githubAuth = githubAuth(this.sequelize);
+    this.auth = auth(this.sequelize);
     this.interepGroups = interepGroups(this.sequelize);
     this.semaphoreCreators = semaphoreCreators(this.sequelize);
     this.threads = threads(this.sequelize);
@@ -246,6 +249,7 @@ export default class DBService extends GenericService {
     await this.ens?.model.sync({ force: !!process.env.FORCE });
     await this.twitterAuth?.model.sync({ force: !!process.env.FORCE });
     await this.githubAuth?.model.sync({ force: !!process.env.FORCE });
+    await this.auth?.model.sync({ force: !!process.env.FORCE });
     await this.interepGroups?.model.sync({ force: !!process.env.FORCE });
     await this.semaphoreCreators?.model.sync({ force: !!process.env.FORCE });
     await this.threads?.model.sync({ force: !!process.env.FORCE });
@@ -263,6 +267,7 @@ export default class DBService extends GenericService {
 
     await this.app?.updateLastGroup42BlockScanned(7660170);
   }
+
   async stop() {
     await this.sequelize.close();
   }

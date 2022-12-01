@@ -12,14 +12,14 @@ import ZKChatService from './services/zkchat';
 import MerkleService from './services/merkle';
 import { ReputationService } from './services/reputation';
 import {
+  AuthController,
   EventsController,
-  GithubController,
   InterepController,
   MerkleController,
   MiscController,
   PostsController,
   TagsController,
-  TwitterController,
+  // TwitterController,
   UsersController,
   ZkChatController,
 } from './services/http/controllers';
@@ -36,6 +36,8 @@ import {
     main.add('gun', new GunService());
     main.add('ipfs', new IPFSService());
     main.add('http', new HttpService());
+
+    main.add('authController', new AuthController());
     main.add('interepController', new InterepController());
     main.add('eventsController', new EventsController());
     main.add('merkleController', new MerkleController());
@@ -43,9 +45,9 @@ import {
     main.add('postsController', new PostsController());
     main.add('usersController', new UsersController());
     main.add('tagsController', new TagsController());
-    main.add('twitterController', new TwitterController());
+    // main.add('twitterController', new TwitterController());
     main.add('zkChatController', new ZkChatController());
-    main.add('githubController', new GithubController());
+    // main.add('githubController', new GithubController());
     main.add('reputation', new ReputationService());
     await main.start();
   } catch (e) {

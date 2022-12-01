@@ -231,7 +231,7 @@ export default class DBService extends GenericService {
     await this.connections?.model.sync({ force: !!process.env.FORCE });
     await this.profiles?.model.sync({ force: !!process.env.FORCE });
     await this.posts?.model.sync({ force: !!process.env.FORCE });
-    await this.posts.vectorizeContent();
+    await this.posts.vectorizeContent().catch(e => console.error(e));
     await this.tags?.model.sync({ force: !!process.env.FORCE });
 
     await this.userMeta?.model.sync({ force: !!process.env.FORCE });
@@ -253,8 +253,6 @@ export default class DBService extends GenericService {
       await this.app?.updateLastArbitrumBlock(config?.lastArbitrumBlock || 2193241);
       await this.app?.updateLastGroup42BlockScanned(7660170);
     }
-
-    await this.app?.updateLastGroup42BlockScanned(7660170);
   }
 
   async stop() {

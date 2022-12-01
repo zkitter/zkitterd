@@ -41,6 +41,7 @@ import {
   addTopic,
   keepAlive,
   publishTopic,
+  publishUnread,
   removeConnection,
   SSEType,
 } from '../util/sse';
@@ -512,6 +513,13 @@ export default class HttpService extends GenericService {
     res.send(makeResponse(data));
   };
 
+  handleGetUnreadCountDM = async (req: Request, res: Response) => {
+    const { sender, receiver } = req.params;
+    const lastRead = req.query.lastRead && Number(req.query.lastRead);
+    const data = await this.call('zkchat', 'getUnreadCountDM', sender, receiver, lastRead);
+    res.send(makeResponse(data));
+  };
+
   handleGetDirectMessage = async (req: Request, res: Response) => {
     const { sender, receiver } = req.params;
     const limit = req.query.limit && Number(req.query.limit);
@@ -789,6 +797,10 @@ export default class HttpService extends GenericService {
       '/v1/zkchat/chat-messages',
       jsonParser,
       this.wrapHandler(this.handlePostChatMessage)
+    );
+    this.app.get(
+      '/v1/zkchat/chat-messages/dm/:sender/:receiver/unread',
+      this.wrapHandler(this.handleGetUnreadCountDM)
     );
     this.app.get(
       '/v1/zkchat/chat-messages/dm/:sender/:receiver',

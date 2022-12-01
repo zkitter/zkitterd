@@ -41,6 +41,10 @@ export default class ZKChatService extends GenericService {
     return this.zkchat.addChatMessage(chatMessage);
   };
 
+  getUnreadCountDM = async (sender_pubkey: string, receiverPubkey: string, lastRead = 0) => {
+    return this.zkchat.getUnreadCountDM(sender_pubkey, receiverPubkey, lastRead);
+  };
+
   getDirectMessages = async (
     senderPubkey: string,
     receiverPubkey: string,

@@ -20,14 +20,14 @@ export default class HttpService extends GenericService {
   httpServer: any;
 
   controllers = [
+    'auth',
     'events',
-    'github',
     'interep',
     'merkle',
     'misc',
     'posts',
     'tags',
-    'twitter',
+    // 'twitter',
     'users',
     'zkChat',
   ];
@@ -65,9 +65,9 @@ export default class HttpService extends GenericService {
     });
     passport.deserializeUser(
       (user: { username: string; provider: string; reputation: string }, done) => {
-        this.call('db', 'getAuthDb', user.provider)
+        this.call('db', 'getAuth')
           .then(db => {
-            db.findTokenByUsername(user.username)
+            db.findTokenByUserId(user.username)
               .then((token: string | undefined) => {
                 // @ts-ignore
                 done(null, { token, ...user });

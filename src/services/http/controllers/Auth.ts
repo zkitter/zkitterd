@@ -1,4 +1,4 @@
-import { Request, RequestHandler, Response, Router } from 'express';
+import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
 import passport from 'passport';
 import { Strategy as GhStrategy } from 'passport-github2';
 import { Strategy as TwitterStrategy } from '@superfaceai/passport-twitter-oauth2';
@@ -7,6 +7,7 @@ import { calculateReputation, OAuthProvider } from '@interep/reputation';
 import { Controller } from './interface';
 import config from '../../../util/config';
 import { getReceivedStars } from '../../../util/github';
+import { makeResponse } from '../utils';
 
 const { ghCallbackUrl, ghClientId, ghClientSecret, twCallbackUrl, twClientId, twClientSecret } =
   config;
@@ -102,6 +103,8 @@ export class AuthController extends Controller {
   }
 
   addRoutes = () => {
+    this._router.get('/session', this.session).get('/logout', this.logout);
+
     this._router.use(
       '/github',
       Router()
@@ -129,12 +132,27 @@ export class AuthController extends Controller {
   };
 
   callback = (req: Request, res: Response) => {
-    console.log(req.user);
     res.redirect(this.redirectUrl);
   };
 
   storeRedirectUrl: RequestHandler<{}, {}, {}, { redirectUrl: string }> = (req, res, next) => {
     this.redirectUrl = req.query.redirectUrl;
     next();
+  };
+
+  session = (req: Request, res: Response) => {
+    if (req.user) {
+      res.status(200).json({ payload: req.user });
+    } else {
+      res.status(401).json({ error: 'not authenticated' });
+    }
+  };
+
+  logout = (req: Request, res: Response, next: NextFunction) => {
+    // @ts-ignore
+    req.logout(err => {
+      if (err) return next(err);
+      res.send(makeResponse('ok'));
+    });
   };
 }

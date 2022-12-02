@@ -22,8 +22,6 @@ export class MiscController extends Controller {
     this._router
       .get('/healthcheck', this.healthcheck)
       .get('/preview', this.preview)
-      .get('/session', this.session)
-      .get('/logout', this.logout)
       .post(
         '/ipfs/upload',
         upload.any(),
@@ -122,22 +120,6 @@ export class MiscController extends Controller {
         url: `https://${cid}.ipfs.dweb.link/${filename}`,
       })
     );
-  };
-
-  session = (req: Request, res: Response) => {
-    if (req.user) {
-      res.status(200).json({ payload: req.user });
-    } else {
-      res.status(401).json({ error: 'not authenticated' });
-    }
-  };
-
-  logout = (req: Request, res: Response, next: NextFunction) => {
-    // @ts-ignore
-    req.logout(err => {
-      if (err) return next(err);
-      res.send(makeResponse('ok'));
-    });
   };
 
   verifyAuth =

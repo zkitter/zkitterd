@@ -326,7 +326,6 @@ export default class HttpService extends GenericService {
     const query = req.body.query;
     const postDB = await this.call('db', 'getPosts');
     const posts = await postDB.search(query, offset, limit);
-    console.log({ posts });
     res.send(makeResponse(posts));
   };
 

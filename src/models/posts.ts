@@ -512,7 +512,10 @@ const posts = (sequelize: Sequelize) => {
               WHERE ts @@ to_tsquery('english', :query)
               ORDER BY "createdAt" ${order} LIMIT :limit
               OFFSET :offset`,
-        { type: QueryTypes.SELECT, replacements: { limit, offset, query } }
+        {
+          type: QueryTypes.SELECT,
+          replacements: { limit, offset, query: query.replace(/\||,/g, '').replace(/ /g, ' | ') },
+        }
       )
       .then(result => result.map(inflateResultToPostJSON));
 

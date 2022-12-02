@@ -2,6 +2,7 @@ import { NextFunction, Request, RequestHandler, Response, Router } from 'express
 import passport from 'passport';
 import { Strategy as GhStrategy } from 'passport-github2';
 import { Strategy as TwitterStrategy } from '@superfaceai/passport-twitter-oauth2';
+import { Strategy as RedditStrategy } from 'passport-reddit';
 import { calculateReputation, OAuthProvider } from '@interep/reputation';
 
 import { Controller } from './interface';
@@ -9,8 +10,17 @@ import config from '../../../util/config';
 import { getReceivedStars } from '../../../util/github';
 import { makeResponse } from '../utils';
 
-const { ghCallbackUrl, ghClientId, ghClientSecret, twCallbackUrl, twClientId, twClientSecret } =
-  config;
+const {
+  ghCallbackUrl,
+  ghClientId,
+  ghClientSecret,
+  rdCallbackUrl,
+  rdClientId,
+  rdClientSecret,
+  twCallbackUrl,
+  twClientId,
+  twClientSecret,
+} = config;
 
 type GhProfile = {
   id: string;
@@ -24,6 +34,7 @@ type GhProfile = {
 
 type TwProfile = {
   id: string;
+  provider: string;
   username: string;
 };
 
@@ -81,7 +92,7 @@ export class AuthController extends Controller {
           clientSecret: twClientSecret,
           callbackURL: twCallbackUrl,
         },
-        async (accessToken, refreshToken, profile, done) => {
+        async (accessToken: string, refreshToken: string, profile: TwProfile, done: any) => {
           const { provider, id: userId, username } = profile;
 
           const db = await this.call('db', 'getAuth');
@@ -94,6 +105,24 @@ export class AuthController extends Controller {
             provider,
             username,
             // reputation,
+          });
+        }
+      )
+    );
+
+    passport.use(
+      // @ts-ignore
+      new RedditStrategy(
+        {
+          clientID: rdClientId,
+          clientSecret: rdClientSecret,
+          callbackURL: rdCallbackUrl,
+        },
+        async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+          console.log({ profile });
+          // @ts-ignore
+          return done(null, {
+            profile,
           });
         }
       )
@@ -128,6 +157,12 @@ export class AuthController extends Controller {
           passport.authenticate('twitter', { scope: ['follows.read'] })
         )
         .get('/callback', passport.authenticate('twitter'), this.callback)
+    );
+    this._router.use(
+      '/reddit',
+      Router()
+        .get('', this.storeRedirectUrl, passport.authenticate('reddit', { scope: ['identity'] }))
+        .get('/callback', passport.authenticate('reddit'), this.callback)
     );
   };
 

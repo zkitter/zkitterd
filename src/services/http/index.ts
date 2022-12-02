@@ -27,7 +27,7 @@ export default class HttpService extends GenericService {
     'misc',
     'posts',
     'tags',
-    // 'twitter',
+    'twitter',
     'users',
     'zkChat',
   ];

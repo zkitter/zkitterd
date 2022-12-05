@@ -1,9 +1,10 @@
 import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
 import passport from 'passport';
 import { Strategy as GhStrategy } from 'passport-github2';
-import { Strategy as TwitterStrategy } from '@superfaceai/passport-twitter-oauth2';
-import { Strategy as RedditStrategy } from 'passport-reddit';
 import { calculateReputation, OAuthProvider } from '@interep/reputation';
+import { Strategy as TwitterStrategy } from '@superfaceai/passport-twitter-oauth2';
+
+import { Strategy as RedditStrategy } from 'passport-reddit';
 
 import { Controller } from './interface';
 import config from '../../../util/config';
@@ -36,6 +37,17 @@ type TwProfile = {
   id: string;
   provider: string;
   username: string;
+};
+
+type RdProfile = {
+  id: string;
+  name: string;
+  provider: string;
+  _json: {
+    coins: number;
+    total_karma: number;
+    linked_identities: any[];
+  };
 };
 
 export class AuthController extends Controller {
@@ -99,7 +111,7 @@ export class AuthController extends Controller {
 
           await db.upsertOne({ provider, userId, username, token: accessToken });
 
-          // TODO get twitter followers/reputation
+          // TODO calculate reputation
           // @ts-ignore
           return done(null, {
             provider,
@@ -118,11 +130,23 @@ export class AuthController extends Controller {
           clientSecret: rdClientSecret,
           callbackURL: rdCallbackUrl,
         },
-        async (accessToken: string, refreshToken: string, profile: any, done: any) => {
-          console.log({ profile });
+        async (accessToken: string, refreshToken: string, profile: RdProfile, done: any) => {
+          const {
+            provider,
+            id: userId,
+            name: username,
+            _json: { coins, total_karma, linked_identities },
+          } = profile;
+
+          const db = await this.call('db', 'getAuth');
+          await db.upsertOne({ provider, userId, username, token: accessToken });
+
+          // TODO calculate reputation
           // @ts-ignore
           return done(null, {
-            profile,
+            provider,
+            username,
+            // reputation
           });
         }
       )

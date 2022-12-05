@@ -1,1 +1,1 @@
-declare namespace 'passport-reddit';
+declare module 'passport-reddit';

@@ -1394,8 +1394,17 @@ tape('DBService', async t => {
     'should search user by name'
   );
 
-  const searchResults = await db.posts!.search('test');
-  t.equal(searchResults.length, 20, 'should search post by text content');
+  let searchResults = await db.posts!.search('test', 0, 100);
+  t.equal(searchResults.length, 42, 'should search post by text content');
+
+  searchResults = await db.posts!.search('test|asdf', 0, 100);
+  t.equal(searchResults.length, 45, 'should search post by text content');
+
+  searchResults = await db.posts!.search('test,asdf', 0, 100);
+  t.equal(searchResults.length, 45, 'should search post by text content');
+
+  searchResults = await db.posts!.search('test||asdf', 0, 100);
+  t.equal(searchResults.length, 45, 'should search post by text content');
 
   await db.stop();
   if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);

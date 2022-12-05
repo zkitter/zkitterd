@@ -508,13 +508,17 @@ const posts = (sequelize: Sequelize) => {
       // prettier-ignore
       .query(
         `SELECT *
-              FROM posts
-              WHERE ts @@ to_tsquery('english', :query)
-              ORDER BY "createdAt" ${order} LIMIT :limit
-              OFFSET :offset`,
+         FROM posts
+         WHERE ts @@ to_tsquery('english', :query)
+         ORDER BY "createdAt" ${order} LIMIT :limit
+         OFFSET :offset`,
         {
           type: QueryTypes.SELECT,
-          replacements: { limit, offset, query: query.replace(/\||,/g, '').replace(/ /g, ' | ') },
+          replacements: {
+            limit,
+            offset,
+            query: query.replace(/\||,/g, ' ').replace(/\s\s+/g, ' ').replace(/ /g, ' | '),
+          },
         }
       )
       .then(result => result.map(inflateResultToPostJSON));

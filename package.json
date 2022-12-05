@@ -22,6 +22,7 @@
   "dependencies": {
     "@ensdomains/ensjs": "^2.0.1",
     "@interep/reputation": "^0.4.0",
+    "@r1oga/passport-reddit": "^1.0.0",
     "@superfaceai/passport-twitter-oauth2": "^1.2.0",
     "@types/passport-twitter": "^1.0.37",
     "@zk-kit/identity": "^1.4.1",
@@ -52,7 +53,6 @@
     "oauth-1.0a": "^2.2.6",
     "passport": "^0.6.0",
     "passport-github2": "^0.1.12",
-    "passport-reddit": "^1.1.0",
     "pg": "^8.7.1",
     "semaphore-lib": "git+https://github.com/akinovak/semaphore-lib.git#dev",
     "sequelize": "6.6.5",

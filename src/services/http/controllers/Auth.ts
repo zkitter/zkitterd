@@ -4,7 +4,7 @@ import { Strategy as GhStrategy } from 'passport-github2';
 import { calculateReputation, OAuthProvider } from '@interep/reputation';
 import { Strategy as TwitterStrategy } from '@superfaceai/passport-twitter-oauth2';
 
-import { Strategy as RedditStrategy } from 'passport-reddit';
+import { Strategy as RedditStrategy } from '@r1oga/passport-reddit';
 
 import { Controller } from './interface';
 import config from '../../../util/config';
@@ -112,7 +112,11 @@ export class AuthController extends Controller {
 
           await db.upsertOne({ provider, userId, username, token: accessToken });
 
-          // TODO calculate reputation
+          // const reputation = calculateReputation(OAuthProvider.TWITTER, {
+          //   botometerOverallScore,
+          //   followers,
+          //   verifiedProfile,
+          // });
           // @ts-ignore
           return done(null, {
             provider,
@@ -190,7 +194,9 @@ export class AuthController extends Controller {
         .get(
           '',
           this.storeRedirectUrl,
-          passport.authenticate('twitter', { scope: ['follows.read'] })
+          passport.authenticate('twitter', {
+            scope: ['tweet.read', 'users.read', 'offline.access', 'follows.read'],
+          })
         )
         .get('/callback', passport.authenticate('twitter'), this.callback)
     );

@@ -10,6 +10,7 @@ import { Controller } from './interface';
 import config from '../../../util/config';
 import { getReceivedStars } from '../../../util/github';
 import { makeResponse } from '../utils';
+import { getBotometerScore, getTwitterUserMetrics } from '../../../util/twitter';
 
 const {
   ghCallbackUrl,
@@ -112,16 +113,20 @@ export class AuthController extends Controller {
 
           await db.upsertOne({ provider, userId, username, token: accessToken });
 
-          // const reputation = calculateReputation(OAuthProvider.TWITTER, {
-          //   botometerOverallScore,
-          //   followers,
-          //   verifiedProfile,
-          // });
+          const { followers, verifiedProfile } = await getTwitterUserMetrics(userId);
+          const botometerOverallScore = await getBotometerScore(username);
+
+          const reputation = calculateReputation(OAuthProvider.TWITTER, {
+            botometerOverallScore,
+            followers,
+            verifiedProfile,
+          });
+
           // @ts-ignore
           return done(null, {
             provider,
             username,
-            // reputation,
+            reputation,
           });
         }
       )

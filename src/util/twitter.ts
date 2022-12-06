@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { URLSearchParams } from 'url';
 import { PostModel } from '../models/posts';
 import config from './config';
+
 const { Botometer } = require('botometer');
 const OAuth = require('oauth-1.0a');
 
@@ -270,5 +271,25 @@ export async function getUser(username: string): Promise<{
 }
 
 export async function getBotometerScore(username: string): Promise<any> {
-  return botometer.getScore(username);
+  const res = await botometer.getScore(username);
+  return res?.display_scores?.universal?.overall;
+}
+
+export async function getTwitterUserMetrics(userId: string) {
+  const res = await fetch(
+    `https://api.twitter.com/2/users/${userId}?user.fields=public_metrics,verified`,
+    {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${TW_BEARER_TOKEN}` },
+    }
+  );
+
+  const {
+    data: {
+      verified: verifiedProfile,
+      public_metrics: { followers_count: followers },
+    },
+  } = await res.json();
+
+  return { followers, verifiedProfile };
 }

@@ -27,7 +27,7 @@ export default class HttpService extends GenericService {
     'misc',
     'posts',
     'tags',
-    'twitter',
+    'twitter', // TODO: remove (to be superseded by Auth Controller)
     'users',
     'zkChat',
   ];

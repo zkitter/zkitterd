@@ -1,6 +1,5 @@
 export * from './Auth';
 export * from './Events';
-export * from './Github';
 export * from './Interep';
 export * from './Merkle';
 export * from './Misc';

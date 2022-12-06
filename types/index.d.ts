@@ -1,1 +1,1 @@
-declare module 'passport-reddit';
+declare module '@r1oga/passport-reddit';

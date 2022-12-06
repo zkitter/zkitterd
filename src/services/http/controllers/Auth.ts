@@ -45,8 +45,9 @@ type RdProfile = {
   provider: string;
   _json: {
     coins: number;
-    total_karma: number;
+    has_subscribed_to_premium: boolean;
     linked_identities: any[];
+    total_karma: number;
   };
 };
 
@@ -135,18 +136,29 @@ export class AuthController extends Controller {
             provider,
             id: userId,
             name: username,
-            _json: { coins, total_karma, linked_identities },
+            _json: {
+              coins,
+              has_subscribed_to_premium: premiumSubscription,
+              linked_identities,
+              total_karma: karma,
+            },
           } = profile;
 
           const db = await this.call('db', 'getAuth');
           await db.upsertOne({ provider, userId, username, token: accessToken });
 
-          // TODO calculate reputation
+          const reputation = calculateReputation(OAuthProvider.REDDIT, {
+            coins,
+            karma,
+            linkedIdentities: linked_identities.length,
+            premiumSubscription,
+          });
+
           // @ts-ignore
           return done(null, {
             provider,
             username,
-            // reputation
+            reputation,
           });
         }
       )

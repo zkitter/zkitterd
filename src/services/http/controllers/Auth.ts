@@ -1,56 +1,10 @@
 import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
 import passport from 'passport';
-import { Strategy as GhStrategy } from 'passport-github2';
-import { calculateReputation, OAuthProvider } from '@interep/reputation';
-import { Strategy as TwitterStrategy } from '@superfaceai/passport-twitter-oauth2';
-
-import { Strategy as RedditStrategy } from '@r1oga/passport-reddit';
+import { OAuthProvider } from '@interep/reputation';
 
 import { Controller } from './interface';
-import config from '../../../util/config';
-import { getReceivedStars } from '../../../util/github';
 import { makeResponse } from '../utils';
-import { getBotometerScore, getTwitterUserMetrics } from '../../../util/twitter';
-
-const {
-  ghCallbackUrl,
-  ghClientId,
-  ghClientSecret,
-  rdCallbackUrl,
-  rdClientId,
-  rdClientSecret,
-  twCallbackUrl,
-  twClientId,
-  twClientSecret,
-} = config;
-
-type GhProfile = {
-  id: string;
-  provider: string;
-  username: string;
-  _json: {
-    followers: number;
-    plan: { name: string };
-  };
-};
-
-type TwProfile = {
-  id: string;
-  provider: string;
-  username: string;
-};
-
-type RdProfile = {
-  id: string;
-  name: string;
-  provider: string;
-  _json: {
-    coins: number;
-    has_subscribed_to_premium: boolean;
-    linked_identities: any[];
-    total_karma: number;
-  };
-};
+import { getProfileParams, GhProfile, RdProfile, STRATEGIES, TwProfile } from '../../../util/auth';
 
 export class AuthController extends Controller {
   prefix = '/auth';
@@ -58,123 +12,37 @@ export class AuthController extends Controller {
 
   constructor() {
     super();
-    passport.use(
-      new GhStrategy(
-        {
-          clientID: ghClientId,
-          clientSecret: ghClientSecret,
-          callbackURL: ghCallbackUrl,
-        },
-        async (accessToken: string, refreshToken: string, profile: GhProfile, done: any) => {
-          const {
-            id: userId,
-            provider,
-            username,
-            _json: {
-              followers,
-              plan: { name: planName },
-            },
-          } = profile;
-
-          const proPlan = planName === 'pro';
-          const receivedStars = await getReceivedStars(username);
-          const reputation = calculateReputation(OAuthProvider.GITHUB, {
-            followers,
-            receivedStars,
-            proPlan,
-          });
-
-          const db = await this.call('db', 'getAuth');
-
-          await db.upsertOne({ provider, userId, username, token: accessToken });
-
-          return done(null, {
-            provider,
-            username,
-            reputation,
-          });
-        }
-      )
-    );
-
-    passport.use(
-      // @ts-ignore
-      new TwitterStrategy(
-        {
-          clientType: 'public',
-          clientID: twClientId,
-          clientSecret: twClientSecret,
-          callbackURL: twCallbackUrl,
-        },
-        async (accessToken: string, refreshToken: string, profile: TwProfile, done: any) => {
-          const { provider, id: userId, username } = profile;
-
-          const db = await this.call('db', 'getAuth');
-
-          await db.upsertOne({ provider, userId, username, token: accessToken });
-
-          const { followers, verifiedProfile } = await getTwitterUserMetrics(userId);
-          const botometerOverallScore = await getBotometerScore(username);
-
-          const reputation = calculateReputation(OAuthProvider.TWITTER, {
-            botometerOverallScore,
-            followers,
-            verifiedProfile,
-          });
-
-          // @ts-ignore
-          return done(null, {
-            provider,
-            username,
-            reputation,
-          });
-        }
-      )
-    );
-
-    passport.use(
-      // @ts-ignore
-      new RedditStrategy(
-        {
-          clientID: rdClientId,
-          clientSecret: rdClientSecret,
-          callbackURL: rdCallbackUrl,
-        },
-        async (accessToken: string, refreshToken: string, profile: RdProfile, done: any) => {
-          const {
-            provider,
-            id: userId,
-            name: username,
-            _json: {
-              coins,
-              has_subscribed_to_premium: premiumSubscription,
-              linked_identities,
-              total_karma: karma,
-            },
-          } = profile;
-
-          const db = await this.call('db', 'getAuth');
-          await db.upsertOne({ provider, userId, username, token: accessToken });
-
-          const reputation = calculateReputation(OAuthProvider.REDDIT, {
-            coins,
-            karma,
-            linkedIdentities: linked_identities.length,
-            premiumSubscription,
-          });
-
-          // @ts-ignore
-          return done(null, {
-            provider,
-            username,
-            reputation,
-          });
-        }
-      )
-    );
+    Object.entries(STRATEGIES).forEach(([provider, { options }]) => {
+      this.createStrategy(provider as OAuthProvider, options);
+    });
 
     this.addRoutes();
   }
+
+  createStrategy = (provider: OAuthProvider, options: any) => {
+    passport.use(
+      new STRATEGIES[provider].Strategy(
+        options,
+        async (
+          accessToken: string,
+          refreshToken: string,
+          profile: GhProfile | RdProfile | TwProfile,
+          done: any
+        ) => {
+          const { reputation, userId, username } = await getProfileParams(profile, provider);
+          const db = await this.call('db', 'getAuth');
+          await db.upsertOne({ provider, userId, username, token: accessToken });
+
+          // @ts-ignore
+          return done(null, {
+            provider,
+            username,
+            reputation,
+          });
+        }
+      )
+    );
+  };
 
   addRoutes = () => {
     this._router.get('/session', this.session).get('/logout', this.logout);

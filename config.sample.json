@@ -25,6 +25,8 @@
   "rdClientId": "set in https://www.reddit.com/prefs/apps",
   "rdClientSecret": "set in https://www.reddit.com/prefs/apps",
   "twCallbackUrl": "obtain from twitter dev dashboard",
+  "twClientId": "obtain from twitter dev dashboard (oauth 2)",
+  "twClientSecret": "obtain from twitter dev dashboard (oauth 2)",
   "twConsumerKey": "obtain from twitter dev dashboard",
   "twConsumerSecret": "obtain from twitter dev dashboard",
   "twBearerToken": "obtain from twitter dev dashboard",

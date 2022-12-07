@@ -14,12 +14,14 @@ export class PostsController extends Controller {
   }
 
   public addRoutes() {
-    this._router.get('/homefeed', this.homefeed);
-    this._router.get('/posts', this.getMany);
-    this._router.get('/post/:hash', this.getOne);
-    this._router.get('/post/:hash/likes', this.getLikes);
-    this._router.get('/post/:hash/retweets', this.getRetweets);
-    this._router.get('/replies', this.getReplies);
+    this._router
+      .get('/homefeed', this.homefeed)
+      .get('/posts', this.getMany)
+      .post('/posts/search', this.search)
+      .get('/post/:hash', this.getOne)
+      .get('/post/:hash/likes', this.getLikes)
+      .get('/post/:hash/retweets', this.getRetweets)
+      .get('/replies', this.getReplies);
   }
 
   homefeed = async (req: Request, res: Response) => {
@@ -47,6 +49,15 @@ export class PostsController extends Controller {
     const postDB = await this.call('db', 'getPosts');
     const post = await postDB.findOne(hash, context);
     res.send(makeResponse(post));
+  };
+
+  search = async (req: Request, res: Response) => {
+    const limit = req.body.limit && Number(req.body.limit);
+    const offset = req.body.offset && Number(req.body.offset);
+    const query = req.body.query;
+    const postDB = await this.call('db', 'getPosts');
+    const posts = await postDB.search(query, offset, limit);
+    res.send(makeResponse(posts));
   };
 
   getLikes = async (req: Request, res: Response) => {

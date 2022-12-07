@@ -5,6 +5,7 @@ import { OAuthProvider } from '@interep/reputation';
 import { Controller } from './interface';
 import { makeResponse } from '../utils';
 import { getProfileParams, GhProfile, RdProfile, STRATEGIES, TwProfile } from '../../../util/auth';
+import logger from '../../../util/logger';
 
 export class AuthController extends Controller {
   prefix = '/auth';
@@ -27,18 +28,23 @@ export class AuthController extends Controller {
           accessToken: string,
           refreshToken: string,
           profile: GhProfile | RdProfile | TwProfile,
-          done: any
+          done: (err?: Error | null, user?: Express.User, info?: object) => void
         ) => {
-          const { reputation, userId, username } = await getProfileParams(profile, provider);
-          const db = await this.call('db', 'getAuth');
-          await db.upsertOne({ provider, userId, username, token: accessToken });
+          try {
+            const { reputation, userId, username } = await getProfileParams(profile, provider);
+            const db = await this.call('db', 'getAuth');
+            await db.upsertOne({ provider, userId, username, token: accessToken });
 
-          // @ts-ignore
-          return done(null, {
-            provider,
-            username,
-            reputation,
-          });
+            // @ts-ignore
+            return done(null, {
+              provider,
+              username,
+              reputation,
+            });
+          } catch (e) {
+            logger.error(e.message, { stack: e.stack });
+            return done(e);
+          }
         }
       )
     );

@@ -27,6 +27,7 @@ export const STRATEGIES = {
       clientSecret: ghClientSecret,
       callbackURL: ghCallbackUrl,
     },
+    scope: ['read:user', 'read:org'],
   },
   [OAuthProvider.REDDIT]: {
     Strategy: RedditStrategy,
@@ -35,6 +36,7 @@ export const STRATEGIES = {
       clientSecret: rdClientSecret,
       callbackURL: rdCallbackUrl,
     },
+    scope: ['identity'],
   },
   [OAuthProvider.TWITTER]: {
     // @ts-ignore
@@ -45,6 +47,7 @@ export const STRATEGIES = {
       clientSecret: twClientSecret,
       callbackURL: twCallbackUrl,
     },
+    scope: ['tweet.read', 'users.read', 'offline.access', 'follows.read'],
   },
 };
 

@@ -47,38 +47,14 @@ export class AuthController extends Controller {
   addRoutes = () => {
     this._router.get('/session', this.session).get('/logout', this.logout);
 
-    this._router.use(
-      '/github',
-      Router()
-        .get(
-          '',
-          this.storeRedirectUrl,
-          passport.authenticate('github', { scope: ['read:user', 'read:org'] })
-        )
-        .get('/callback', passport.authenticate('github'), this.callback)
-        .get('/test', (req, res) => {
-          res.json(req.user);
-        })
-    );
-
-    this._router.use(
-      '/twitter',
-      Router()
-        .get(
-          '',
-          this.storeRedirectUrl,
-          passport.authenticate('twitter', {
-            scope: ['tweet.read', 'users.read', 'offline.access', 'follows.read'],
-          })
-        )
-        .get('/callback', passport.authenticate('twitter'), this.callback)
-    );
-    this._router.use(
-      '/reddit',
-      Router()
-        .get('', this.storeRedirectUrl, passport.authenticate('reddit', { scope: ['identity'] }))
-        .get('/callback', passport.authenticate('reddit'), this.callback)
-    );
+    Object.entries(STRATEGIES).forEach(([provider, { scope }]) => {
+      this._router.use(
+        `/${provider}`,
+        Router()
+          .get('', this.storeRedirectUrl, passport.authenticate(provider, { scope }))
+          .get('/callback', passport.authenticate(provider), this.callback)
+      );
+    });
   };
 
   callback = (req: Request, res: Response) => {

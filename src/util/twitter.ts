@@ -51,7 +51,7 @@ export const requestToken = async (): Promise<string> => {
     url: TW_REQ_TOKEN_URL,
     method: 'POST',
     data: {
-      oauth_callbank: TW_CALLBACK_URL,
+      oauth_callback: TW_CALLBACK_URL,
     },
   };
 

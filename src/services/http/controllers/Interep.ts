@@ -1,4 +1,4 @@
-import { json, Request, Response, Router } from 'express';
+import { Request, Response, Router } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { Controller } from './interface';
@@ -55,30 +55,46 @@ export class InterepController extends Controller {
   };
 
   signUp = async (req: Request, res: Response) => {
-    const identityCommitment = req.params.identityCommitment;
-    const provider = req.params.provider;
-    const name = req.params.name;
+    const { identityCommitment, name, provider } = req.params;
+    if (!['twitter', 'github'].includes(provider))
+      throw new Error(`joining ${provider} interep groups not supported`);
 
-    // @ts-ignore
-    const { twitterToken } = req.session;
-    const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
-    const twitterAuthDB = await this.call('db', 'getTwitterAuth');
-    const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
+    let headers;
 
-    const headers = createHeader(
-      {
-        url: `https://api.twitter.com/1.1/account/verify_credentials.json`,
-        method: 'GET',
-      },
-      auth.user_token,
-      auth.user_token_secret
-    );
+    // TODO refactor twitter with passport
+    if (provider === 'twitter') {
+      // @ts-ignore
+      const { twitterToken } = req.session;
+      const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
+      const twitterAuthDB = await this.call('db', 'getTwitterAuth');
+      const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
+
+      headers = createHeader(
+        {
+          url: `https://api.twitter.com/1.1/account/verify_credentials.json`,
+          method: 'GET',
+        },
+        auth.user_token,
+        auth.user_token_secret
+      );
+    }
+
+    if (provider === 'github') {
+      // @ts-ignore
+      if (!req.user?.userId) throw new Error('not authenticated');
+
+      const githubAuthDb = await this.call('db', 'getGithubAuth');
+      // @ts-ignore
+      const { accessToken } = await githubAuthDb.findUserById(req.user.userId);
+
+      headers = { Authorization: `token ${accessToken}` };
+    }
 
     const resp = await fetch(
       `${config.interrepAPI}/api/v1/groups/${provider}/${name}/${identityCommitment}`,
       {
         method: 'POST',
-        headers: headers,
+        headers,
       }
     );
 

@@ -142,12 +142,12 @@ export class TwitterController extends Controller {
     const { followers_count, verified, profile_image_url, profile_image_url_https, screen_name } =
       json;
 
-    const botometerResult = await getBotometerScore(screen_name);
+    const botometerOverallScore = await getBotometerScore(screen_name);
 
     const reputation = calculateReputation(OAuthProvider.TWITTER, {
       followers: followers_count,
       verifiedProfile: verified,
-      botometerOverallScore: botometerResult?.display_scores?.universal?.overall,
+      botometerOverallScore,
     });
 
     res.send(

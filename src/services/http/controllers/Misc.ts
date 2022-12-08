@@ -19,23 +19,24 @@ export class MiscController extends Controller {
   }
 
   addRoutes = () => {
-    this._router.get('/healthcheck', this.healthcheck);
-    this._router.get('/preview', this.preview);
-    this._router.post(
-      '/ipfs/upload',
-      upload.any(),
-      this.verifyAuth(
-        async () => 'FILE_UPLOAD',
-        // @ts-ignore
-        async req => req.files[0].originalname.slice(0, 16),
-        req => {
+    this._router
+      .get('/healthcheck', this.healthcheck)
+      .get('/preview', this.preview)
+      .post(
+        '/ipfs/upload',
+        upload.any(),
+        this.verifyAuth(
+          async () => 'FILE_UPLOAD',
           // @ts-ignore
-          const filepath = path.join(process.cwd(), req.files[0].path);
-          fs.unlinkSync(filepath);
-        }
-      ),
-      this.ipfsUpload
-    );
+          async req => req.files[0].originalname.slice(0, 16),
+          req => {
+            // @ts-ignore
+            const filepath = path.join(process.cwd(), req.files[0].path);
+            fs.unlinkSync(filepath);
+          }
+        ),
+        this.ipfsUpload
+      );
   };
 
   healthcheck = async (req: Request, res: Response) => res.send(makeResponse('ok'));

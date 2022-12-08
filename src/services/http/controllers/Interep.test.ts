@@ -22,7 +22,7 @@ tape('InterepController', t => {
   t.test('POST /v1/interrep/groups/:provider/:name/:identityCommitment', async t => {
     init({
       identityCommitment: '0xidcommitment',
-      provider: 'myspace',
+      provider: 'twitter',
       name: 'diamond',
     });
     req.session.twitterToken =
@@ -45,7 +45,7 @@ tape('InterepController', t => {
 
     t.deepEqual(
       fetchStub.args[0][0],
-      'https://kovan.interep.link/api/v1/groups/myspace/diamond/0xidcommitment',
+      'https://kovan.interep.link/api/v1/groups/twitter/diamond/0xidcommitment',
       'should make request to interep'
     );
     t.deepEqual(
@@ -70,7 +70,7 @@ tape('InterepController', t => {
     stubs.semaphore.findAllByCommitment.returns(
       Promise.resolve([
         {
-          provider: 'myspace',
+          provider: 'twitter',
           name: 'diamond',
         },
       ])
@@ -80,7 +80,7 @@ tape('InterepController', t => {
 
     t.deepEqual(
       fetchStub.args[0][0],
-      'https://kovan.interep.link/api/v1/groups/myspace/diamond/0xidcommitment/proof',
+      'https://kovan.interep.link/api/v1/groups/twitter/diamond/0xidcommitment/proof',
       'should make request to interep'
     );
     t.deepEqual(
@@ -89,7 +89,7 @@ tape('InterepController', t => {
         {
           payload: {
             siblings: [0, 1, 0],
-            provider: 'myspace',
+            provider: 'twitter',
             name: 'diamond',
           },
           error: undefined,

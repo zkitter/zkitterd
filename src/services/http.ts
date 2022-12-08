@@ -319,6 +319,16 @@ export default class HttpService extends GenericService {
     res.send(makeResponse(posts));
   };
 
+  handleSearchPosts = async (req: Request, res: Response) => {
+    const limit = req.body.limit && Number(req.body.limit);
+    const offset = req.body.offset && Number(req.body.offset);
+    const query = req.body.query;
+    const postDB = await this.call('db', 'getPosts');
+    const posts = await postDB.search(query, offset, limit);
+    console.log({ posts });
+    res.send(makeResponse(posts));
+  };
+
   handleGetPostsByTag = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
@@ -516,19 +526,15 @@ export default class HttpService extends GenericService {
     const values = await sequelize.query(
       // prettier-ignore
       `
-            SELECT distinct zkc.receiver_pubkey as pubkey, zkc.receiver_address as address, null as group_id 
-            FROM zkchat_chats zkc
-            WHERE zkc.receiver_pubkey IN (
-                SELECT distinct receiver_pubkey FROM zkchat_chats WHERE sender_pubkey = :pubkey
-            )
-            UNION
-            SELECT distinct zkc.sender_pubkey as pubkey, zkc.sender_address as address, mr.group_id 
-            FROM zkchat_chats zkc
-            LEFT JOIN merkle_roots mr on mr.root_hash = zkc.rln_root
-            WHERE zkc.sender_pubkey IN (
-                SELECT distinct sender_pubkey FROM zkchat_chats WHERE receiver_pubkey = :pubkey
-            );
-        `,
+          SELECT distinct zkc.receiver_pubkey as pubkey, zkc.receiver_address as address, null as group_id
+          FROM zkchat_chats zkc
+          WHERE zkc.receiver_pubkey IN (SELECT distinct receiver_pubkey FROM zkchat_chats WHERE sender_pubkey = :pubkey)
+          UNION
+          SELECT distinct zkc.sender_pubkey as pubkey, zkc.sender_address as address, mr.group_id
+          FROM zkchat_chats zkc
+                   LEFT JOIN merkle_roots mr on mr.root_hash = zkc.rln_root
+          WHERE zkc.sender_pubkey IN (SELECT distinct sender_pubkey FROM zkchat_chats WHERE receiver_pubkey = :pubkey);
+      `,
       {
         type: QueryTypes.SELECT,
         replacements: {
@@ -578,16 +584,20 @@ export default class HttpService extends GenericService {
     const values = await sequelize.query(
       // prettier-ignore
       `
-            SELECT
-                u.name as address,
-                name.value as name,
-                idcommitment.value as idcommitment 
-            FROM users u
-            LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
-            JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
-            JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = u.name AND invite.name = :member_address
-            JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :member_address AND accept.name = u.name
-        `,
+          SELECT u.name             as address,
+                 name.value         as name,
+                 idcommitment.value as idcommitment
+          FROM users u
+                   LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId"
+                                                                  FROM profiles
+                                                                  WHERE creator = u.name
+                                                                    AND subtype = 'NAME'
+                                                                  ORDER BY "createdAt" DESC LIMIT 1)
+              JOIN profiles idcommitment
+          ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key ='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+              JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = u.name AND invite.name = :member_address
+              JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :member_address AND accept.name = u.name
+      `,
       {
         type: QueryTypes.SELECT,
         replacements: {
@@ -648,6 +658,7 @@ export default class HttpService extends GenericService {
     this.app.post('/v1/users', jsonParser, this.wrapHandler(this.handleAddUser));
     this.app.get('/v1/replies', this.wrapHandler(this.handleGetReplies));
     this.app.get('/v1/posts', this.wrapHandler(this.handleGetPosts));
+    this.app.post('/v1/posts/search', jsonParser, this.wrapHandler(this.handleSearchPosts));
     this.app.get('/v1/tags/:tagName', this.wrapHandler(this.handleGetPostsByTag));
     this.app.get('/v1/tags', this.wrapHandler(this.handleGetTags));
     this.app.get('/v1/:creator/replies', this.wrapHandler(this.handleGetUserReplies));

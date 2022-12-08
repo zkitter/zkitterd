@@ -578,7 +578,7 @@ function pad(str: string, len: number) {
     throw new Error(`${len} exceeds max length ${len}`);
   }
 
-  let values = Array(len).fill('0');
+  const values = Array(len).fill('0');
 
   for (let i = str.length - 1; i >= 0; i--) {
     values[len - (str.length - i)] = str[i];

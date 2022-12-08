@@ -1,5 +1,6 @@
 import { Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+
 const mutex = new Mutex();
 
 type TwitterAuthModel = {

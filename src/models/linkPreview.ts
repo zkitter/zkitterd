@@ -1,4 +1,4 @@
-import { Sequelize, BIGINT, STRING } from 'sequelize';
+import { Sequelize, STRING } from 'sequelize';
 
 type LinkPreviewModel = {
   link: string;
@@ -43,7 +43,7 @@ const linkPreview = (sequelize: Sequelize) => {
   );
 
   const read = async (link: string): Promise<LinkPreviewModel> => {
-    let result = await model.findOne({
+    const result = await model.findOne({
       where: {
         link,
       },

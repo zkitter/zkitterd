@@ -42,7 +42,7 @@ const records = (sequelize: Sequelize) => {
   );
 
   const findOne = async (soul: string, field: string): Promise<RecordModel | null> => {
-    let result = await model.findOne({
+    const result = await model.findOne({
       where: {
         soul,
         field,
@@ -53,7 +53,7 @@ const records = (sequelize: Sequelize) => {
   };
 
   const findAll = async (soul: string): Promise<RecordModel[]> => {
-    let result = await model.findAll({
+    const result = await model.findAll({
       where: {
         soul,
       },
@@ -63,7 +63,7 @@ const records = (sequelize: Sequelize) => {
   };
 
   const readAll = async (offset = 0, limit = 20): Promise<RecordModel[]> => {
-    let result = await model.findAll({
+    const result = await model.findAll({
       offset,
       limit,
     });

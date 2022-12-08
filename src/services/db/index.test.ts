@@ -1,8 +1,10 @@
 import fs from 'fs';
 import path from 'path';
+
 import tape from 'tape';
 
 import DBService from './index';
+
 import { getMockDB } from '@util/test';
 
 const gunpath = path.join(process.cwd(), 'gun.test.db');

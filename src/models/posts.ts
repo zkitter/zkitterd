@@ -1,6 +1,7 @@
 import { BIGINT, Op, QueryTypes, Sequelize, STRING } from 'sequelize';
-import { MessageType, PostJSON, PostMessageSubType } from '@util/message';
 import { Mutex } from 'async-mutex';
+
+import { MessageType, PostJSON, PostMessageSubType } from '@util/message';
 import {
   globalModClause,
   globalVisibilityClause,
@@ -151,7 +152,7 @@ const posts = (sequelize: Sequelize) => {
 
     const values: PostJSON[] = [];
 
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       if (post.createdAt > 0) {
         values.push(post);
@@ -196,7 +197,7 @@ const posts = (sequelize: Sequelize) => {
 
     const values: PostJSON[] = [];
 
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }
@@ -238,7 +239,7 @@ const posts = (sequelize: Sequelize) => {
 
     const values: PostJSON[] = [];
 
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }
@@ -280,7 +281,7 @@ const posts = (sequelize: Sequelize) => {
 
     const values: PostJSON[] = [];
 
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }
@@ -324,7 +325,7 @@ const posts = (sequelize: Sequelize) => {
     );
 
     const values: PostJSON[] = [];
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }
@@ -365,7 +366,7 @@ const posts = (sequelize: Sequelize) => {
     );
 
     const values: PostJSON[] = [];
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }
@@ -408,7 +409,7 @@ const posts = (sequelize: Sequelize) => {
 
   const createTwitterPosts = async (records: PostModel[]) => {
     return mutex.runExclusive(async () => {
-      for (let record of records) {
+      for (const record of records) {
         if (record.type !== '@TWEET@') continue;
 
         const topic = `https://twitter.com/${record.creator}/status/${record.messageId}`;

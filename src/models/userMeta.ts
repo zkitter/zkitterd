@@ -56,7 +56,7 @@ const userMeta = (sequelize: Sequelize) => {
   );
 
   const findOne = async (name: string): Promise<UserMetaModel | null> => {
-    let result = await model.findOne({
+    const result = await model.findOne({
       where: {
         name,
       },

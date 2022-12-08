@@ -1,6 +1,7 @@
 import 'isomorphic-fetch';
 // @ts-ignore
 import tape from 'tape';
+
 import { verifySignatureP256 } from './crypto';
 
 tape('crypto.ts', async t => {

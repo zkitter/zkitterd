@@ -1,7 +1,9 @@
 import { QueryTypes, Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
-import { PostJSON } from '@util/message';
+
 import { inflateResultToPostJSON } from './posts';
+
+import { PostJSON } from '@util/message';
 import { globalModClause, replyModerationClause } from '@util/sql';
 import config from '@util/config';
 
@@ -93,7 +95,7 @@ const tags = (sequelize: Sequelize) => {
 
     const values: PostJSON[] = [];
 
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }

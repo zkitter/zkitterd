@@ -1,6 +1,7 @@
-import * as csv from 'csv';
 import fs from 'fs';
 import path from 'path';
+
+import * as csv from 'csv';
 
 import DBService from '@services/db';
 

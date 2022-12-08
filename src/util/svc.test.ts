@@ -1,5 +1,6 @@
 // @ts-ignore
 import tape from 'tape';
+
 import { GenericService, MainService } from './svc';
 
 class SampleService extends GenericService {

@@ -1,9 +1,10 @@
-import { GenericService } from '@util/svc';
 import { Contract } from 'web3-eth-contract';
 import Web3 from 'web3';
+import LRU from 'lru-cache';
+
+import { GenericService } from '@util/svc';
 import config from '@util/config';
 import { ensResolverABI } from '@util/abi';
-import LRU from 'lru-cache';
 import Timeout = NodeJS.Timeout;
 
 const { default: ENS, getEnsAddress } = require('@ensdomains/ensjs');

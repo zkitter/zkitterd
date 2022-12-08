@@ -1,4 +1,4 @@
-import { Sequelize, BIGINT, STRING } from 'sequelize';
+import { Sequelize, STRING } from 'sequelize';
 
 type MerkleRootModel = {
   root_hash: string;
@@ -22,7 +22,7 @@ const merkleRoot = (sequelize: Sequelize) => {
   );
 
   const getGroupByRoot = async (root_hash: string): Promise<MerkleRootModel> => {
-    let result = await model.findOne({
+    const result = await model.findOne({
       where: {
         root_hash,
       },

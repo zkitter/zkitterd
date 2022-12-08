@@ -41,6 +41,7 @@ import {
   addTopic,
   keepAlive,
   publishTopic,
+  publishUnread,
   removeConnection,
   SSEType,
 } from '../util/sse';
@@ -325,7 +326,6 @@ export default class HttpService extends GenericService {
     const query = req.body.query;
     const postDB = await this.call('db', 'getPosts');
     const posts = await postDB.search(query, offset, limit);
-    console.log({ posts });
     res.send(makeResponse(posts));
   };
 
@@ -383,6 +383,15 @@ export default class HttpService extends GenericService {
     const postsDB = await this.call('db', 'getPosts');
     const retweets = await postsDB.findAllRetweets(hash, offset, limit);
     res.send(makeResponse(retweets));
+  };
+
+  handlePostLastRead = async (req: Request, res: Response) => {
+    const reader = req.params.reader;
+    const context = req.params.context;
+    const { lastread } = req.body;
+    const lastReadDB = await this.call('db', 'getLastRead');
+    await lastReadDB.update({ reader, context: context || '', lastread });
+    res.send(makeResponse('ok'));
   };
 
   handleGetUserFollowers = async (req: Request, res: Response) => {
@@ -509,6 +518,15 @@ export default class HttpService extends GenericService {
       type: SSEType.NEW_CHAT_MESSAGE,
       message: data,
     });
+    res.send(makeResponse(data));
+  };
+
+  handleGetUnreadCountDM = async (req: Request, res: Response) => {
+    const { sender, receiver } = req.params;
+    const lastReadDB = await this.call('db', 'getLastRead');
+    const result = await lastReadDB.getLastRead(receiver, sender);
+    const lastRead = result?.lastread || 0;
+    const data = await this.call('zkchat', 'getUnreadCountDM', sender, receiver, lastRead);
     res.send(makeResponse(data));
   };
 
@@ -646,8 +664,10 @@ export default class HttpService extends GenericService {
   };
 
   handleGetUnreadNotificationCounts = async (req: Request, res: Response) => {
-    const lastRead = req.query.lastRead && Number(req.query.lastRead);
     const { address } = req.params;
+    const lastReadDB = await this.call('db', 'getLastRead');
+    const result = await lastReadDB.getLastRead(address, '');
+    const lastRead = result?.lastread || 0;
     const values = await sequelize.query(
       `
         SELECT tem.type, COUNT(*)
@@ -783,12 +803,21 @@ export default class HttpService extends GenericService {
     this.app.get('/v1/post/:hash', this.wrapHandler(this.handleGetPostByHash));
     this.app.get('/v1/post/:hash/likes', this.wrapHandler(this.handleGetLikesByPost));
     this.app.get('/v1/post/:hash/retweets', this.wrapHandler(this.handleGetRetweetsByPost));
+    this.app.post(
+      '/v1/lastread/:reader/:context?',
+      jsonParser,
+      this.wrapHandler(this.handlePostLastRead)
+    );
 
     this.app.get('/v1/zkchat/users', this.wrapHandler(this.handleGetChatUsers));
     this.app.post(
       '/v1/zkchat/chat-messages',
       jsonParser,
       this.wrapHandler(this.handlePostChatMessage)
+    );
+    this.app.get(
+      '/v1/zkchat/chat-messages/dm/:sender/:receiver/unread',
+      this.wrapHandler(this.handleGetUnreadCountDM)
     );
     this.app.get(
       '/v1/zkchat/chat-messages/dm/:sender/:receiver',

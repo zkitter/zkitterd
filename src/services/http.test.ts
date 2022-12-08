@@ -594,7 +594,11 @@ tape('HTTPService - get interep ID commitment', async t => {
 
   http.addRoutes();
 
-  const interepGetIdParams = getStub.args[30];
+  // @ts-ignore
+  const interepGetIdParams = getStub.args.filter(
+    ([url]) => url === '/interrep/:identityCommitment'
+  )[0];
+
   // @ts-ignore
   const getIdHandler: any = interepGetIdParams[2];
   const getIdRequest = newRequest({

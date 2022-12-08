@@ -110,7 +110,9 @@ const meta = (sequelize: Sequelize) => {
   };
 
   const update = async (record: MetaModel) => {
-    return model.create(record);
+    return mutex.runExclusive(async () => {
+      return model.create(record);
+    });
   };
 
   return {

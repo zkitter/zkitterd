@@ -22,6 +22,7 @@ import uploads from '../../models/uploads';
 import merkleRoot from '../../models/merkle_root';
 import { sequelize } from '../../util/sequelize';
 import config from '../../util/config';
+import lastread from '../../models/lastread';
 
 export default class DBService extends GenericService {
   sequelize: Sequelize;
@@ -47,6 +48,7 @@ export default class DBService extends GenericService {
   threads?: ReturnType<typeof threads>;
   uploads?: ReturnType<typeof uploads>;
   merkleRoot?: ReturnType<typeof merkleRoot>;
+  lastread?: ReturnType<typeof lastread>;
 
   constructor() {
     super();
@@ -198,6 +200,13 @@ export default class DBService extends GenericService {
     return this.uploads;
   }
 
+  async getLastRead(): Promise<ReturnType<typeof lastread>> {
+    if (!this.lastread) {
+      return Promise.reject(new Error('lastread is not initialized'));
+    }
+    return this.lastread;
+  }
+
   async start() {
     this.app = app(this.sqlite);
     this.records = records(this.sqlite);
@@ -219,6 +228,7 @@ export default class DBService extends GenericService {
     this.threads = threads(this.sequelize);
     this.uploads = uploads(this.sequelize);
     this.merkleRoot = merkleRoot(this.sequelize);
+    this.lastread = lastread(this.sequelize);
 
     await this.app?.model.sync({ force: !!process.env.FORCE });
     await this.linkPreview?.model.sync({ force: !!process.env.FORCE });
@@ -244,6 +254,7 @@ export default class DBService extends GenericService {
     await this.threads?.model.sync({ force: !!process.env.FORCE });
     await this.uploads?.model.sync({ force: !!process.env.FORCE });
     await this.merkleRoot?.model.sync({ force: !!process.env.FORCE });
+    await this.lastread?.model.sync({ force: !!process.env.FORCE });
 
     const appData = await this.app?.read();
 

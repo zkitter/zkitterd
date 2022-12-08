@@ -146,7 +146,7 @@ const users = (sequelize: Sequelize) => {
         type: QueryTypes.SELECT,
         replacements: {
           context: context || '',
-          query: `${query.toLowerCase()}%`,
+          query: `%${query.toLowerCase()}%`,
           limit,
           offset,
         },

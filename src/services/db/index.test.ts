@@ -32,16 +32,16 @@ tape('DBService', async t => {
 
   // @ts-ignore
   const { id, createdAt, updatedAt, ...appData } = await db.app?.read();
-  t.deepEqual(
-    appData,
-    {
-      lastArbitrumBlockScanned: 2193241,
-      lastENSBlockScanned: 12957300,
-      lastInterrepBlockScanned: 28311377,
-      lastGroup42BlockScanned: 7660170,
-    },
-    'should read and write app'
-  );
+
+  [
+    'lastArbitrumBlockScanned',
+    'lastENSBlockScanned',
+    'lastInterrepBlockScanned',
+    'lastGroup42BlockScanned',
+  ].forEach(k => {
+    // @ts-ignore
+    t.equal(typeof appData[k], 'number', 'should read and write app');
+  });
 
   // @ts-ignore
   const { updatedAt, ...conn1 } = await db.connections?.findOne(
@@ -1400,9 +1400,4 @@ tape('DBService', async t => {
   await db.stop();
   if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
   t.end();
-});
-
-tape('EXIT', t => {
-  t.end();
-  process.exit(0);
 });

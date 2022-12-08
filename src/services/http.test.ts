@@ -537,7 +537,7 @@ tape('HTTPService - Interep Signup', async t => {
 
   http.addRoutes();
 
-  const interepSignupParams = postStub.args[3];
+  const interepSignupParams = postStub.args[4];
   // @ts-ignore
   const signupHandler: any = interepSignupParams[2];
   const signupRequest = newRequest({

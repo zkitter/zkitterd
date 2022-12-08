@@ -37,6 +37,14 @@ const lastread = (sequelize: Sequelize) => {
 
   const update = async (record: LastReadModel) => {
     return mutex.runExclusive(async () => {
+      const result = await model.findOne({
+        where: {
+          reader: record.reader,
+          context: record.context,
+        },
+      });
+
+      if (result) return result.update({ lastread: record.lastread });
       return model.create(record);
     });
   };

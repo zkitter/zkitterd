@@ -523,7 +523,9 @@ export default class HttpService extends GenericService {
 
   handleGetUnreadCountDM = async (req: Request, res: Response) => {
     const { sender, receiver } = req.params;
-    const lastRead = req.query.lastRead && Number(req.query.lastRead);
+    const lastReadDB = await this.call('db', 'getLastRead');
+    const result = await lastReadDB.getLastRead(receiver, sender);
+    const lastRead = result?.lastread || 0;
     const data = await this.call('zkchat', 'getUnreadCountDM', sender, receiver, lastRead);
     res.send(makeResponse(data));
   };

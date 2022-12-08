@@ -489,6 +489,33 @@ const posts = (sequelize: Sequelize) => {
     });
   };
 
+  const vectorizeContent = async () => {
+    // add tsvector column
+    await sequelize.query(
+      `
+          ALTER TABLE posts
+              ADD COLUMN ts tsvector
+                  GENERATED ALWAYS AS (to_tsvector('english', content)) STORED
+      `
+    );
+
+    // create Generalized Inverted Index (https://www.postgresql.org/docs/current/textsearch-indexes.html)
+    await sequelize.query(`CREATE INDEX ts_idx ON posts USING GIN (ts)`);
+  };
+
+  const search = async (query: string, offset = 0, limit = 20, order: 'DESC' | 'ASC' = 'DESC') =>
+    sequelize
+      // prettier-ignore
+      .query(
+        `SELECT *
+              FROM posts
+              WHERE ts @@ to_tsquery('english', :query)
+              ORDER BY "createdAt" ${order} LIMIT :limit
+              OFFSET :offset`,
+        { type: QueryTypes.SELECT, replacements: { limit, offset, query } }
+      )
+      .then(result => result.map(inflateResultToPostJSON));
+
   return {
     model,
     remove,
@@ -504,6 +531,8 @@ const posts = (sequelize: Sequelize) => {
     createTwitterPosts,
     createPost,
     ensurePost,
+    vectorizeContent,
+    search,
   };
 };
 
@@ -560,46 +589,50 @@ export function inflateResultToPostJSON(r: any): PostJSON {
 }
 
 const selectJoinQuery = `
-    SELECT
-        p.hash,
-        p.creator,
-        p.type,
-        p.subtype,
-        p."createdAt",
-        p.topic,
-        p.title,
-        p.content,
-        p.reference,
-        p.attachment,
-        m."messageId" as liked,
-        rpm."messageId" as "rpLiked",
-        thrdmod."subtype" as "moderation",
-        global."messageId" as "global",
-        root."messageId" as "rootId",
-        modliked."messageId" as "modLikedPost",
-        modblocked."messageId" as "modBlockedPost",
-        modblockeduser."messageId" as "modBlockedUser",
-        modfolloweduser."messageId" as "modFollowerUser",
-        modblockedctx."messageId" as "modblockedctx",
-        modfollowedctx."messageId" as "modfollowedctx",
-        modmentionedctx."message_id" as "modmentionedctx",
-        blk."messageId" as blocked,
-        rpblk."messageId" as "rpBlocked",
-        rp."messageId" as reposted,
-        rprp."messageId" as "rpReposted",
-        mt."replyCount",
-        mt."repostCount",
-        mt."likeCount",
-        rpmt."replyCount" as "rpReplyCount",    
-        rpmt."repostCount" as "rpRepostCount",
-        rpmt."likeCount" as "rpLikeCount",
-        rpsc.provider as "rpInterepProvider",
-        rpsc."group" as "rpInterepGroup",
-        sc.provider as "interepProvider",
-        sc."group" as "interepGroup"
+    SELECT p.hash,
+           p.creator,
+           p.type,
+           p.subtype,
+           p."createdAt",
+           p.topic,
+           p.title,
+           p.content,
+           p.reference,
+           p.attachment,
+           m."messageId"                as liked,
+           rpm."messageId"              as "rpLiked",
+           thrdmod."subtype"            as "moderation",
+           global."messageId"           as "global",
+           root."messageId"             as "rootId",
+           modliked."messageId"         as "modLikedPost",
+           modblocked."messageId"       as "modBlockedPost",
+           modblockeduser."messageId"   as "modBlockedUser",
+           modfolloweduser."messageId"  as "modFollowerUser",
+           modblockedctx."messageId"    as "modblockedctx",
+           modfollowedctx."messageId"   as "modfollowedctx",
+           modmentionedctx."message_id" as "modmentionedctx",
+           blk."messageId"              as blocked,
+           rpblk."messageId"            as "rpBlocked",
+           rp."messageId"               as reposted,
+           rprp."messageId"             as "rpReposted",
+           mt."replyCount",
+           mt."repostCount",
+           mt."likeCount",
+           rpmt."replyCount"            as "rpReplyCount",
+           rpmt."repostCount"           as "rpRepostCount",
+           rpmt."likeCount"             as "rpLikeCount",
+           rpsc.provider                as "rpInterepProvider",
+           rpsc."group"                 as "rpInterepGroup",
+           sc.provider                  as "interepProvider",
+           sc."group"                   as "interepGroup"
     FROM posts p
-        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = :context LIMIT 1)
-        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where subtype = 'LIKE' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
+             LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId"
+                                                         FROM moderations
+                                                         WHERE subtype = 'LIKE'
+                                                           AND reference = p."messageId"
+                                                           AND creator = :context LIMIT 1)
+        LEFT JOIN moderations rpm
+    ON rpm."messageId" = (select "messageId" from moderations where subtype = 'LIKE' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN moderations blk ON blk."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = :context LIMIT 1)
         LEFT JOIN moderations rpblk ON rpblk."messageId" = (select "messageId" from moderations where subtype = 'BLOCK' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN threads thrd ON thrd."message_id" = p."messageId"
@@ -622,53 +655,57 @@ const selectJoinQuery = `
         LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."reference" = p.reference
         LEFT JOIN semaphore_creators sc on sc."message_id" = p."messageId"
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
-        LEFT JOIN connections modblockedctx  ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
-        LEFT JOIN connections modfollowedctx  ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modblockedctx ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modfollowedctx ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
         LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = '@'||:context
 `;
 
 const selectLikedPostsQuery = `
-    SELECT
-        p.hash,
-        p.creator,
-        p.type,
-        p.subtype,
-        p."createdAt",
-        p.topic,
-        p.title,
-        p.content,
-        p.reference,
-        p.attachment,
-        m."messageId" as liked,
-        rpm."messageId" as "rpLiked",
-        blk."messageId" as blocked,
-        rpblk."messageId" as "rpBlocked",
-        rp."messageId" as reposted,
-        rprp."messageId" as "rpReposted",
-        thrdmod.subtype as "moderation",
-        global."messageId" as "global",
-        root."messageId" as "rootId",
-        modliked."messageId" as "modLikedPost",
-        modblocked."messageId" as "modBlockedPost",
-        modblockeduser."messageId" as "modBlockedUser",
-        modfolloweduser."messageId" as "modFollowerUser",
-        modblockedctx."messageId" as "modblockedctx",
-        modfollowedctx."messageId" as "modfollowedctx",
-        modmentionedctx."message_id" as "modmentionedctx",
-        mt."replyCount",
-        mt."repostCount",
-        mt."likeCount",
-        rpmt."replyCount" as "rpReplyCount",
-        rpmt."repostCount" as "rpRepostCount",
-        rpmt."likeCount" as "rpLikeCount",
-        rpsc.provider as "rpInterepProvider",
-        rpsc."group" as "rpInterepGroup",
-        sc.provider as "interepProvider",
-        sc."group" as "interepGroup"
+    SELECT p.hash,
+           p.creator,
+           p.type,
+           p.subtype,
+           p."createdAt",
+           p.topic,
+           p.title,
+           p.content,
+           p.reference,
+           p.attachment,
+           m."messageId"                as liked,
+           rpm."messageId"              as "rpLiked",
+           blk."messageId"              as blocked,
+           rpblk."messageId"            as "rpBlocked",
+           rp."messageId"               as reposted,
+           rprp."messageId"             as "rpReposted",
+           thrdmod.subtype              as "moderation",
+           global."messageId"           as "global",
+           root."messageId"             as "rootId",
+           modliked."messageId"         as "modLikedPost",
+           modblocked."messageId"       as "modBlockedPost",
+           modblockeduser."messageId"   as "modBlockedUser",
+           modfolloweduser."messageId"  as "modFollowerUser",
+           modblockedctx."messageId"    as "modblockedctx",
+           modfollowedctx."messageId"   as "modfollowedctx",
+           modmentionedctx."message_id" as "modmentionedctx",
+           mt."replyCount",
+           mt."repostCount",
+           mt."likeCount",
+           rpmt."replyCount"            as "rpReplyCount",
+           rpmt."repostCount"           as "rpRepostCount",
+           rpmt."likeCount"             as "rpLikeCount",
+           rpsc.provider                as "rpInterepProvider",
+           rpsc."group"                 as "rpInterepGroup",
+           sc.provider                  as "interepProvider",
+           sc."group"                   as "interepGroup"
     FROM moderations mod
-        LEFT JOIN posts p ON p."messageId" = mod.reference
-        LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'LIKE' AND reference = p."messageId" AND creator = :context LIMIT 1)
-        LEFT JOIN moderations rpm ON rpm."messageId" = (select "messageId" from moderations where subtype = 'LIKE' AND reference = p.reference AND creator = :context  AND p.subtype = 'REPOST' LIMIT 1)
+             LEFT JOIN posts p ON p."messageId" = mod.reference
+             LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId"
+                                                         FROM moderations
+                                                         WHERE subtype = 'LIKE'
+                                                           AND reference = p."messageId"
+                                                           AND creator = :context LIMIT 1)
+        LEFT JOIN moderations rpm
+    ON rpm."messageId" = (select "messageId" from moderations where subtype = 'LIKE' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN moderations blk ON blk."messageId" = (SELECT "messageId" FROM moderations WHERE subtype = 'BLOCK' AND reference = p."messageId" AND creator = :context LIMIT 1)
         LEFT JOIN moderations rpblk ON rpblk."messageId" = (select "messageId" from moderations where subtype = 'BLOCK' AND reference = p.reference AND creator = :context AND p.subtype = 'REPOST' LIMIT 1)
         LEFT JOIN threads thrd ON thrd."message_id" = p."messageId"
@@ -691,7 +728,7 @@ const selectLikedPostsQuery = `
         LEFT JOIN meta rpmt ON p.subtype = 'REPOST' AND rpmt."reference" = p.reference
         LEFT JOIN semaphore_creators sc on sc."message_id" = mod.reference
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
-        LEFT JOIN connections modblockedctx  ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
-        LEFT JOIN connections modfollowedctx  ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modblockedctx ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
+        LEFT JOIN connections modfollowedctx ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
         LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = '@'||:context
 `;

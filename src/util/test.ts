@@ -36,6 +36,11 @@ export const getMockDB = async () => {
     parse('usermeta.csv', db.userMeta!.update),
     parse('users.csv', db.users!.updateOrCreateUser),
   ]);
+
+  try {
+    await db.posts?.vectorizeContent();
+  } catch {}
+
   return db;
 };
 

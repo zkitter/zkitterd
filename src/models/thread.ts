@@ -1,10 +1,5 @@
-import { Sequelize, BIGINT, STRING, QueryTypes } from 'sequelize';
+import { Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
-
-type ThreadModel = {
-  message_id: string;
-  root_id: string;
-};
 
 const mutex = new Mutex();
 
@@ -26,25 +21,22 @@ const threads = (sequelize: Sequelize) => {
 
   const addThreadData = async (rootId: string, messageId: string) => {
     return mutex.runExclusive(async () => {
-      const res = await model.create({
+      return await model.create({
         root_id: rootId,
         message_id: messageId,
       });
-
-      return res;
     });
   };
 
   const removeThreadData = async (rootId: string, messageId: string) => {
     return mutex.runExclusive(async () => {
       try {
-        const res = await model.destroy({
+        return await model.destroy({
           where: {
             root_id: rootId,
             message_id: messageId,
           },
         });
-        return res;
       } catch (e) {
         return false;
       }

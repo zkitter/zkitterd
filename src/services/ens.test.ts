@@ -7,7 +7,7 @@ import { stubCall } from '@util/testUtils';
 
 tape.skip('ENSService', async t => {
   const ens = new ENSService();
-  const [call, stubs] = stubCall(ens);
+  const [, stubs] = stubCall(ens);
   await ens.start();
 
   t.equal(

@@ -7,6 +7,7 @@ import config from '@util/config';
 import { ensResolverABI } from '@util/abi';
 import Timeout = NodeJS.Timeout;
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { default: ENS, getEnsAddress } = require('@ensdomains/ensjs');
 
 const cache = new LRU({

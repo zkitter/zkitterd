@@ -1,4 +1,5 @@
-import { CIDString, Filelike, Web3Storage } from 'web3.storage';
+import { Web3Storage } from 'web3.storage';
+import type { CIDString, Filelike } from 'web3.storage';
 
 import { GenericService } from '@util/svc';
 import config from '@util/config';
@@ -8,7 +9,6 @@ export default class IPFSService extends GenericService {
 
   constructor() {
     super();
-    // @ts-ignore
     this.client = new Web3Storage({
       token: config.web3StorageAPIKey as string,
     });

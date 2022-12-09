@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 
+import { parseMessageId, PostMessageSubType } from '@util/message';
+import { getReplies } from '@util/twitter';
 import { Controller } from './interface';
 import { makeResponse } from '../utils';
-import { parseMessageId, PostMessageSubType } from '../../../util/message';
-import { getReplies } from '../../../util/twitter';
 
 export class PostsController extends Controller {
   prefix = '/v1';
@@ -92,7 +92,7 @@ export class PostsController extends Controller {
 
     if (parentPost?.subtype === PostMessageSubType.MirrorPost) {
       const tweetUrl = parentPost.payload.topic;
-      const [__, _, id] = tweetUrl.replace('https://twitter.com/', '').split('/');
+      const [, , id] = tweetUrl.replace('https://twitter.com/', '').split('/');
       tweetId = id;
       const lastTweet = await postDB.findLastTweetInConversation(id);
       const tweets = await getReplies(tweetUrl, lastTweet?.hash);

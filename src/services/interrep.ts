@@ -31,8 +31,7 @@ export default class InterrepService extends GenericService {
   }
 
   syncOne = async (group: string) => {
-    const [protocol, groupType, groupName] = group.split('_');
-    // @ts-ignore
+    const [, groupType, groupName] = group.split('_');
     const resp = await fetch(`${config.interrepAPI}/api/v1/groups/${groupType}/${groupName}`);
     const json = await resp.json();
     const data = json.data;
@@ -49,7 +48,7 @@ export default class InterrepService extends GenericService {
         clearTimeout(this.timeout);
         this.timeout = null;
       }
-      // @ts-ignore
+
       const resp = await fetch(`${config.interrepAPI}/api/v1/groups`);
       const json = await resp.json();
       const groups = json.data;
@@ -78,7 +77,7 @@ export default class InterrepService extends GenericService {
     offset = 0
   ): Promise<void> {
     const groupId = `interrep_${provider}_${name}`;
-    // @ts-ignore
+
     const resp = await fetch(
       `${config.interrepAPI}/api/v1/groups/${provider}/${name}/members?limit=${limit}&offset=${offset}`
     );
@@ -103,7 +102,6 @@ export default class InterrepService extends GenericService {
 
       if (exist) return exist;
 
-      // @ts-ignore
       const resp = await fetch(`${config.interrepAPI}/api/v1/batches/${rootHash}`);
       const json = await resp.json();
       const group = json?.data?.group;
@@ -124,19 +122,16 @@ export default class InterrepService extends GenericService {
 
   async getProofFromGroup(provider: string, name: string, id: string) {
     try {
-      // @ts-ignore
       const resp = await fetch(
         `${config.interrepAPI}/api/v1/groups/${provider}/${name}/${id}/proof`
       );
-      const json = await resp.json();
-      return json;
+      return await resp.json();
     } catch (e) {
       return false;
     }
   }
 
   async inProvider(provider: string, id: string): Promise<boolean> {
-    // @ts-ignore
     const resp = await fetch(`${config.interrepAPI}/api/v1/providers/${provider}/${id}`);
     const json = await resp.json();
 

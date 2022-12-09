@@ -47,7 +47,7 @@ export const getRepos = async (username: string, after: string | null = null) =>
  * @param username
  */
 export const getReceivedStars = async (username: string): Promise<number> => {
-  let nodes = [];
+  const nodes = [];
   let hasNextPage = true;
   let endCursor = null;
 

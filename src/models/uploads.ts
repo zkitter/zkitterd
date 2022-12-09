@@ -1,5 +1,5 @@
 import { Mutex } from 'async-mutex';
-import { BIGINT, ENUM, QueryTypes, Sequelize, STRING } from 'sequelize';
+import { BIGINT, Sequelize, STRING } from 'sequelize';
 
 export type UploadModel = {
   cid: string;
@@ -43,21 +43,19 @@ const uploads = (sequelize: Sequelize) => {
 
   const addUploadData = async (data: UploadModel) => {
     return mutex.runExclusive(async () => {
-      const res = await model.create(data);
-      return res;
+      return await model.create(data);
     });
   };
 
   const removeUploadData = async (cid: string, filename: string) => {
     return mutex.runExclusive(async () => {
       try {
-        const res = await model.destroy({
+        return await model.destroy({
           where: {
             cid,
             filename,
           },
         });
-        return res;
       } catch (e) {
         return false;
       }

@@ -28,5 +28,5 @@ const mentionRegExp =
   '\u00C0-\u1EF9' +
   '\u002E' +
   ']';
-export const HASHTAG_REGEX = /\#[\w\u0590-\u05ff]+/g;
-export const MENTION_REGEX = new RegExp(`\@${mentionRegExp}+`, 'g');
+export const HASHTAG_REGEX = /#[\w\u0590-\u05ff]+/g;
+export const MENTION_REGEX = new RegExp(`@${mentionRegExp}+`, 'g');

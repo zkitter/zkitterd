@@ -143,18 +143,16 @@ const meta = (sequelize: Sequelize) => {
           const data = result.toJSON() as MetaModel;
           return result.update({
             ...data,
-            // @ts-ignore
+            // @ts-expect-error
             [key]: Math.max(0, (Number(data[key]) || 0) + delta),
           });
         }
 
-        const res = await model.create({
+        return await model.create({
           reference,
           ...emptyMeta,
           [key]: Math.max(0, delta),
         });
-
-        return res;
       });
     };
   }
@@ -174,18 +172,4 @@ FROM meta mt
     LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = mt."reference" AND creator = :context AND subtype = 'LIKE' LIMIT 1)
     LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE mt."reference" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
 WHERE mt."reference" = :reference
-`;
-
-const selectManyMetaQuery = `
-SELECT
-    m."messageId" as liked,
-    rp."messageId" as reposted,
-    mt."replyCount",
-    mt."repostCount",
-    mt."likeCount",
-    mt."reference"
-FROM meta mt
-    LEFT JOIN moderations m ON m."messageId" = (SELECT "messageId" FROM moderations WHERE reference = mt."reference" AND creator = :context AND subtype = 'LIKE' LIMIT 1)
-    LEFT JOIN posts rp ON rp."messageId" = (SELECT "messageId" from posts WHERE mt."reference" = reference AND creator = :context AND subtype = 'REPOST' LIMIT 1)
-WHERE mt."reference" in (:references)
 `;

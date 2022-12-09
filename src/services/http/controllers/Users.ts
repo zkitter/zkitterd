@@ -1,10 +1,10 @@
-import { json, Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { QueryTypes } from 'sequelize';
 import Web3 from 'web3';
 
+import { sequelize } from '@util/sequelize';
 import { Controller } from './interface';
 import { makeResponse } from '../utils';
-import { sequelize } from '../../../util/sequelize';
 
 export class UsersController extends Controller {
   prefix = '/v1';
@@ -36,7 +36,7 @@ export class UsersController extends Controller {
 
     const result = [];
 
-    for (let user of users) {
+    for (const user of users) {
       const ens = await this.call('ens', 'fetchNameByAddress', user.username);
       result.push({ ens, ...user });
     }
@@ -177,7 +177,7 @@ export class UsersController extends Controller {
     const users = await usersDB.search(query || '', context, offset, limit);
     const result = [];
 
-    for (let user of users) {
+    for (const user of users) {
       const ens = await this.call('ens', 'fetchNameByAddress', user.username);
       result.push({ ens, ...user });
     }

@@ -4,8 +4,8 @@ import jwt from 'jsonwebtoken';
 import { Controller } from './interface';
 import { makeResponse } from '../utils';
 import { JWT_SECRET } from '../constants';
-import { createHeader } from '../../../util/twitter';
-import config from '../../../util/config';
+import { createHeader } from '@util/twitter';
+import config from '@util/config';
 
 export class InterepController extends Controller {
   constructor() {
@@ -40,7 +40,7 @@ export class InterepController extends Controller {
       res.status(404).send(makeResponse('not found', true));
       return;
     }
-    // @ts-ignore
+
     const resp = await fetch(
       `${config.interrepAPI}/api/v1/groups/${group.provider}/${group.name}/${identityCommitment}/proof`
     );
@@ -63,7 +63,7 @@ export class InterepController extends Controller {
 
     // TODO refactor twitter with passport
     if (provider === 'twitter') {
-      // @ts-ignore
+      // @ts-expect-error
       const { twitterToken } = req.session;
       const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
       const twitterAuthDB = await this.call('db', 'getTwitterAuth');
@@ -80,11 +80,11 @@ export class InterepController extends Controller {
     }
 
     if (provider === 'github') {
-      // @ts-ignore
+      // @ts-expect-error
       if (!req.user?.userId) throw new Error('not authenticated');
 
       const githubAuthDb = await this.call('db', 'getGithubAuth');
-      // @ts-ignore
+      // @ts-expect-error
       const { accessToken } = await githubAuthDb.findUserById(req.user.userId);
 
       headers = { Authorization: `token ${accessToken}` };
@@ -114,14 +114,12 @@ export class InterepController extends Controller {
     const resp = await fetch(`${config.interrepAPI}/api/v1/groups`);
     const { data: groups } = await resp.json();
     for (const group of groups) {
-      // @ts-ignore
       const existResp = await fetch(
         `${config.interrepAPI}/api/v1/groups/${group.provider}/${group.name}/${identityCommitment}`
       );
       const { data: exist } = await existResp.json();
 
       if (exist) {
-        // @ts-ignore
         const proofResp = await fetch(
           `${config.interrepAPI}/api/v1/groups/${group.provider}/${group.name}/${identityCommitment}/proof`
         );

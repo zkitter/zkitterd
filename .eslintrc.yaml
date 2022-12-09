@@ -19,9 +19,6 @@ rules:
   '@typescript-eslint/no-var-requires': warn
   '@typescript-eslint/return-await': off
   '@typescript-eslint/no-this-alias': warn
-  import/order:
-    - warn
-    - newlines-between: always
   import/newline-after-import: warn
   no-case-declarations: warn
   no-console: warn

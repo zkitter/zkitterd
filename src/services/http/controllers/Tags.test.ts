@@ -1,10 +1,11 @@
 import tape from 'tape';
 
 import { TagsController } from './Tags';
-import { newRequest, newResponse, stubCall } from '../../../util/testUtils';
-import { post } from '../../http/_fixtures';
+import { newRequest, newResponse, stubCall } from '@util/testUtils';
+import { post } from '@services/http/_fixtures';
 
 let controller: TagsController;
+/* eslint-disable @typescript-eslint/no-unused-vars */
 let call: ReturnType<typeof stubCall>[0];
 let stubs: ReturnType<typeof stubCall>[1];
 let req: ReturnType<typeof newRequest>;

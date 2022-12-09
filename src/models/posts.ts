@@ -109,7 +109,6 @@ const posts = (sequelize: Sequelize) => {
     });
 
     if (result) {
-      // @ts-ignore
       const json: PostModel = result.toJSON();
       if (json.reference && json.subtype === 'REPLY') {
         return findRoot(json.reference);
@@ -448,7 +447,7 @@ const posts = (sequelize: Sequelize) => {
       if (result) {
         const json = (await result.toJSON()) as PostModel;
         if (json.createdAt < 0) {
-          // @ts-ignore
+          // @ts-expect-error
           await result.changed('createdAt', true);
           await result.set('createdAt', record.createdAt, { raw: true });
           await result.save({

@@ -1,9 +1,13 @@
+/* eslint-disable import/no-unresolved */
 import { Dialect, QueryTypes, Sequelize } from 'sequelize';
 import { RLNFullProof, SemaphoreFullProof } from '@zk-kit/protocols';
 
 import { GenericService } from '@util/svc';
+// @ts-expect-error
 import { ZKChat } from '~/zk-chat-server/src';
+// @ts-expect-error
 import { ChatMessage } from '~/zk-chat-server/src/services/chat.service';
+// @ts-expect-error
 import config from '~/zk-chat-server/src/utils/config';
 
 export default class ZKChatService extends GenericService {
@@ -90,7 +94,7 @@ export default class ZKChatService extends GenericService {
   };
 
   searchChats = async (query: string, sender?: string, offset = 0, limit = 20) => {
-    const values = await this.sequelize.query(
+    return await this.sequelize.query(
       `
           SELECT ecdh.value         as receiver_ecdh,
                  idcommitment.value as receiver_idcommitment,
@@ -127,7 +131,5 @@ export default class ZKChatService extends GenericService {
         },
       }
     );
-
-    return values;
   };
 }

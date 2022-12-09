@@ -5,12 +5,12 @@ import { getLinkPreview } from 'link-preview-js';
 import path from 'path';
 import { getFilesFromPath } from 'web3.storage';
 
+import { UploadModel } from '@models/uploads';
+import { verifySignatureP256 } from '@util/crypto';
+import vKey from '#/verification_key.json';
 import { MAX_FILE_SIZE, MAX_PER_USER_SIZE } from '../constants';
 import { Controller } from './interface';
-import { UploadModel } from '../../../models/uploads';
 import { makeResponse, upload } from '../utils';
-import { verifySignatureP256 } from '../../../util/crypto';
-import vKey from '../../../../static/verification_key.json';
 
 export class MiscController extends Controller {
   prefix = '/v1';
@@ -29,10 +29,10 @@ export class MiscController extends Controller {
         upload.any(),
         this.verifyAuth(
           async () => 'FILE_UPLOAD',
-          // @ts-ignore
+          // @ts-expect-error
           async req => req.files[0].originalname.slice(0, 16),
           req => {
-            // @ts-ignore
+            // @ts-expect-error
             const filepath = path.join(process.cwd(), req.files[0].path);
             fs.unlinkSync(filepath);
           }
@@ -79,10 +79,10 @@ export class MiscController extends Controller {
   ipfsUpload = async (req: Request, res: Response) => {
     if (!req.files) throw new Error('file missing from formdata');
 
-    // @ts-ignore
+    // @ts-expect-error
     const username = req.username;
 
-    // @ts-ignore
+    // @ts-expect-error
     const { path: relPath, filename, size, mimetype } = req.files[0];
     const uploadDB = await this.call('db', 'getUploads');
     const filepath = path.join(process.cwd(), relPath);
@@ -145,7 +145,7 @@ export class MiscController extends Controller {
           if (onError) onError(req);
           return;
         }
-        // @ts-ignore
+        // @ts-expect-error
         req.username = params[1];
       } else if (semaphoreProof) {
         const { proof, publicSignals } = JSON.parse(semaphoreProof) as SemaphoreFullProof;

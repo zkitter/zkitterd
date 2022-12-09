@@ -3,8 +3,7 @@ import { Request, Response, Router } from 'express';
 import jwt from 'jsonwebtoken';
 import queryString from 'querystring';
 
-import { Controller } from './interface';
-import { makeResponse } from '../utils';
+import { verifySignatureP256 } from '@util/crypto';
 import {
   accessToken,
   getBotometerScore,
@@ -14,9 +13,10 @@ import {
   TW_AUTH_URL,
   updateStatus,
   verifyCredential,
-} from '../../../util/twitter';
+} from '@util/twitter';
 import { JWT_SECRET } from '../constants';
-import { verifySignatureP256 } from '../../../util/crypto';
+import { Controller } from './interface';
+import { makeResponse } from '../utils';
 
 export class TwitterController extends Controller {
   constructor() {
@@ -43,19 +43,18 @@ export class TwitterController extends Controller {
     const text = await requestToken();
     const { oauth_token: token, oauth_token_secret: tokenSecret } = queryString.parse(text);
 
-    // @ts-ignore
+    // @ts-expect-error
     req.session.tokenSecret = tokenSecret;
-    // @ts-ignore
+    // @ts-expect-error
     req.session.redirectUrl = req.query.redirectUrl;
     res.send(makeResponse(`${TW_AUTH_URL}?${queryString.stringify({ oauth_token: token })}`));
   };
 
   callback = async (req: Request, res: Response) => {
-    // @ts-ignore
     const { oauth_token: token, oauth_verifier: verifier } = req.query;
-    // @ts-ignore
+    // @ts-expect-error
     const tokenSecret = req.session.tokenSecret;
-    // @ts-ignore
+    // @ts-expect-error
     delete req.session.tokenSecret;
 
     const text = await accessToken(token as string, verifier as string, tokenSecret);
@@ -83,12 +82,12 @@ export class TwitterController extends Controller {
       userId: string;
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     req.session.twitterToken = jwt.sign({ userToken }, JWT_SECRET);
 
-    // @ts-ignore
+    // @ts-expect-error
     const redirectUrl = req.session.redirectUrl;
-    // @ts-ignore
+    // @ts-expect-error
     delete req.session.redirectUrl;
     res.redirect(redirectUrl);
   };
@@ -101,7 +100,7 @@ export class TwitterController extends Controller {
   };
 
   session = async (req: Request, res: Response) => {
-    // @ts-ignore
+    // @ts-expect-error
     const { twitterToken } = req.session;
     const signature = req.header('X-SIGNED-ADDRESS');
     const twitterAuthDB = await this.call('db', 'getTwitterAuth');
@@ -120,7 +119,7 @@ export class TwitterController extends Controller {
           if (sigAuth) {
             auth = sigAuth;
 
-            // @ts-ignore
+            // @ts-expect-error
             req.session.twitterToken = jwt.sign(
               {
                 userToken: auth.user_token,
@@ -167,13 +166,12 @@ export class TwitterController extends Controller {
   };
 
   reset = async (req: Request, res: Response) => {
-    // @ts-ignore
+    // @ts-expect-error
     if (req.session.twitterToken) delete req.session.twitterToken;
     res.send(makeResponse('ok'));
   };
 
   status = async (req: Request, res: Response) => {
-    // @ts-ignore
     const { id } = req.query;
     const status = await showStatus(id as string);
     res.send(makeResponse(status));
@@ -186,7 +184,7 @@ export class TwitterController extends Controller {
   };
 
   update = async (req: Request, res: Response) => {
-    // @ts-ignore
+    // @ts-expect-error
     const { twitterToken } = req.session;
     const { status, in_reply_to_status_id } = req.body;
     const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);

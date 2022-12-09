@@ -59,21 +59,6 @@ export const addTopic = (clientId: string, topic: string) => {
   bucket[clientId] = true;
   TOPIC_MAP[topic] = bucket;
 };
-
-export const removeTopic = (clientId: string, topic: string) => {
-  const client = CLIENT_CACHE[clientId];
-
-  if (!client) {
-    throw new Error(`${clientId} not found`);
-  }
-
-  const bucket: { [id: string]: boolean } = TOPIC_MAP[topic] || {};
-
-  if (bucket[clientId]) delete bucket[clientId];
-
-  TOPIC_MAP[topic] = bucket;
-};
-
 export const publishTopic = async (topic: string, data: any) => {
   const bucket: { [id: string]: boolean } = TOPIC_MAP[topic] || {};
 
@@ -87,19 +72,6 @@ export const publishTopic = async (topic: string, data: any) => {
     }
   }
 };
-
-export const publishUnread = async (clientId: string, unread: any) => {
-  const client = CLIENT_CACHE[clientId];
-  const data = JSON.stringify({
-    type: SSEType.UPDATE_UNREAD,
-    message: unread,
-  });
-  if (client) {
-    const raw = `data: ${data}\n\n`;
-    client.res.write(raw);
-  }
-};
-
 export const removeConnection = (clientId: string) => {
   const client = CLIENT_CACHE[clientId];
 
@@ -108,10 +80,6 @@ export const removeConnection = (clientId: string) => {
   delete CLIENT_CACHE[clientId];
 
   client.res.end();
-};
-
-export const getConnection = (clientId: string) => {
-  return CLIENT_CACHE[clientId];
 };
 
 export const pruneConnections = async () => {

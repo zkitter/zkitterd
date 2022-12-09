@@ -5,10 +5,6 @@ import { GenericService } from '@util/svc';
 export class ReputationService extends GenericService {
   group42?: Group42;
 
-  constructor() {
-    super();
-  }
-
   async start() {
     const app = await this.call('db', 'getApp');
     this.group42 = new Group42({

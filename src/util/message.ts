@@ -538,10 +538,6 @@ export class Profile extends Message {
   }
 }
 
-enum FileMessageSubType {
-  Default = '',
-}
-
 function encodeString(str: string, maxBytes: number): string {
   const hex = Buffer.from(str, 'utf-8').toString('hex');
   const len = hex.length;
@@ -565,26 +561,6 @@ function decodeNumber(data: string, maxBytes: number, cb?: (n: number) => void):
   const hex = data.slice(0, maxBytes);
   cb && cb(maxBytes);
   return [parseInt(hex, 16), maxBytes];
-}
-
-function decodeHex(data: string, maxBytes: number, cb?: (n: number) => void): [string, number] {
-  const hex = data.slice(0, maxBytes);
-  cb && cb(maxBytes);
-  return [hex, maxBytes];
-}
-
-function pad(str: string, len: number) {
-  if (str.length >= len) {
-    throw new Error(`${len} exceeds max length ${len}`);
-  }
-
-  const values = Array(len).fill('0');
-
-  for (let i = str.length - 1; i >= 0; i--) {
-    values[len - (str.length - i)] = str[i];
-  }
-
-  return values.join('');
 }
 
 const HEX_64_REGEX = /\b[A-Fa-f0-9]{64}$\b/;

@@ -1,10 +1,8 @@
 import 'isomorphic-fetch';
 import sinon, { SinonStub } from 'sinon';
-import Sinon from 'sinon';
 
 let fetchStub: any;
 export const stubFetch = () => {
-  // @ts-ignore
   fetchStub = fetchStub || sinon.stub(global, 'fetch');
   return fetchStub;
 };

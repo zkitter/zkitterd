@@ -24,6 +24,7 @@
     "format:ci": "npm run format:check --loglevel warn",
     "format:write": "prettier --write 'src/**/*.ts'",
     "lint:check": "eslint . --ext .ts",
+    "lint:ci": "npm run lint:check --quiet",
     "lint:fix": "eslint . --ext .ts --fix",
     "prepare": "is-ci || husky install"
   },

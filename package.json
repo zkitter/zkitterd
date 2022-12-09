@@ -14,8 +14,9 @@
     "test:coverage": "nyc npm run test",
     "test:some": "_some() { find ./src -path *$1*.test.ts -exec tape -r ts-node/register {} \\; | tap-spec; }; FORCE=true NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' _some",
     "format:check": "prettier --check 'src/**/*.ts'",
+    "format:ci": "npm run format:check --loglevel warn",
     "format:write": "prettier --write 'src/**/*.ts'",
-    "prepare": "husky install"
+    "prepare": "is-ci || husky install"
   },
   "author": "",
   "license": "ISC",
@@ -43,6 +44,7 @@
     "gun": "0.2020.1232",
     "http-terminator": "^3.2.0",
     "ipfs-http-client": "56.x",
+    "is-ci": "^3.0.1",
     "isomorphic-fetch": "^3.0.0",
     "jsonwebtoken": "^8.5.1",
     "link-preview-js": "^2.1.8",

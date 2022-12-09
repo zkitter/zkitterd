@@ -218,7 +218,7 @@ export class UsersController extends Controller {
         UNION
         SELECT p."messageId" as message_id, 'MENTION' as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM tags t
         JOIN posts p ON p."messageId" = t.message_id
-        WHERE t.tag_name = '@'||:address
+        WHERE t.tag_name = CONCAT('@', :address)
         ORDER BY timestamp DESC
         LIMIT :limit OFFSET :offset
       `,
@@ -275,7 +275,7 @@ export class UsersController extends Controller {
           UNION
           SELECT p."messageId" as message_id, 'MENTION' as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM tags t
           JOIN posts p ON p."messageId" = t.message_id
-          WHERE t.tag_name = '@'||:address
+          WHERE t.tag_name = CONCAT('@',:address)
           AND p."createdAt" > :lastRead
         ) AS tem
         GROUP BY type

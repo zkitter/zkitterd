@@ -3,6 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "_moduleAliases": {
+    "@models": "src/models",
+    "@services": "src/services",
+    "@util": "src/util",
+    "~": "lib",
+    "#": "static"
+  },
   "scripts": {
     "dev-server": "nodemon ./build/server.js",
     "watch-server": "webpack --config webpack.server.config.js --watch",
@@ -10,7 +17,7 @@
     "dev": "NODE_ENV=development concurrently --kill-others-on-fail npm:watch-server npm:dev-server",
     "build": "NODE_ENV=production npm run build-server",
     "start": "NODE_ENV=production npm run build && node ./build/server.js",
-    "test": "FORCE=true NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' tape -r ts-node/register './src/**/*.test.ts' | tap-spec",
+    "test": "FORCE=true NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' tape -r module-alias/register -r ts-node/register './src/**/*.test.ts' | tap-spec",
     "test:coverage": "nyc npm run test",
     "test:some": "_some() { find ./src -path *$1*.test.ts -exec tape -r ts-node/register {} \\; | tap-spec; }; FORCE=true NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' _some",
     "format:check": "prettier --check 'src/**/*.ts'",
@@ -52,6 +59,7 @@
     "link-preview-js": "^2.1.8",
     "link-preview-node": "^1.0.7",
     "lru-cache": "^6.0.0",
+    "module-alias": "^2.2.2",
     "ms": "^2.1.3",
     "multer": "^1.4.5-lts.1",
     "oauth-1.0a": "^2.2.6",

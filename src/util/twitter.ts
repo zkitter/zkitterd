@@ -1,4 +1,4 @@
-import { Botometer } from 'botometer';
+const { Botometer } = require('botometer');
 import crypto from 'crypto';
 import { URLSearchParams } from 'url';
 import { PostModel } from '@models/posts';

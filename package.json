@@ -14,6 +14,7 @@
     "test:coverage": "nyc npm run test",
     "test:some": "_some() { find ./src -path *$1*.test.ts -exec tape -r ts-node/register {} \\; | tap-spec; }; FORCE=true NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' _some",
     "format:check": "prettier --check 'src/**/*.ts'",
+    "format:ci": "npm run format:check --loglevel warn",
     "format:write": "prettier --write 'src/**/*.ts'",
     "prepare": "husky install"
   },

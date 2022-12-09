@@ -22,6 +22,7 @@ let pruneTimeout: any;
 export enum SSEType {
   INIT = 'INIT',
   NEW_CHAT_MESSAGE = 'NEW_CHAT_MESSAGE',
+  UPDATE_UNREAD = 'UPDATE_UNREAD',
   HEALTHCHECK = 'HEALTHCHECK',
 }
 
@@ -84,6 +85,18 @@ export const publishTopic = async (topic: string, data: any) => {
       const raw = `data: ${JSON.stringify(data)}\n\n`;
       client.res.write(raw);
     }
+  }
+};
+
+export const publishUnread = async (clientId: string, unread: any) => {
+  const client = CLIENT_CACHE[clientId];
+  const data = JSON.stringify({
+    type: SSEType.UPDATE_UNREAD,
+    message: unread,
+  });
+  if (client) {
+    const raw = `data: ${data}\n\n`;
+    client.res.write(raw);
   }
 };
 

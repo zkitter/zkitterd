@@ -13,7 +13,7 @@ export class TagsController extends Controller {
 
   addRoutes = () => {
     this._router.get('/tags', this.getMany);
-    this._router.get('/tags.:tagName', this.getPostsByTagName);
+    this._router.get('/tags/:tagName', this.getPostsByTagName);
   };
 
   getMany = async (req: Request, res: Response) => {

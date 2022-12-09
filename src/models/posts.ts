@@ -508,11 +508,18 @@ const posts = (sequelize: Sequelize) => {
       // prettier-ignore
       .query(
         `SELECT *
-              FROM posts
-              WHERE ts @@ to_tsquery('english', :query)
-              ORDER BY "createdAt" ${order} LIMIT :limit
-              OFFSET :offset`,
-        { type: QueryTypes.SELECT, replacements: { limit, offset, query } }
+         FROM posts
+         WHERE ts @@ to_tsquery('english', :query)
+         ORDER BY "createdAt" ${order} LIMIT :limit
+         OFFSET :offset`,
+        {
+          type: QueryTypes.SELECT,
+          replacements: {
+            limit,
+            offset,
+            query: query.replace(/\||,/g, ' ').replace(/\s\s+/g, ' ').replace(/ /g, ' | '),
+          },
+        }
       )
       .then(result => result.map(inflateResultToPostJSON));
 
@@ -657,7 +664,7 @@ const selectJoinQuery = `
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
         LEFT JOIN connections modblockedctx ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modfollowedctx ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
-        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = '@'||:context
+        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = CONCAT('@',:context)
 `;
 
 const selectLikedPostsQuery = `
@@ -730,5 +737,5 @@ const selectLikedPostsQuery = `
         LEFT JOIN semaphore_creators rpsc on p.subtype = 'REPOST' AND rpsc."message_id" = p."reference"
         LEFT JOIN connections modblockedctx ON modblockeduser."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'BLOCK' AND name = :context AND creator = root.creator LIMIT 1)
         LEFT JOIN connections modfollowedctx ON modfollowedctx."messageId" = (SELECT "messageId" FROM connections WHERE subtype = 'FOLLOW' AND name = :context AND creator = root.creator LIMIT 1)
-        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = '@'||:context
+        LEFT JOIN tags modmentionedctx ON modmentionedctx.message_id = root."messageId" AND modmentionedctx.tag_name = CONCAT('@',:context)
 `;

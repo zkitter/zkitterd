@@ -146,7 +146,7 @@ const users = (sequelize: Sequelize) => {
         type: QueryTypes.SELECT,
         replacements: {
           context: context || '',
-          query: `${query.toLowerCase()}%`,
+          query: `%${query.toLowerCase()}%`,
           limit,
           offset,
         },
@@ -216,51 +216,51 @@ const users = (sequelize: Sequelize) => {
 export default users;
 
 const userSelectQuery = `
-    SELECT  
-        u.name,
-        u.pubkey,
-        u."joinedAt",
-        u."tx",
-        u."type",
-        umt."followerCount",
-        umt."followingCount",
-        umt."blockedCount",
-        umt."blockingCount",
-        umt."postingCount",
-        umt."mentionedCount",
-        f."messageId" as followed,
-        b."messageId" as blocked,
-        bio.value as bio,
-        name.value as nickname,
-        "profileImage".value as "profileImage",
-        "coverImage".value as "coverImage",
-        "group".value as "group",
-        "twitterVerification".value as "tweetId",
-        "twitterVerification".key as "twitterHandle",
-        website.value as website,
-        ecdh.value as ecdh,
-        idcommitment.value as idcommitment,
-        accept."messageId" as accepted,
-        invite."messageId" as invited,
-        invrecv."messageId" as invrecv,
-        acceptsent."messageId" as acceptsent
-    FROM users u
-    LEFT JOIN usermeta umt ON umt.name = u.name
-    LEFT JOIN connections f ON f.subtype = 'FOLLOW' AND f.creator = :context AND f.name = u.name
-    LEFT JOIN connections b ON b.subtype = 'BLOCK' AND b.creator = :context AND b.name = u.name
-    LEFT JOIN profiles bio ON bio."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'BIO' ORDER BY "createdAt" DESC LIMIT 1)
-    LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
-    LEFT JOIN profiles "profileImage" ON "profileImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'PROFILE_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)
-    LEFT JOIN profiles "coverImage" ON "coverImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'COVER_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)
-    LEFT JOIN profiles "twitterVerification" ON "twitterVerification"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'TWT_VERIFICATION' ORDER BY "createdAt" DESC LIMIT 1)
-    LEFT JOIN profiles "group" ON "group"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'GROUP' ORDER BY "createdAt" DESC LIMIT 1)
-    LEFT JOIN profiles website ON website."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'WEBSITE' ORDER BY "createdAt" DESC LIMIT 1)
-    LEFT JOIN profiles ecdh ON ecdh."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='ecdh_pubkey' ORDER BY "createdAt" DESC LIMIT 1)
-    LEFT JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
-    LEFT JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = :context AND invite.name = u.name 
-    LEFT JOIN connections invrecv ON invrecv.subtype = 'MEMBER_INVITE' AND invrecv.creator = u.name AND invrecv.name = :context
-    LEFT JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = u.name AND accept.name = :context 
-    LEFT JOIN connections acceptsent ON acceptsent.subtype = 'MEMBER_ACCEPT' AND acceptsent.creator = :context  AND acceptsent.name = u.name
+  SELECT  
+    u.name,
+    u.pubkey,
+    u."joinedAt",
+    u."tx",
+    u."type",
+    umt."followerCount",
+    umt."followingCount",
+    umt."blockedCount",
+    umt."blockingCount",
+    umt."postingCount",
+    umt."mentionedCount",
+    f."messageId" as followed,
+    b."messageId" as blocked,
+    bio.value as bio,
+    name.value as nickname,
+    "profileImage".value as "profileImage",
+    "coverImage".value as "coverImage",
+    "group".value as "group",
+    "twitterVerification".value as "tweetId",
+    "twitterVerification".key as "twitterHandle",
+    website.value as website,
+    ecdh.value as ecdh,
+    idcommitment.value as idcommitment,
+    accept."messageId" as accepted,
+    invite."messageId" as invited,
+    invrecv."messageId" as invrecv,
+    acceptsent."messageId" as acceptsent
+  FROM users u
+  LEFT JOIN usermeta umt ON umt.name = u.name
+  LEFT JOIN connections f ON f."messageId" = (SELECT "messageId" FROM connections conn WHERE conn.subtype = 'FOLLOW' AND conn.creator = :context AND conn.name = u.name ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN connections b ON b."messageId" = (SELECT "messageId" FROM connections conn WHERE conn.subtype = 'BLOCK' AND conn.creator = :context AND conn.name = u.name ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN profiles bio ON bio."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'BIO' ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN profiles "profileImage" ON "profileImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'PROFILE_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN profiles "coverImage" ON "coverImage"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'COVER_IMAGE' ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN profiles "twitterVerification" ON "twitterVerification"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'TWT_VERIFICATION' ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN profiles "group" ON "group"."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'GROUP' ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN profiles website ON website."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'WEBSITE' ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN profiles ecdh ON ecdh."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='ecdh_pubkey' ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN connections invite ON invite."messageId" = (SELECT "messageId" FROM connections conn WHERE conn.subtype = 'MEMBER_INVITE' AND conn.creator = :context AND conn.name = u.name ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN connections invrecv ON invrecv."messageId" = (SELECT "messageId" FROM connections conn WHERE conn.subtype = 'MEMBER_INVITE' AND conn.creator = u.name AND conn.name = :context ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN connections accept ON accept."messageId" = (SELECT "messageId" FROM connections conn WHERE conn.subtype = 'MEMBER_ACCEPT' AND conn.creator = u.name AND conn.name = :context ORDER BY "createdAt" DESC LIMIT 1)
+  LEFT JOIN connections acceptsent ON acceptsent."messageId" = (SELECT "messageId" FROM connections conn WHERE conn.subtype = 'MEMBER_ACCEPT' AND conn.creator = :context  AND conn.name = u.name ORDER BY "createdAt" DESC LIMIT 1)
 `;
 
 function inflateValuesToUserJSON(values: any[]): UserModel[] {

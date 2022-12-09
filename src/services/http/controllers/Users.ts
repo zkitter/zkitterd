@@ -22,6 +22,8 @@ export class UsersController extends Controller {
     this._router.get('/:creator/replies', this.getReplies);
     this._router.get('/:creator/likes', this.getLikes);
     this._router.get('/:address/groups', this.getGroups);
+    this._router.get('/:address/notifications', this.getNotifications);
+    this._router.get('/:address/notifications/unread', this.getUnreadNotificationCounts);
     this._router.get('/users/search/:query?', this.search);
   };
 
@@ -33,7 +35,7 @@ export class UsersController extends Controller {
     const users = await usersDB.readAll(context, offset, limit);
 
     const result = [];
-    // console.log({ usersDB, users });
+
     for (let user of users) {
       const ens = await this.call('ens', 'fetchNameByAddress', user.username);
       result.push({ ens, ...user });
@@ -181,5 +183,121 @@ export class UsersController extends Controller {
     }
 
     res.send(makeResponse(result));
+  };
+
+  getNotifications = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
+    const { address } = req.params;
+    const values = await sequelize.query(
+      `
+        SELECT p."messageId" as message_id, m.subtype as type, m."createdAt" as timestamp,  m.creator as creator, null as sender_pubkey FROM moderations m
+        JOIN posts p on p."messageId" = m.reference
+        WHERE m.subtype = 'LIKE'
+        AND p.creator = :address
+        UNION
+        SELECT p."messageId" as message_id, p.subtype as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM posts p
+        JOIN posts op on op."messageId" = p.reference AND p.subtype = 'REPLY'
+        AND op.creator = :address
+        UNION
+        SELECT p."messageId" as message_id, p.subtype as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM posts p
+        JOIN posts op on op."messageId" = p.reference AND p.subtype = 'REPOST'
+        AND op.creator = :address
+        UNION
+        SELECT invite."messageId" as message_id, invite.subtype as type, invite."createdAt" as timestamp, invite.creator as creator, null as sender_pubkey FROM users u
+        LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+        JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+        JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = u.name AND invite.name = :address
+        LEFT JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :address AND accept.name = u.name
+        UNION
+        SELECT accept."messageId" as message_id, accept.subtype as type, accept."createdAt" as timestamp, accept.creator as creator, null as sender_pubkey FROM users u
+        LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+        JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+        JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = :address AND invite.name = u.name
+        JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = u.name AND accept.name = :address
+        UNION
+        SELECT p."messageId" as message_id, 'MENTION' as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM tags t
+        JOIN posts p ON p."messageId" = t.message_id
+        WHERE t.tag_name = CONCAT('@', :address)
+        ORDER BY timestamp DESC
+        LIMIT :limit OFFSET :offset
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          address: address,
+          limit,
+          offset,
+        },
+      }
+    );
+    res.send(makeResponse(values));
+  };
+
+  getUnreadNotificationCounts = async (req: Request, res: Response) => {
+    const { address } = req.params;
+    const lastReadDB = await this.call('db', 'getLastRead');
+    const result = await lastReadDB.getLastRead(address, '');
+    const lastRead = result?.lastread || 0;
+    const values = await sequelize.query(
+      `
+        SELECT tem.type, COUNT(*)
+        FROM (
+          SELECT p."messageId" as message_id, m.subtype as type, m."createdAt" as timestamp,  m.creator as creator, null as sender_pubkey FROM moderations m
+          JOIN posts p on p."messageId" = m.reference
+          WHERE m.subtype = 'LIKE'
+          AND p.creator = :address
+          AND m."createdAt" > :lastRead
+          UNION
+          SELECT p."messageId" as message_id, p.subtype as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM posts p
+          JOIN posts op on op."messageId" = p.reference AND p.subtype = 'REPLY'
+          AND op.creator = :address
+          AND p."createdAt" > :lastRead
+          UNION
+          SELECT p."messageId" as message_id, p.subtype as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM posts p
+          JOIN posts op on op."messageId" = p.reference AND p.subtype = 'REPOST'
+          AND op.creator = :address
+          AND p."createdAt" > :lastRead
+          UNION
+          SELECT invite."messageId" as message_id, invite.subtype as type, invite."createdAt" as timestamp, invite.creator as creator, null as sender_pubkey FROM users u
+          LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+          JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+          JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = u.name AND invite.name = :address
+          LEFT JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :address AND accept.name = u.name
+          WHERE invite."createdAt" > :lastRead
+          UNION
+          SELECT accept."messageId" as message_id, accept.subtype as type, accept."createdAt" as timestamp, accept.creator as creator, null as sender_pubkey FROM users u
+          LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+          JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+          JOIN connections invite ON invite.subtype = 'MEMBER_INVITE' AND invite.creator = :address AND invite.name = u.name
+          JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = u.name AND accept.name = :address
+          WHERE accept."createdAt" > :lastRead
+          UNION
+          SELECT p."messageId" as message_id, 'MENTION' as type, p."createdAt" as timestamp,  p.creator as creator, null as sender_pubkey FROM tags t
+          JOIN posts p ON p."messageId" = t.message_id
+          WHERE t.tag_name = CONCAT('@',:address)
+          AND p."createdAt" > :lastRead
+        ) AS tem
+        GROUP BY type
+        ORDER BY type
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          address: address,
+          lastRead,
+        },
+      }
+    );
+    res.send(
+      makeResponse(
+        values.reduce((map: any, val: any) => {
+          map[val.type] = Number(val.count);
+          map.TOTAL = map.TOTAL || 0;
+          map.TOTAL += Number(val.count);
+          return map;
+        }, {})
+      )
+    );
   };
 }

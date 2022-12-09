@@ -15,6 +15,7 @@ import tags from '@models/tags';
 import linkPreview from '@models/linkPreview';
 import ens from '@models/ens';
 import twitterAuth from '@models/twitterAuth';
+import auth from '@models/auth';
 import interepGroups from '@models/interepGroups';
 import semaphoreCreators from '@models/semaphore_creators';
 import threads from '@models/thread';

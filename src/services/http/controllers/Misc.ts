@@ -13,6 +13,8 @@ import { verifySignatureP256 } from '../../../util/crypto';
 import vKey from '../../../../static/verification_key.json';
 
 export class MiscController extends Controller {
+  prefix = '/v1';
+
   constructor() {
     super();
     this.addRoutes();
@@ -36,7 +38,8 @@ export class MiscController extends Controller {
           }
         ),
         this.ipfsUpload
-      );
+      )
+      .post('/lastread/:reader/:context?', this.postLastRead);
   };
 
   healthcheck = async (req: Request, res: Response) => res.send(makeResponse('ok'));
@@ -198,4 +201,13 @@ export class MiscController extends Controller {
 
       next();
     };
+
+  postLastRead = async (req: Request, res: Response) => {
+    const reader = req.params.reader;
+    const context = req.params.context;
+    const { lastread } = req.body;
+    const lastReadDB = await this.call('db', 'getLastRead');
+    await lastReadDB.update({ reader, context: context || '', lastread });
+    res.send(makeResponse('ok'));
+  };
 }

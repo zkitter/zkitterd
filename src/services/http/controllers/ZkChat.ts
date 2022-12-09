@@ -25,6 +25,7 @@ export class ZkChatController extends Controller {
         .get('/users', this.getUsers)
         .post('/chat-messages', this.postMessage)
         .get('/chat-messages/dm/:sender/:receiver', this.getDirectMessage)
+        .get('/chat-messages/dm/:sender/:receiver/unread', this.getUnreadCountDM)
         .get('/chats/dm/:pubkey', this.getDirectChats)
         .get('/chats/search/:query?', this.searchChats)
     );
@@ -170,6 +171,15 @@ export class ZkChatController extends Controller {
     const { query } = req.params;
     const { sender } = req.query;
     const data = await this.call('zkchat', 'searchChats', query || '', sender);
+    res.send(makeResponse(data));
+  };
+
+  getUnreadCountDM = async (req: Request, res: Response) => {
+    const { sender, receiver } = req.params;
+    const lastReadDB = await this.call('db', 'getLastRead');
+    const result = await lastReadDB.getLastRead(receiver, sender);
+    const lastRead = result?.lastread || 0;
+    const data = await this.call('zkchat', 'getUnreadCountDM', sender, receiver, lastRead);
     res.send(makeResponse(data));
   };
 }

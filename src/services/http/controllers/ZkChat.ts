@@ -1,12 +1,13 @@
-import { Request, Response, Router, json } from 'express';
+import { Request, Response, Router } from 'express';
+import { QueryTypes } from 'sequelize';
+
+import { verifySignatureP256 } from '@util/crypto';
+import { publishTopic, SSEType } from '@util/sse';
+import { sequelize } from '@util/sequelize';
+import merkleRoot from '@models/merkle_root';
 
 import { Controller } from './interface';
 import { makeResponse } from '../utils';
-import { verifySignatureP256 } from '../../../util/crypto';
-import { publishTopic, SSEType } from '../../../util/sse';
-import { sequelize } from '../../../util/sequelize';
-import merkleRoot from '../../../models/merkle_root';
-import { QueryTypes } from 'sequelize';
 
 export class ZkChatController extends Controller {
   merkleRoot?: ReturnType<typeof merkleRoot>;
@@ -112,12 +113,12 @@ export class ZkChatController extends Controller {
       rln,
     });
 
-    // await
+    // await ?
     publishTopic(`ecdh:${data.sender_pubkey}`, {
       type: SSEType.NEW_CHAT_MESSAGE,
       message: data,
     });
-    // await?
+    // await ?
     publishTopic(`ecdh:${data.receiver_pubkey}`, {
       type: SSEType.NEW_CHAT_MESSAGE,
       message: data,

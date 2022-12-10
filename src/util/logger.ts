@@ -1,6 +1,7 @@
 import winston from 'winston';
+
 const format = winston.format;
-const { combine, timestamp, prettyPrint } = format;
+const { combine, timestamp } = format;
 
 const logger = winston.createLogger({
   level: 'info',

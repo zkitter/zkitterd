@@ -1,5 +1,4 @@
 import { BIGINT, Sequelize, STRING } from 'sequelize';
-import { ProfileMessageSubType } from '../util/message';
 
 type ProfileModel = {
   messageId: string;
@@ -76,7 +75,7 @@ const profiles = (sequelize: Sequelize) => {
   };
 
   const findOne = async (hash: string): Promise<ProfileModel | null> => {
-    let result: any = await model.findOne({
+    const result: any = await model.findOne({
       where: {
         hash,
       },

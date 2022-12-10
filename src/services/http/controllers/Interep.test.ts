@@ -4,6 +4,7 @@ import { InterepController } from './Interep';
 import { newRequest, newResponse, stubCall, stubFetch } from '../../../util/testUtils';
 
 let controller: InterepController;
+/* eslint-disable @typescript-eslint/no-unused-vars */
 let call: ReturnType<typeof stubCall>[0];
 let stubs: ReturnType<typeof stubCall>[1];
 let req: ReturnType<typeof newRequest>;

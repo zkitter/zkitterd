@@ -1,4 +1,5 @@
 import tape from 'tape';
+
 import { accessToken, requestToken, verifyCredential } from './twitter';
 import { stubFetch } from './testUtils';
 

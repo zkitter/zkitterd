@@ -1,11 +1,13 @@
-import { GenericService } from '../util/svc';
 import { Contract } from 'web3-eth-contract';
 import Web3 from 'web3';
-import config from '../util/config';
-import { ensResolverABI } from '../util/abi';
 import LRU from 'lru-cache';
+
+import { GenericService } from '@util/svc';
+import config from '@util/config';
+import { ensResolverABI } from '@util/abi';
 import Timeout = NodeJS.Timeout;
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { default: ENS, getEnsAddress } = require('@ensdomains/ensjs');
 
 const cache = new LRU({

@@ -1,8 +1,10 @@
 import tape from 'tape';
 import sinon from 'sinon';
 import { Semaphore } from '@zk-kit/protocols';
+
 import GunService from './gun';
-import { stubCall, stubFetch } from '../util/testUtils';
+
+import { stubCall, stubFetch } from '@util/testUtils';
 
 const fetchStub = stubFetch();
 
@@ -10,9 +12,9 @@ const verifyProofStub = sinon.stub(Semaphore, 'verifyProof').returns(Promise.res
 
 tape('GunService - insert a post', async t => {
   const gun = new GunService();
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun = { get: sinon.stub() };
-  const [callStub, stubs] = stubCall(gun);
+  const [, stubs] = stubCall(gun);
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
@@ -21,7 +23,7 @@ tape('GunService - insert a post', async t => {
     })
   );
 
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun.get.returns(
     Promise.resolve({
       topic: 'unitest',
@@ -86,7 +88,7 @@ tape('GunService - insert a post', async t => {
 
 tape('GunService - insert an anon post', async t => {
   const gun = new GunService();
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun = { get: sinon.stub() };
   const [callStub, stubs] = stubCall(gun);
 
@@ -107,7 +109,7 @@ tape('GunService - insert an anon post', async t => {
     })
   );
 
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun.get.returns(
     Promise.resolve({
       content: 'asdf',
@@ -182,7 +184,7 @@ tape('GunService - insert an anon post', async t => {
 
 tape('GunService - insert a reply', async t => {
   const gun = new GunService();
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun = { get: sinon.stub() };
   const [callStub, stubs] = stubCall(gun);
 
@@ -195,7 +197,7 @@ tape('GunService - insert a reply', async t => {
     })
   );
 
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun.get.returns(
     Promise.resolve({
       topic: 'reply',
@@ -279,9 +281,9 @@ tape('GunService - insert a reply', async t => {
 
 tape('GunService - insert a moderation', async t => {
   const gun = new GunService();
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun = { get: sinon.stub() };
-  const [callStub, stubs] = stubCall(gun);
+  const [, stubs] = stubCall(gun);
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
@@ -290,7 +292,7 @@ tape('GunService - insert a moderation', async t => {
     })
   );
 
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun.get.returns(
     Promise.resolve({
       reference: '0x123/3456',
@@ -340,9 +342,9 @@ tape('GunService - insert a moderation', async t => {
 
 tape('GunService - insert a connection', async t => {
   const gun = new GunService();
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun = { get: sinon.stub() };
-  const [callStub, stubs] = stubCall(gun);
+  const [, stubs] = stubCall(gun);
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
@@ -351,7 +353,7 @@ tape('GunService - insert a connection', async t => {
     })
   );
 
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun.get.returns(
     Promise.resolve({
       name: '0xotheruser',
@@ -403,9 +405,9 @@ tape('GunService - insert a connection', async t => {
 
 tape('GunService - insert a profile', async t => {
   const gun = new GunService();
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun = { get: sinon.stub() };
-  const [callStub, stubs] = stubCall(gun);
+  const [, stubs] = stubCall(gun);
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
@@ -414,7 +416,7 @@ tape('GunService - insert a profile', async t => {
     })
   );
 
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun.get.returns(
     Promise.resolve({
       key: 'twitter_user_handle',
@@ -479,7 +481,7 @@ tape('GunService - insert a profile', async t => {
 
 tape('GunService - delete post', async t => {
   const gun = new GunService();
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun = { get: sinon.stub() };
   const [callStub, stubs] = stubCall(gun);
 
@@ -538,9 +540,9 @@ tape('GunService - delete post', async t => {
 
 tape('GunService - delete moderation', async t => {
   const gun = new GunService();
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun = { get: sinon.stub() };
-  const [callStub, stubs] = stubCall(gun);
+  const [, stubs] = stubCall(gun);
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
@@ -578,9 +580,9 @@ tape('GunService - delete moderation', async t => {
 
 tape('GunService - delete connections', async t => {
   const gun = new GunService();
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun = { get: sinon.stub() };
-  const [callStub, stubs] = stubCall(gun);
+  const [, stubs] = stubCall(gun);
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
@@ -621,9 +623,9 @@ tape('GunService - delete connections', async t => {
 
 tape('GunService - delete profile', async t => {
   const gun = new GunService();
-  // @ts-ignore
+  // @ts-expect-error
   gun.gun = { get: sinon.stub() };
-  const [callStub, stubs] = stubCall(gun);
+  const [, stubs] = stubCall(gun);
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({

@@ -1,5 +1,6 @@
 import { BIGINT, Sequelize, STRING } from 'sequelize';
-import { ConnectionMessageSubType } from '../util/message';
+
+import { ConnectionMessageSubType } from '@util/message';
 
 type ConnectionModel = {
   messageId: string;
@@ -55,7 +56,7 @@ const connections = (sequelize: Sequelize) => {
   );
 
   const findOne = async (hash: string): Promise<ConnectionModel | null> => {
-    let result: any = await model.findOne({
+    const result: any = await model.findOne({
       where: {
         hash,
       },
@@ -82,7 +83,7 @@ const connections = (sequelize: Sequelize) => {
     limit = 20,
     order: 'DESC' | 'ASC' = 'DESC'
   ): Promise<ConnectionModel[]> => {
-    let result = await model.findAll({
+    const result = await model.findAll({
       where: {
         name,
       },
@@ -100,7 +101,7 @@ const connections = (sequelize: Sequelize) => {
     limit = 20,
     order: 'DESC' | 'ASC' = 'DESC'
   ): Promise<ConnectionModel[]> => {
-    let result = await model.findAll({
+    const result = await model.findAll({
       attributes: ['creator'],
       where: { name },
       offset,
@@ -117,7 +118,7 @@ const connections = (sequelize: Sequelize) => {
     limit = 20,
     order: 'DESC' | 'ASC' = 'DESC'
   ): Promise<ConnectionModel[]> => {
-    let result = await model.findAll({
+    const result = await model.findAll({
       attributes: ['name'],
       where: { creator },
       offset,
@@ -133,7 +134,7 @@ const connections = (sequelize: Sequelize) => {
   };
 
   const findMemberInvite = async (groupAddress: string, memberAddress: string) => {
-    let result: any = await model.findOne({
+    const result: any = await model.findOne({
       where: {
         creator: groupAddress,
         name: memberAddress,

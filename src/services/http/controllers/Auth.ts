@@ -4,8 +4,8 @@ import { OAuthProvider } from '@interep/reputation';
 
 import { Controller } from './interface';
 import { makeResponse } from '../utils';
-import { getProfileParams, GhProfile, RdProfile, STRATEGIES, TwProfile } from '../../../util/auth';
-import logger from '../../../util/logger';
+import { getProfileParams, GhProfile, RdProfile, STRATEGIES, TwProfile } from '@util/auth';
+import logger from '@util/logger';
 
 export class AuthController extends Controller {
   prefix = '/auth';
@@ -35,7 +35,6 @@ export class AuthController extends Controller {
             const db = await this.call('db', 'getAuth');
             await db.upsertOne({ provider, userId, username, token: accessToken });
 
-            // @ts-ignore
             return done(null, {
               provider,
               username,
@@ -67,6 +66,7 @@ export class AuthController extends Controller {
     res.redirect(this.redirectUrl);
   };
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   storeRedirectUrl: RequestHandler<{}, {}, {}, { redirectUrl: string }> = (req, res, next) => {
     this.redirectUrl = req.query.redirectUrl;
     next();
@@ -81,7 +81,6 @@ export class AuthController extends Controller {
   };
 
   logout = (req: Request, res: Response, next: NextFunction) => {
-    // @ts-ignore
     req.logout(err => {
       if (err) return next(err);
       res.send(makeResponse('ok'));

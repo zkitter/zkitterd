@@ -1,12 +1,6 @@
-import { BIGINT, ModelCtor, QueryTypes, Sequelize, STRING } from 'sequelize';
-import {
-  Message,
-  MessageType,
-  ModerationJSON,
-  PostJSON,
-  PostMessageSubType,
-} from '../util/message';
-import { PostModel } from './posts';
+import { BIGINT, QueryTypes, Sequelize, STRING } from 'sequelize';
+
+import { ModerationJSON } from '@util/message';
 
 type ModerationModel = {
   messageId: string;
@@ -61,7 +55,7 @@ const moderations = (sequelize: Sequelize) => {
   );
 
   const findOne = async (hash: string): Promise<ModerationModel | null> => {
-    let result: any = await model.findOne({
+    const result: any = await model.findOne({
       where: {
         hash,
       },
@@ -120,7 +114,7 @@ const moderations = (sequelize: Sequelize) => {
     limit = 20,
     order: 'DESC' | 'ASC' = 'DESC'
   ): Promise<ModerationJSON[]> => {
-    let result = await model.findAll({
+    const result = await model.findAll({
       where: {
         reference,
       },

@@ -1,4 +1,5 @@
 import Web3 from 'web3';
+
 import { interrepABI } from './abi';
 import config from './config';
 

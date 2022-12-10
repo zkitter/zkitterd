@@ -32,7 +32,7 @@ const semaphore = (sequelize: Sequelize) => {
   );
 
   const findOneByCommitment = async (id_commitment: string): Promise<SemaphoreModel | null> => {
-    let result = await model.findOne({
+    const result = await model.findOne({
       where: {
         id_commitment,
       },
@@ -46,7 +46,7 @@ const semaphore = (sequelize: Sequelize) => {
     id_commitment: string,
     group_id: string
   ): Promise<SemaphoreModel | null> => {
-    let result = await model.findOne({
+    const result = await model.findOne({
       where: {
         id_commitment,
         group_id,
@@ -58,7 +58,7 @@ const semaphore = (sequelize: Sequelize) => {
   };
 
   const findAllByCommitment = async (id_commitment: string): Promise<SemaphoreModel[]> => {
-    let result = await model.findAll({
+    const result = await model.findAll({
       where: {
         id_commitment,
       },
@@ -68,7 +68,7 @@ const semaphore = (sequelize: Sequelize) => {
   };
 
   const findAllByGroup = async (group: string): Promise<SemaphoreModel[]> => {
-    let result = await model.findAll({
+    const result = await model.findAll({
       where: {
         group,
       },

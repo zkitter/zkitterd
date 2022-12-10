@@ -1,7 +1,7 @@
 import { CorsOptions } from 'cors';
 import ms from 'ms';
 
-import config from '../../util/config';
+import config from '@util/config';
 
 export const CORS_OPTIONS: CorsOptions = {
   credentials: true,

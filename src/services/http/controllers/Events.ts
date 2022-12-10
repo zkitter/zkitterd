@@ -1,9 +1,9 @@
-import { json, Request, Response, Router } from 'express';
+import { Request, Response, Router } from 'express';
 import crypto from 'crypto';
 
 import { Controller } from './interface';
 import { makeResponse } from '../utils';
-import { addConnection, addTopic, keepAlive, removeConnection } from '../../../util/sse';
+import { addConnection, addTopic, keepAlive, removeConnection } from '@util/sse';
 
 export class EventsController extends Controller {
   prefix = '/v1';

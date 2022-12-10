@@ -1,14 +1,11 @@
-import { Sequelize, BIGINT, STRING, QueryTypes } from 'sequelize';
+import { QueryTypes, Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
-import { PostJSON } from '../util/message';
-import { inflateResultToPostJSON } from './posts';
-import { globalModClause, globalVisibilityClause, replyModerationClause } from '../util/sql';
-import config from '../util/config';
 
-type TagModel = {
-  tag_name: string;
-  message_id: string;
-};
+import { inflateResultToPostJSON } from './posts';
+
+import { PostJSON } from '@util/message';
+import { globalModClause, replyModerationClause } from '@util/sql';
+import config from '@util/config';
 
 const mutex = new Mutex();
 
@@ -30,25 +27,22 @@ const tags = (sequelize: Sequelize) => {
 
   const addTagPost = async (tagName: string, messageId: string) => {
     return mutex.runExclusive(async () => {
-      const res = await model.create({
+      return await model.create({
         tag_name: tagName,
         message_id: messageId,
       });
-
-      return res;
     });
   };
 
   const removeTagPost = async (tagName: string, messageId: string) => {
     return mutex.runExclusive(async () => {
       try {
-        const res = await model.destroy({
+        return await model.destroy({
           where: {
             tag_name: tagName,
             message_id: messageId,
           },
         });
-        return res;
       } catch (e) {
         return false;
       }
@@ -93,7 +87,7 @@ const tags = (sequelize: Sequelize) => {
 
     const values: PostJSON[] = [];
 
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }

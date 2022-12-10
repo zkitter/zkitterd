@@ -1,5 +1,5 @@
-// @ts-ignore
 import tape from 'tape';
+
 import {
   Connection,
   ConnectionMessageSubType,

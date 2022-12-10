@@ -1,11 +1,13 @@
 import tape from 'tape';
 import sinon from 'sinon';
-import { stubCall } from '../util/testUtils';
+
 import ArbitrumService from './arbitrum';
+
+import { stubCall } from '@util/testUtils';
 
 tape.skip('ArbitrumService', async t => {
   const arb = new ArbitrumService();
-  const [call, stubs] = stubCall(arb);
+  const [, stubs] = stubCall(arb);
 
   t.equal(
     await arb.getNonce('0x5741cc1bDb03738Eaed6F227E435fc08e6bE157B'),

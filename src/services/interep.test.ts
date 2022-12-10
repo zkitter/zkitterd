@@ -1,12 +1,14 @@
 import 'isomorphic-fetch';
 import tape from 'tape';
+import { stubCall, stubFetch } from '@util/testUtils';
+
 import InterrepService from './interrep';
-import { stubCall, stubFetch } from '../util/testUtils';
+
 const fetchStub = stubFetch();
 
 const interrep = new InterrepService();
 
-const [callStub, { semaphore, interepGroups }] = stubCall(interrep);
+const [, { interepGroups }] = stubCall(interrep);
 
 tape.skip('InterepService.start', async (t: any) => {
   const datas = [

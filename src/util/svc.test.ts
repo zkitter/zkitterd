@@ -1,11 +1,13 @@
-// @ts-ignore
 import tape from 'tape';
+
 import { GenericService, MainService } from './svc';
 
 class SampleService extends GenericService {
   return = (value: any) => value;
 
-  async start() {}
+  async start() {
+    /**/
+  }
 }
 
 tape('svc.ts', async t => {

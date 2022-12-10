@@ -1,13 +1,14 @@
 import { BIGINT, Op, QueryTypes, Sequelize, STRING } from 'sequelize';
-import { MessageType, PostJSON, PostMessageSubType } from '../util/message';
 import { Mutex } from 'async-mutex';
+
+import { MessageType, PostJSON, PostMessageSubType } from '@util/message';
 import {
   globalModClause,
   globalVisibilityClause,
   notBlockedClause,
   replyModerationClause,
-} from '../util/sql';
-import config from '../util/config';
+} from '@util/sql';
+import config from '@util/config';
 
 const mutex = new Mutex();
 
@@ -108,7 +109,6 @@ const posts = (sequelize: Sequelize) => {
     });
 
     if (result) {
-      // @ts-ignore
       const json: PostModel = result.toJSON();
       if (json.reference && json.subtype === 'REPLY') {
         return findRoot(json.reference);
@@ -151,7 +151,7 @@ const posts = (sequelize: Sequelize) => {
 
     const values: PostJSON[] = [];
 
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       if (post.createdAt > 0) {
         values.push(post);
@@ -196,7 +196,7 @@ const posts = (sequelize: Sequelize) => {
 
     const values: PostJSON[] = [];
 
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }
@@ -238,7 +238,7 @@ const posts = (sequelize: Sequelize) => {
 
     const values: PostJSON[] = [];
 
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }
@@ -280,7 +280,7 @@ const posts = (sequelize: Sequelize) => {
 
     const values: PostJSON[] = [];
 
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }
@@ -324,7 +324,7 @@ const posts = (sequelize: Sequelize) => {
     );
 
     const values: PostJSON[] = [];
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }
@@ -365,7 +365,7 @@ const posts = (sequelize: Sequelize) => {
     );
 
     const values: PostJSON[] = [];
-    for (let r of result) {
+    for (const r of result) {
       const post = inflateResultToPostJSON(r);
       values.push(post);
     }
@@ -408,7 +408,7 @@ const posts = (sequelize: Sequelize) => {
 
   const createTwitterPosts = async (records: PostModel[]) => {
     return mutex.runExclusive(async () => {
-      for (let record of records) {
+      for (const record of records) {
         if (record.type !== '@TWEET@') continue;
 
         const topic = `https://twitter.com/${record.creator}/status/${record.messageId}`;
@@ -447,7 +447,7 @@ const posts = (sequelize: Sequelize) => {
       if (result) {
         const json = (await result.toJSON()) as PostModel;
         if (json.createdAt < 0) {
-          // @ts-ignore
+          // @ts-expect-error
           await result.changed('createdAt', true);
           await result.set('createdAt', record.createdAt, { raw: true });
           await result.save({

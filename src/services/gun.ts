@@ -1,9 +1,13 @@
-import { GenericService } from '../util/svc';
+/* eslint-disable no-case-declarations */
 import Gun from 'gun';
 import { IGunChainReference } from 'gun/types/chain';
 import express from 'express';
-import config from '../util/config';
-import logger from '../util/logger';
+import { Mutex } from 'async-mutex';
+import { Semaphore } from '@zk-kit/protocols';
+
+import { GenericService } from '@util/svc';
+import config from '@util/config';
+import logger from '@util/logger';
 import {
   Connection,
   ConnectionMessageSubType,
@@ -16,19 +20,17 @@ import {
   PostMessageSubType,
   Profile,
   ProfileMessageSubType,
-} from '../util/message';
-import { Mutex } from 'async-mutex';
-import { UserModel } from '../models/users';
-import { HASHTAG_REGEX, MENTION_REGEX } from '../util/regex';
-import vKey from '../../static/verification_key.json';
-import { showStatus } from '../util/twitter';
-import { Semaphore } from '@zk-kit/protocols';
-import merkleRoot from '../models/merkle_root';
-import { sequelize } from '../util/sequelize';
+} from '@util/message';
+import { UserModel } from '@models/users';
+import { HASHTAG_REGEX, MENTION_REGEX } from '@util/regex';
+import vKey from '#/verification_key.json';
+import { showStatus } from '@util/twitter';
+import merkleRoot from '@models/merkle_root';
+import { sequelize } from '@util/sequelize';
 
-const Graph = require('../../lib/gun/graph.js');
-const State = require('../../lib/gun/state.js');
-const Val = require('../../lib/gun/val.js');
+const Graph = require('~/gun/graph.js');
+const State = require('~/gun/state.js');
+const Val = require('~/gun/val.js');
 
 const getMutex = new Mutex();
 const putMutex = new Mutex();
@@ -72,7 +74,7 @@ export default class GunService extends GenericService {
 
   handleGunMessage = async (data: any, messageId: string, pubkey?: string) => {
     return insertMutex.runExclusive(async () => {
-      const { creator, hash } = parseMessageId(messageId);
+      const { creator } = parseMessageId(messageId);
 
       let user: UserModel | null = null;
 
@@ -100,7 +102,7 @@ export default class GunService extends GenericService {
       if (!type) return;
 
       if (data.payload) {
-        // @ts-ignore
+        // @ts-expect-error
         payload = await this.gun.get(data.payload['#']);
       }
 
@@ -314,7 +316,7 @@ export default class GunService extends GenericService {
             x_share: data.x_share,
           };
 
-          const { shares, isSpam, isDuplicate } = await this.call('zkchat', 'checkShare', share);
+          const { isSpam, isDuplicate } = await this.call('zkchat', 'checkShare', share);
 
           if (isSpam || isDuplicate || !verified) return;
         }
@@ -327,7 +329,7 @@ export default class GunService extends GenericService {
 
         if (!group) return;
 
-        const [protocol, groupName, groupType] = group.split('_');
+        const [, groupName, groupType] = group.split('_');
         await semaphoreCreatorsDB.addSemaphoreCreator(messageId, groupName, groupType);
       }
 
@@ -349,7 +351,6 @@ export default class GunService extends GenericService {
 
       if (payload.reference) {
         try {
-          // @ts-ignore
           new URL(payload.reference);
         } catch (e) {
           await postDB.ensurePost(payload.reference);
@@ -604,6 +605,7 @@ export default class GunService extends GenericService {
     this.merkleRoot = await merkleRoot(sequelize);
     const app = express();
     const server = app.listen(config.gunPort);
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const ctx = this;
     const gunPath = process.env.NODE_ENV === 'development' ? './dev_gun_data' : './gun_data';
 
@@ -613,10 +615,10 @@ export default class GunService extends GenericService {
       peers: config.gunPeers,
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     gun.on('put', async function (msg: any) {
       return putMutex.runExclusive(async () => {
-        // @ts-ignore
+        // @ts-expect-error
         this.to.next(msg);
 
         try {
@@ -626,7 +628,7 @@ export default class GunService extends GenericService {
           const state = put['>'];
           const value = put[':'];
 
-          const [raw, key, username, messageId] = soul.split('/');
+          const [raw, , username] = soul.split('/');
           const recordDB = await ctx.call('db', 'getRecords');
           const userDB = await ctx.call('db', 'getUsers');
 
@@ -685,10 +687,10 @@ export default class GunService extends GenericService {
       });
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     gun.on('get', async function (msg: any) {
       return getMutex.runExclusive(async () => {
-        // @ts-ignore
+        // @ts-expect-error
         this.to.next(msg);
         // Extract soul from message
         const soul = msg.get['#'];
@@ -709,7 +711,7 @@ export default class GunService extends GenericService {
             node = State.to(node, field);
           } else {
             const records = await recordDB.findAll(soul);
-            for (let record of records) {
+            for (const record of records) {
               const { state, value, relation } = record;
               const val = relation ? Val.rel.ify(relation) : value;
               node = State.ify(node, record.field, state, val, soul);
@@ -722,7 +724,7 @@ export default class GunService extends GenericService {
             origin: 'gun',
           });
 
-          // @ts-ignore
+          // @ts-expect-error
           gun.on('in', {
             '@': msg['#'],
             put: Graph.node(node),
@@ -739,7 +741,7 @@ export default class GunService extends GenericService {
       });
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     this.gun = gun;
 
     const userDB = await this.call('db', 'getUsers');

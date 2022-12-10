@@ -1,5 +1,4 @@
 import { BIGINT, ENUM, QueryTypes, Sequelize, STRING } from 'sequelize';
-import userMetaSeq from './userMeta';
 import { Mutex } from 'async-mutex';
 
 export type UserModel = {
@@ -93,7 +92,7 @@ const users = (sequelize: Sequelize) => {
   };
 
   const findOneByPubkey = async (pubkey: string): Promise<UserModel | null> => {
-    let result = await model.findOne({
+    const result = await model.findOne({
       where: {
         pubkey,
       },

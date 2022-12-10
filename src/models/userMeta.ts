@@ -56,7 +56,7 @@ const userMeta = (sequelize: Sequelize) => {
   );
 
   const findOne = async (name: string): Promise<UserMetaModel | null> => {
-    let result = await model.findOne({
+    const result = await model.findOne({
       where: {
         name,
       },
@@ -102,18 +102,16 @@ const userMeta = (sequelize: Sequelize) => {
           const data = result.toJSON() as UserMetaModel;
           return result.update({
             ...data,
-            // @ts-ignore
+            // @ts-expect-error
             [key]: Math.max(0, (Number(data[key]) || 0) + delta),
           });
         }
 
-        const res = await model.create({
+        return await model.create({
           name,
           ...emptyMeta,
           [key]: Math.max(0, delta),
         });
-
-        return res;
       });
     };
   }

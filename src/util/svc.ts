@@ -69,8 +69,10 @@ export class GenericService {
     return Promise.reject(new Error('Main service not found'));
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   async start() {}
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   async stop() {}
 }
 

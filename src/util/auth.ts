@@ -39,7 +39,7 @@ export const STRATEGIES = {
     scope: ['identity'],
   },
   [OAuthProvider.TWITTER]: {
-    // @ts-ignore
+    // @ts-expect-error ...
     Strategy: TwitterStrategy,
     options: {
       clientType: 'public',

@@ -42,7 +42,7 @@ export const STRATEGIES = {
     // @ts-expect-error ...
     Strategy: TwitterStrategy,
     options: {
-      clientType: 'public',
+      clientType: 'confidential',
       clientID: twClientId,
       clientSecret: twClientSecret,
       callbackURL: twCallbackUrl,

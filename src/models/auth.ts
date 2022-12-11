@@ -26,11 +26,17 @@ const auth = (sequelize: Sequelize) => {
     return (record?.toJSON() as AuthModel | undefined)?.token;
   };
 
+  const findToken = async (username: string, provider: string) => {
+    const record = await model.findOne({ where: { username, provider }, attributes: ['token'] });
+    return (record?.toJSON() as AuthModel | undefined)?.token;
+  };
+
   const upsertOne = async (data: AuthModel) => (await model.upsert(data))[0];
 
   return {
     model,
     findTokenByUserId,
+    findToken,
     upsertOne,
   };
 };

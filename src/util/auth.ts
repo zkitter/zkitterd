@@ -1,6 +1,6 @@
 import { Strategy as GhStrategy } from 'passport-github2';
 import { Strategy as RedditStrategy } from '@r1oga/passport-reddit';
-import { Strategy as TwitterStrategy } from '@superfaceai/passport-twitter-oauth2';
+import { Strategy as TwitterStrategy } from 'passport-twitter';
 import { calculateReputation, OAuthProvider, ReputationLevel } from '@interep/reputation';
 
 import config from './config';
@@ -15,8 +15,8 @@ const {
   rdClientId,
   rdClientSecret,
   twCallbackUrl,
-  twClientId,
-  twClientSecret,
+  twConsumerKey,
+  twConsumerSecret,
 } = config;
 
 export const STRATEGIES = {
@@ -39,12 +39,10 @@ export const STRATEGIES = {
     scope: ['identity'],
   },
   [OAuthProvider.TWITTER]: {
-    // @ts-expect-error ...
     Strategy: TwitterStrategy,
     options: {
-      clientType: 'confidential',
-      clientID: twClientId,
-      clientSecret: twClientSecret,
+      consumerKey: twConsumerKey,
+      consumerSecret: twConsumerSecret,
       callbackURL: twCallbackUrl,
     },
     scope: ['tweet.read', 'users.read', 'offline.access', 'follows.read'],

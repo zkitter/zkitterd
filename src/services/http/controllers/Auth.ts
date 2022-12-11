@@ -6,6 +6,7 @@ import { Controller } from './interface';
 import { makeResponse } from '../utils';
 import { getProfileParams, GhProfile, RdProfile, STRATEGIES, TwProfile } from '@util/auth';
 import logger from '@util/logger';
+import { createHeader } from '@util/twitter';
 
 export class AuthController extends Controller {
   prefix = '/auth';
@@ -33,7 +34,13 @@ export class AuthController extends Controller {
           try {
             const { reputation, userId, username } = await getProfileParams(profile, provider);
             const db = await this.call('db', 'getAuth');
-            await db.upsertOne({ provider, userId, username, token: accessToken });
+            await db.upsertOne({
+              provider,
+              userId,
+              username,
+              token: accessToken,
+              refreshToken: refreshToken,
+            });
 
             return done(null, {
               provider,
@@ -72,7 +79,7 @@ export class AuthController extends Controller {
     next();
   };
 
-  session = (req: Request, res: Response) => {
+  session = async (req: Request, res: Response) => {
     if (req.user) {
       res.status(200).json({ payload: req.user });
     } else {

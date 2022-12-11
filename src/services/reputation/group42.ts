@@ -1,4 +1,5 @@
 import Web3 from 'web3';
+// @ts-ignore
 import { Contract } from 'web3-eth-contract';
 
 import { sequelize } from '@util/sequelize';

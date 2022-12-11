@@ -64,18 +64,19 @@ export class InterepController extends Controller {
     // TODO refactor twitter with passport
     if (provider === 'twitter') {
       // @ts-expect-error
-      const { twitterToken } = req.session;
-      const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
-      const twitterAuthDB = await this.call('db', 'getTwitterAuth');
-      const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
+      if (!req.user?.username) throw new Error('not authenticated');
+
+      const authDb = await this.call('db', 'getAuth');
+      // @ts-expect-error
+      const { token, refreshToken } = await authDb.findToken(req.user.username, req.user.provider);
 
       headers = createHeader(
         {
           url: `https://api.twitter.com/1.1/account/verify_credentials.json`,
           method: 'GET',
         },
-        auth.user_token,
-        auth.user_token_secret
+        token,
+        refreshToken
       );
     }
 
@@ -85,9 +86,9 @@ export class InterepController extends Controller {
 
       const authDb = await this.call('db', 'getAuth');
       // @ts-expect-error
-      const accessToken = await authDb.findToken(req.user.username, provider);
+      const { token } = await authDb.findToken(req.user.username, req.user.provider);
 
-      headers = { Authorization: `token ${accessToken}` };
+      headers = { Authorization: `Bearer ${token}` };
     }
 
     const resp = await fetch(

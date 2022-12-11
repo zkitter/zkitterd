@@ -263,7 +263,7 @@ export async function getUser(username: string): Promise<{
 
 export async function getBotometerScore(username: string): Promise<any> {
   const res = await botometer.getScore(username);
-  return res?.display_scores?.universal?.overall;
+  return res?.display_scores?.universal?.overall || 5;
 }
 
 export async function getTwitterUserMetrics(userId: string) {

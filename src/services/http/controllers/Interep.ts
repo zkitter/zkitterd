@@ -56,7 +56,7 @@ export class InterepController extends Controller {
 
   signUp = async (req: Request, res: Response) => {
     const { identityCommitment, name, provider } = req.params;
-    if (!['twitter', 'github'].includes(provider))
+    if (!['twitter', 'github', 'reddit'].includes(provider))
       throw new Error(`joining ${provider} interep groups not supported`);
 
     let headers;
@@ -80,7 +80,7 @@ export class InterepController extends Controller {
       );
     }
 
-    if (provider === 'github') {
+    if (provider === 'github' || provider === 'reddit') {
       // @ts-expect-error
       if (!req.user?.username) throw new Error('not authenticated');
 

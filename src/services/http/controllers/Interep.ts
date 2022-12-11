@@ -56,7 +56,7 @@ export class InterepController extends Controller {
 
   signUp = async (req: Request, res: Response) => {
     const { identityCommitment, name, provider } = req.params;
-    if (!['twitter', 'github'].includes(provider))
+    if (!['twitter', 'github', 'reddit'].includes(provider))
       throw new Error(`joining ${provider} interep groups not supported`);
 
     let headers;
@@ -64,30 +64,31 @@ export class InterepController extends Controller {
     // TODO refactor twitter with passport
     if (provider === 'twitter') {
       // @ts-expect-error
-      const { twitterToken } = req.session;
-      const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
-      const twitterAuthDB = await this.call('db', 'getTwitterAuth');
-      const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);
+      if (!req.user?.username) throw new Error('not authenticated');
+
+      const authDb = await this.call('db', 'getAuth');
+      // @ts-expect-error
+      const { token, refreshToken } = await authDb.findToken(req.user.username, req.user.provider);
 
       headers = createHeader(
         {
           url: `https://api.twitter.com/1.1/account/verify_credentials.json`,
           method: 'GET',
         },
-        auth.user_token,
-        auth.user_token_secret
+        token,
+        refreshToken
       );
     }
 
-    if (provider === 'github') {
+    if (provider === 'github' || provider === 'reddit') {
       // @ts-expect-error
-      if (!req.user?.userId) throw new Error('not authenticated');
+      if (!req.user?.username) throw new Error('not authenticated');
 
-      const githubAuthDb = await this.call('db', 'getGithubAuth');
+      const authDb = await this.call('db', 'getAuth');
       // @ts-expect-error
-      const { accessToken } = await githubAuthDb.findUserById(req.user.userId);
+      const { token } = await authDb.findToken(req.user.username, req.user.provider);
 
-      headers = { Authorization: `token ${accessToken}` };
+      headers = { Authorization: `Bearer ${token}` };
     }
 
     const resp = await fetch(

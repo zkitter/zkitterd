@@ -1,10 +1,12 @@
-import { Contract } from 'web3-eth-contract';
 import Web3 from 'web3';
+// @ts-ignore
+// eslint-disable-next-line import/no-unresolved
+import { Contract } from 'web3-eth-contract';
 
-import { GenericService } from '@util/svc';
+import { arbRegistrarABI } from '@util/abi';
 import config from '@util/config';
 import logger from '@util/logger';
-import { arbRegistrarABI } from '@util/abi';
+import { GenericService } from '@util/svc';
 import Timeout = NodeJS.Timeout;
 
 export default class ArbitrumService extends GenericService {

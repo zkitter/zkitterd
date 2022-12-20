@@ -1,5 +1,6 @@
 import Web3 from 'web3';
 // @ts-ignore
+// eslint-disable-next-line import/no-unresolved
 import { Contract } from 'web3-eth-contract';
 
 import { sequelize } from '@util/sequelize';

@@ -1,3 +1,5 @@
+// @ts-ignore
+// eslint-disable-next-line import/no-unresolved
 import { Contract } from 'web3-eth-contract';
 import Web3 from 'web3';
 import LRU from 'lru-cache';

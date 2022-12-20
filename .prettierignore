@@ -2,14 +2,15 @@ node_modules
 package-lock.json
 pnpm-lock.yaml
 
-# build dirs
+# TS build dir
 build
+
+# Jest
+coverage
 
 # JetBrains IDE
 .idea
 
 static
 lib
-
-webpack.server.config.js
-webpack.test.config.js
+.nycrc

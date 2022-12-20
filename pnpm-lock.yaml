@@ -3572,7 +3572,7 @@ packages:
     dev: false
 
   /@zkitter/eslint-config/1.0.2_c5yjtck4pxvbqk6u2aaezpbque:
-    resolution: {integrity: sha512-qjOfXeSlpj8DGGNUjweTw8FADk2MnU0Tg/Lae1DJGR+Ge8ktu8WsIUCDtqrK2tx8BgDwyiy4KxS6KE1f4PggLQ==, tarball: download/@zkitter/eslint-config/1.0.2/8c27695bd613f755b4c4bda65519fbd33f69e2ff}
+    resolution: {integrity: sha512-tDluFiO8kc1VgUvYQsTa8A4fao0cftTLUlp8hdLqUCx4uCNjyxgg2mjYMsTz3zbXcTVIT8Zh6kXk50iCG/psWA==}
     requiresBuild: true
     peerDependencies:
       '@typescript-eslint/eslint-plugin': ^5.46.1
@@ -3597,7 +3597,7 @@ packages:
     dev: true
 
   /@zkitter/prettier-config/1.0.0_prettier@2.8.1:
-    resolution: {integrity: sha512-2YbNIlfWICmlOk3zkzuxAJESOPNQpYmAdcoYmaZhLxdyObjIgS9bS6AMal6T0Ojz6/6sJ6xIFadvNoNiDO0tDQ==, tarball: download/@zkitter/prettier-config/1.0.0/998256b79197ab8d8c01d5092b3369f66467b67e}
+    resolution: {integrity: sha512-VY/2PQGOJ7AJhyqepQzHRcQSLQ2Su9XQwA7YC2+0FZbc3GCQTHqqEJzS9tdUyge5UpGdBhY6gJyq7bGX5SJF9A==}
     requiresBuild: true
     peerDependencies:
       prettier: ^2.8.1

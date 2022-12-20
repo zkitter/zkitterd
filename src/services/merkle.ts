@@ -1,5 +1,7 @@
 import { BindOrReplacements, QueryOptions, QueryTypes } from 'sequelize';
 import { generateMerkleTree } from '@zk-kit/protocols';
+// @ts-ignore
+// eslint-disable-next-line import/no-unresolved
 import { IncrementalMerkleTree, MerkleProof } from '@zk-kit/incremental-merkle-tree';
 
 import { GenericService } from '@util/svc';
@@ -135,6 +137,7 @@ export default class MerkleService extends GenericService {
 
     const retProof = {
       root,
+      // @ts-ignore
       siblings: proof.siblings.map(siblings =>
         Array.isArray(siblings)
           ? siblings.map(element => '0x' + element.toString(16))

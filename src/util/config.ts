@@ -1,5 +1,7 @@
-import fs from 'fs';
-import path from 'path';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+import { isDocker, isProd, isTest } from './env';
 
 let json: {
   interrepAPI?: string;
@@ -44,15 +46,18 @@ let json: {
 } = {};
 
 try {
-  const configBuffer =
-    process.env.NODE_ENV === 'production'
-      ? fs.readFileSync(path.join(process.cwd(), 'config.prod.json'))
-      : process.env.NODE_ENV === 'test'
-      ? fs.readFileSync(path.join(process.cwd(), 'config.test.json'))
-      : fs.readFileSync(path.join(process.cwd(), 'config.dev.json'));
-  const parsed = JSON.parse(configBuffer.toString('utf-8'));
-  json = parsed;
-} catch (e) {}
+  const configBuffer = isDocker
+    ? readFileSync('/run/secrets/config', 'utf8').trim()
+    : isProd
+    ? readFileSync(join(process.cwd(), 'config.prod.json'))
+    : isTest
+    ? readFileSync(join(process.cwd(), 'config.test.json'))
+    : readFileSync(join(process.cwd(), 'config.dev.json'));
+
+  json = JSON.parse(configBuffer.toString('utf-8'));
+} catch (e) {
+  console.error(e);
+}
 
 const rapidAPIKey = json.rapidAPIKey || process.env.RAPIDAPI_KEY;
 const ghPat = json.ghPat || process.env.GH_PAT;

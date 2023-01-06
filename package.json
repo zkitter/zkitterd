@@ -58,7 +58,6 @@
     "http-terminator": "^3.2.0",
     "ipfs-http-client": "56.x",
     "is-ci": "^3.0.1",
-    "is-docker": "^3.0.0",
     "isomorphic-fetch": "^3.0.0",
     "jsonwebtoken": "^8.5.1",
     "link-preview-js": "^2.1.8",

@@ -1,10 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-
 import tape from 'tape';
-
-import DBService from './index';
-
 import { getMockDB } from '@util/test';
 
 const gunpath = path.join(process.cwd(), 'gun.test.db');
@@ -32,8 +28,8 @@ tape('DBService', async t => {
   t.equal(db.semaphoreCreators, await db.getSemaphoreCreators());
   t.equal(db.threads, await db.getThreads());
 
-  // @ts-ignore
-  const { id, createdAt, updatedAt, ...appData } = await db.app?.read();
+  // @ts-expect-error
+  const { createdAt, updatedAt, ...appData } = await db.app?.read();
 
   [
     'lastArbitrumBlockScanned',
@@ -41,11 +37,11 @@ tape('DBService', async t => {
     'lastInterrepBlockScanned',
     'lastGroup42BlockScanned',
   ].forEach(k => {
-    // @ts-ignore
+    // @ts-expect-error
     t.equal(typeof appData[k], 'number', 'should read and write app');
   });
 
-  // @ts-ignore
+  // @ts-expect-error
   const { updatedAt, ...conn1 } = await db.connections?.findOne(
     '112abaddfa6c4861d5a2a7f63fb2e4a56ae5c97dd91f2f0d8bb402a845709890'
   );
@@ -88,17 +84,17 @@ tape('DBService', async t => {
   );
   t.deepEqual(
     meta1,
-    { liked: null, reposted: null, replyCount: 0, repostCount: 0, likeCount: 1, postCount: 0 },
+    { likeCount: 1, liked: null, postCount: 0, replyCount: 0, repostCount: 0, reposted: null },
     'should return meta by message id'
   );
 
   t.deepEqual(
     await db.meta!.findTags(),
     [
-      { tagName: '#TODO', postCount: 9 },
-      { tagName: '#test', postCount: 6 },
-      { tagName: '#autism', postCount: 2 },
-      { tagName: '#bug', postCount: 1 },
+      { postCount: 9, tagName: '#TODO' },
+      { postCount: 6, tagName: '#test' },
+      { postCount: 2, tagName: '#autism' },
+      { postCount: 1, tagName: '#bug' },
     ],
     'should return tags'
   );
@@ -110,45 +106,45 @@ tape('DBService', async t => {
     await db.meta!.findOne(
       '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/8f7e627373283807338846710c7a9ab3484e295127bc0c4d19f58829b4bbe195'
     ),
-    { liked: null, reposted: null, replyCount: 0, repostCount: 0, likeCount: 2, postCount: 0 },
+    { likeCount: 2, liked: null, postCount: 0, replyCount: 0, repostCount: 0, reposted: null },
     'should add post counts'
   );
 
-  // @ts-ignore
+  // @ts-expect-error
   const { updatedAt, ...mod1 } = await db.moderations!.findOne(
     '8f24b1ae868cbc87a509dbba582af6e396460237b88ad9f09644fa65e44deed9'
   );
   t.deepEqual(
     mod1,
     {
+      createdAt: '1646285327701',
+      creator: '0x3F425586D68616A113C29c303766DAD444167EE8',
+      hash: '8f24b1ae868cbc87a509dbba582af6e396460237b88ad9f09644fa65e44deed9',
       messageId:
         '0x3F425586D68616A113C29c303766DAD444167EE8/8f24b1ae868cbc87a509dbba582af6e396460237b88ad9f09644fa65e44deed9',
-      hash: '8f24b1ae868cbc87a509dbba582af6e396460237b88ad9f09644fa65e44deed9',
-      creator: '0x3F425586D68616A113C29c303766DAD444167EE8',
-      type: 'MODERATION',
-      subtype: 'LIKE',
-      createdAt: '1646285327701',
       reference: '945bb091bfadd460418c36ce6274d6a4f9689aaca1b95879ffe35ca7a4eded5b',
+      subtype: 'LIKE',
+      type: 'MODERATION',
     },
     'should return one moderation'
   );
 
-  // @ts-ignore
+  // @ts-expect-error
   const [{ updatedAt, ...mod2 }] = await db.moderations!.findThreadModeration(
     '0x3F425586D68616A113C29c303766DAD444167EE8/d3f9955efd39a068b1b1482040c9ff6d429263987282ced9e296c07dc8e0126c'
   );
   t.deepEqual(
     mod2,
     {
+      createdAt: '1648193705500',
+      creator: '0x3F425586D68616A113C29c303766DAD444167EE8',
+      hash: '691336cb1993b3f689414a415bfe7ddf84e7fcb4c4a439cf7cc299878676cfd8',
       messageId:
         '0x3F425586D68616A113C29c303766DAD444167EE8/691336cb1993b3f689414a415bfe7ddf84e7fcb4c4a439cf7cc299878676cfd8',
-      creator: '0x3F425586D68616A113C29c303766DAD444167EE8',
       reference:
         '0x3F425586D68616A113C29c303766DAD444167EE8/d3f9955efd39a068b1b1482040c9ff6d429263987282ced9e296c07dc8e0126c',
-      type: 'MODERATION',
       subtype: 'THREAD_ONLY_MENTION',
-      hash: '691336cb1993b3f689414a415bfe7ddf84e7fcb4c4a439cf7cc299878676cfd8',
-      createdAt: '1648193705500',
+      type: 'MODERATION',
     },
     'should return thread moderation'
   );
@@ -181,41 +177,41 @@ tape('DBService', async t => {
   t.deepEqual(
     post2,
     {
-      type: 'POST',
-      subtype: 'M_POST',
+      createdAt: '1648193678747',
+      hash: 'd0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
       messageId:
         '0x3F425586D68616A113C29c303766DAD444167EE8/d0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
-      hash: 'd0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
-      createdAt: '1648193678747',
+      meta: {
+        blocked: null,
+        interepGroup: null,
+        interepProvider: null,
+        likeCount: 0,
+        liked: null,
+        modblockedctx: null,
+        modBlockedPost: null,
+        modBlockedUser: null,
+        moderation: 'THREAD_ONLY_MENTION',
+        modfollowedctx: null,
+        modFollowerUser: null,
+        modLikedPost: null,
+        modmentionedctx:
+          '0x3F425586D68616A113C29c303766DAD444167EE8/d0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
+        replyCount: 0,
+        repostCount: 0,
+        reposted: null,
+        rootId:
+          '0x3F425586D68616A113C29c303766DAD444167EE8/d0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
+      },
       payload: {
-        topic: 'https://twitter.com/AutismDev/status/1507259650093182977',
-        title: '',
+        attachment: '',
         content:
           '@0x3aec555a667EF810C4B0a0D064D6Fb7c66161360 @0x5d432ce201d2c03234e314d4703559102Ebf365C @0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb ',
         reference: '',
-        attachment: '',
+        title: '',
+        topic: 'https://twitter.com/AutismDev/status/1507259650093182977',
       },
-      meta: {
-        replyCount: 0,
-        likeCount: 0,
-        repostCount: 0,
-        liked: null,
-        reposted: null,
-        blocked: null,
-        interepProvider: null,
-        interepGroup: null,
-        rootId:
-          '0x3F425586D68616A113C29c303766DAD444167EE8/d0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
-        moderation: 'THREAD_ONLY_MENTION',
-        modblockedctx: null,
-        modfollowedctx: null,
-        modmentionedctx:
-          '0x3F425586D68616A113C29c303766DAD444167EE8/d0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
-        modLikedPost: null,
-        modBlockedPost: null,
-        modBlockedUser: null,
-        modFollowerUser: null,
-      },
+      subtype: 'M_POST',
+      type: 'POST',
     },
     'should return post'
   );
@@ -230,177 +226,177 @@ tape('DBService', async t => {
     post3,
     [
       {
-        type: 'POST',
-        subtype: 'M_POST',
+        createdAt: '1648192630248',
+        hash: '1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
         messageId:
           '0x3F425586D68616A113C29c303766DAD444167EE8/1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
-        hash: '1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
-        createdAt: '1648192630248',
-        payload: {
-          topic: 'https://twitter.com/AutismDev/status/1507255252461842438',
-          title: '',
-          content: 'asdfasdfasdfasd asdfasdf asdfasdf',
-          reference: '',
-          attachment: '',
-        },
         meta: {
-          replyCount: 0,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
           blocked: null,
-          interepProvider: null,
           interepGroup: null,
-          rootId:
-            '0x3F425586D68616A113C29c303766DAD444167EE8/1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
-          moderation: null,
+          interepProvider: null,
+          likeCount: 0,
+          liked: null,
           modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: null,
           modfollowedctx:
             '0x3F425586D68616A113C29c303766DAD444167EE8/6cb3a3eea1355ead9cbcb0907e282eac3d1f606d7a8d77252445404a09d58584',
-          modmentionedctx: null,
-          modLikedPost: null,
-          modBlockedPost: null,
-          modBlockedUser: null,
           modFollowerUser: null,
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0x3F425586D68616A113C29c303766DAD444167EE8/1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
         },
+        payload: {
+          attachment: '',
+          content: 'asdfasdfasdfasd asdfasdf asdfasdf',
+          reference: '',
+          title: '',
+          topic: 'https://twitter.com/AutismDev/status/1507255252461842438',
+        },
+        subtype: 'M_POST',
+        type: 'POST',
       },
       {
-        type: 'POST',
-        subtype: '',
-        messageId: 'db51fd8dd7d710c56ef9cca92ee3bc1e332d029f78a67f09d22087a2ac3be038',
-        hash: 'db51fd8dd7d710c56ef9cca92ee3bc1e332d029f78a67f09d22087a2ac3be038',
         createdAt: '1648192605180',
+        hash: 'db51fd8dd7d710c56ef9cca92ee3bc1e332d029f78a67f09d22087a2ac3be038',
+        messageId: 'db51fd8dd7d710c56ef9cca92ee3bc1e332d029f78a67f09d22087a2ac3be038',
+        meta: {
+          blocked: null,
+          interepGroup: 'not_sufficient',
+          interepProvider: 'twitter',
+          likeCount: 0,
+          liked: null,
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: null,
+          modfollowedctx: null,
+          modFollowerUser: null,
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId: 'db51fd8dd7d710c56ef9cca92ee3bc1e332d029f78a67f09d22087a2ac3be038',
+        },
         payload: {
-          topic: '',
-          title: '',
+          attachment: '',
           content: 'asdfasdf',
           reference: '',
-          attachment: '',
+          title: '',
+          topic: '',
         },
-        meta: {
-          replyCount: 0,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
-          blocked: null,
-          interepProvider: 'twitter',
-          interepGroup: 'not_sufficient',
-          rootId: 'db51fd8dd7d710c56ef9cca92ee3bc1e332d029f78a67f09d22087a2ac3be038',
-          moderation: null,
-          modblockedctx: null,
-          modfollowedctx: null,
-          modmentionedctx: null,
-          modLikedPost: null,
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser: null,
-        },
+        subtype: '',
+        type: 'POST',
       },
       {
-        type: 'POST',
-        subtype: '',
-        messageId: '6c62eb251be69ca722e5a615f616ce68b6ad3378b4568c93e34cad455905cc9a',
-        hash: '6c62eb251be69ca722e5a615f616ce68b6ad3378b4568c93e34cad455905cc9a',
         createdAt: '1648093704735',
+        hash: '6c62eb251be69ca722e5a615f616ce68b6ad3378b4568c93e34cad455905cc9a',
+        messageId: '6c62eb251be69ca722e5a615f616ce68b6ad3378b4568c93e34cad455905cc9a',
+        meta: {
+          blocked: null,
+          interepGroup: 'not_sufficient',
+          interepProvider: 'twitter',
+          likeCount: 0,
+          liked: null,
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: null,
+          modfollowedctx: null,
+          modFollowerUser: null,
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 1,
+          repostCount: 0,
+          reposted: null,
+          rootId: '6c62eb251be69ca722e5a615f616ce68b6ad3378b4568c93e34cad455905cc9a',
+        },
         payload: {
-          topic: '',
-          title: '',
+          attachment: 'https://c.tenor.com/G1DmbkkM46cAAAAC/eimi-fukada-eimi-dance.gif',
           content: '',
           reference: '',
-          attachment: 'https://c.tenor.com/G1DmbkkM46cAAAAC/eimi-fukada-eimi-dance.gif',
+          title: '',
+          topic: '',
         },
-        meta: {
-          replyCount: 1,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
-          blocked: null,
-          interepProvider: 'twitter',
-          interepGroup: 'not_sufficient',
-          rootId: '6c62eb251be69ca722e5a615f616ce68b6ad3378b4568c93e34cad455905cc9a',
-          moderation: null,
-          modblockedctx: null,
-          modfollowedctx: null,
-          modmentionedctx: null,
-          modLikedPost: null,
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser: null,
-        },
+        subtype: '',
+        type: 'POST',
       },
       {
-        type: 'POST',
-        subtype: '',
+        createdAt: '1648093364657',
+        hash: '899e3621100ce2d3411431ca777cea7fa0223fccec9ab073181bd7ee65a64456',
         messageId:
           '0x3aec555a667EF810C4B0a0D064D6Fb7c66161360/899e3621100ce2d3411431ca777cea7fa0223fccec9ab073181bd7ee65a64456',
-        hash: '899e3621100ce2d3411431ca777cea7fa0223fccec9ab073181bd7ee65a64456',
-        createdAt: '1648093364657',
-        payload: {
-          topic: '',
-          title: '',
-          content: 'gm everyone',
-          reference: '',
-          attachment: '',
-        },
         meta: {
-          replyCount: 0,
+          blocked: null,
+          interepGroup: null,
+          interepProvider: null,
           likeCount: 1,
-          repostCount: 0,
           liked:
             '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/3ae9158b74ff7cd02a5638d751a605dd9e930b1201a167d498eabd0f0c331692',
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: null,
+          modfollowedctx: null,
+          modFollowerUser: null,
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
           reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
           rootId:
             '0x3aec555a667EF810C4B0a0D064D6Fb7c66161360/899e3621100ce2d3411431ca777cea7fa0223fccec9ab073181bd7ee65a64456',
-          moderation: null,
-          modblockedctx: null,
-          modfollowedctx: null,
-          modmentionedctx: null,
-          modLikedPost: null,
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser: null,
         },
+        payload: {
+          attachment: '',
+          content: 'gm everyone',
+          reference: '',
+          title: '',
+          topic: '',
+        },
+        subtype: '',
+        type: 'POST',
       },
       {
-        type: 'POST',
-        subtype: '',
+        createdAt: '1648001768213',
+        hash: 'ca8462e60519167046ce106caca1c45c21bf7b198f2c29c2ee802dbb5c32ed6e',
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/ca8462e60519167046ce106caca1c45c21bf7b198f2c29c2ee802dbb5c32ed6e',
-        hash: 'ca8462e60519167046ce106caca1c45c21bf7b198f2c29c2ee802dbb5c32ed6e',
-        createdAt: '1648001768213',
-        payload: {
-          topic: '',
-          title: '',
-          content: '#TODO PWA-ify mobile view',
-          reference: '',
-          attachment: '',
-        },
         meta: {
-          replyCount: 0,
-          likeCount: 1,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
           blocked: null,
-          interepProvider: null,
           interepGroup: null,
-          rootId:
-            '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/ca8462e60519167046ce106caca1c45c21bf7b198f2c29c2ee802dbb5c32ed6e',
-          moderation: null,
+          interepProvider: null,
+          likeCount: 1,
+          liked: null,
           modblockedctx: null,
-          modfollowedctx: null,
-          modmentionedctx: null,
-          modLikedPost: null,
           modBlockedPost: null,
           modBlockedUser: null,
+          moderation: null,
+          modfollowedctx: null,
           modFollowerUser: null,
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/ca8462e60519167046ce106caca1c45c21bf7b198f2c29c2ee802dbb5c32ed6e',
         },
+        payload: {
+          attachment: '',
+          content: '#TODO PWA-ify mobile view',
+          reference: '',
+          title: '',
+          topic: '',
+        },
+        subtype: '',
+        type: 'POST',
       },
     ],
     'should return all posts'
@@ -416,81 +412,81 @@ tape('DBService', async t => {
     post4,
     [
       {
-        type: 'POST',
-        subtype: 'REPLY',
+        createdAt: '1647989094705',
+        hash: 'bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
-        hash: 'bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
-        createdAt: '1647989094705',
+        meta: {
+          blocked: null,
+          interepGroup: null,
+          interepProvider: null,
+          likeCount: 0,
+          liked: null,
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: null,
+          modfollowedctx:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
+          modFollowerUser:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
+        },
         payload: {
-          topic: '',
-          title: '',
+          attachment: '',
           content: '#test',
           reference:
             '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-          attachment: '',
+          title: '',
+          topic: '',
         },
-        meta: {
-          replyCount: 0,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
-          rootId:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-          moderation: null,
-          modblockedctx: null,
-          modfollowedctx:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
-          modmentionedctx: null,
-          modLikedPost: null,
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
-        },
+        subtype: 'REPLY',
+        type: 'POST',
       },
       {
-        type: 'POST',
-        subtype: 'REPLY',
+        createdAt: '1647579193827',
+        hash: 'b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
-        hash: 'b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
-        createdAt: '1647579193827',
+        meta: {
+          blocked: null,
+          interepGroup: null,
+          interepProvider: null,
+          likeCount: 1,
+          liked: null,
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: 'THREAD_ONLY_MENTION',
+          modfollowedctx:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
+          modFollowerUser:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
+          modLikedPost:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/4a20a1924dd087e348e2bfa1cc5827300e471687b9e5b631cc27453c715310a2',
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
+        },
         payload: {
-          topic: '',
-          title: '',
+          attachment: '',
           content: 'teest asdfasdf ',
           reference:
             '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
-          attachment: '',
+          title: '',
+          topic: '',
         },
-        meta: {
-          replyCount: 0,
-          likeCount: 1,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
-          rootId:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
-          moderation: 'THREAD_ONLY_MENTION',
-          modblockedctx: null,
-          modfollowedctx:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
-          modmentionedctx: null,
-          modLikedPost:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/4a20a1924dd087e348e2bfa1cc5827300e471687b9e5b631cc27453c715310a2',
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
-        },
+        subtype: 'REPLY',
+        type: 'POST',
       },
     ],
     'should return replies from creator'
@@ -501,83 +497,82 @@ tape('DBService', async t => {
     post5,
     [
       {
-        type: 'POST',
-        subtype: 'M_POST',
+        createdAt: '1648193678747',
+        hash: 'd0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
         messageId:
           '0x3F425586D68616A113C29c303766DAD444167EE8/d0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
-        hash: 'd0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
-        createdAt: '1648193678747',
+        meta: {
+          blocked: null,
+          interepGroup: null,
+          interepProvider: null,
+          likeCount: 0,
+          liked: null,
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: 'THREAD_ONLY_MENTION',
+          modfollowedctx:
+            '0x3F425586D68616A113C29c303766DAD444167EE8/6cb3a3eea1355ead9cbcb0907e282eac3d1f606d7a8d77252445404a09d58584',
+          modFollowerUser: null,
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0x3F425586D68616A113C29c303766DAD444167EE8/d0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
+        },
         payload: {
-          topic: 'https://twitter.com/AutismDev/status/1507259650093182977',
-          title: '',
+          attachment: '',
           content:
             '@0x3aec555a667EF810C4B0a0D064D6Fb7c66161360 @0x5d432ce201d2c03234e314d4703559102Ebf365C @0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb ',
           reference: '',
-          attachment: '',
+          title: '',
+          topic: 'https://twitter.com/AutismDev/status/1507259650093182977',
         },
-        meta: {
-          replyCount: 0,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
-          rootId:
-            '0x3F425586D68616A113C29c303766DAD444167EE8/d0b437c184c3600f0e87921957e352dac895da11110e94f68985d9a5b38f3f9b',
-          moderation: 'THREAD_ONLY_MENTION',
-          modblockedctx: null,
-          modfollowedctx:
-            '0x3F425586D68616A113C29c303766DAD444167EE8/6cb3a3eea1355ead9cbcb0907e282eac3d1f606d7a8d77252445404a09d58584',
-          modmentionedctx: null,
-          modLikedPost: null,
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser: null,
-        },
+        subtype: 'M_POST',
+        type: 'POST',
       },
       {
-        type: 'POST',
-        subtype: 'M_POST',
+        createdAt: '1648192630248',
+        hash: '1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
         messageId:
           '0x3F425586D68616A113C29c303766DAD444167EE8/1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
-        hash: '1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
-        createdAt: '1648192630248',
-        payload: {
-          topic: 'https://twitter.com/AutismDev/status/1507255252461842438',
-          title: '',
-          content: 'asdfasdfasdfasd asdfasdf asdfasdf',
-          reference: '',
-          attachment: '',
-        },
         meta: {
-          replyCount: 0,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
           blocked: null,
-          interepProvider: null,
           interepGroup: null,
-          rootId:
-            '0x3F425586D68616A113C29c303766DAD444167EE8/1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
-          moderation: null,
+          interepProvider: null,
+          likeCount: 0,
+          liked: null,
           modblockedctx: null,
-          modfollowedctx:
-            '0x3F425586D68616A113C29c303766DAD444167EE8/6cb3a3eea1355ead9cbcb0907e282eac3d1f606d7a8d77252445404a09d58584',
-          modmentionedctx: null,
-          modLikedPost: null,
           modBlockedPost: null,
           modBlockedUser: null,
+          moderation: null,
+          modfollowedctx:
+            '0x3F425586D68616A113C29c303766DAD444167EE8/6cb3a3eea1355ead9cbcb0907e282eac3d1f606d7a8d77252445404a09d58584',
           modFollowerUser: null,
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0x3F425586D68616A113C29c303766DAD444167EE8/1bd96ba61f182f1619668040f8845a36d230dda686f8c8e7b8502568dac18e95',
         },
+        payload: {
+          attachment: '',
+          content: 'asdfasdfasdfasd asdfasdf asdfasdf',
+          reference: '',
+          title: '',
+          topic: 'https://twitter.com/AutismDev/status/1507255252461842438',
+        },
+        subtype: 'M_POST',
+        type: 'POST',
       },
     ],
     'should return home feed'
   );
 
-  // @ts-ignore
   const post6 = await db.posts!.findAllReplies(
     '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
     '0xd44a82dD160217d46D754a03C8f841edF06EBE3c'
@@ -586,86 +581,85 @@ tape('DBService', async t => {
     post6,
     [
       {
-        type: 'POST',
-        subtype: 'REPLY',
+        createdAt: '1647564670980',
+        hash: '699a260463efd7d6173a4af8fae4bc8b7d62fa1a3e13bcff8ba3de652d676b82',
         messageId:
           '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/699a260463efd7d6173a4af8fae4bc8b7d62fa1a3e13bcff8ba3de652d676b82',
-        hash: '699a260463efd7d6173a4af8fae4bc8b7d62fa1a3e13bcff8ba3de652d676b82',
-        createdAt: '1647564670980',
+        meta: {
+          blocked: null,
+          interepGroup: null,
+          interepProvider: null,
+          likeCount: 0,
+          liked: null,
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: 'THREAD_ONLY_MENTION',
+          modfollowedctx:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
+          modFollowerUser: null,
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 1,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
+        },
         payload: {
-          topic: '',
-          title: '',
+          attachment: '',
           content: 'asdfa',
           reference:
             '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
-          attachment: '',
+          title: '',
+          topic: '',
         },
-        meta: {
-          replyCount: 1,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
-          rootId:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
-          moderation: 'THREAD_ONLY_MENTION',
-          modblockedctx: null,
-          modfollowedctx:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
-          modmentionedctx: null,
-          modLikedPost: null,
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser: null,
-        },
+        subtype: 'REPLY',
+        type: 'POST',
       },
       {
-        type: 'POST',
-        subtype: 'REPLY',
+        createdAt: '1647579193827',
+        hash: 'b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
-        hash: 'b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
-        createdAt: '1647579193827',
+        meta: {
+          blocked: null,
+          interepGroup: null,
+          interepProvider: null,
+          likeCount: 1,
+          liked: null,
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: 'THREAD_ONLY_MENTION',
+          modfollowedctx:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
+          modFollowerUser:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
+          modLikedPost:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/4a20a1924dd087e348e2bfa1cc5827300e471687b9e5b631cc27453c715310a2',
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
+        },
         payload: {
-          topic: '',
-          title: '',
+          attachment: '',
           content: 'teest asdfasdf ',
           reference:
             '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
-          attachment: '',
+          title: '',
+          topic: '',
         },
-        meta: {
-          replyCount: 0,
-          likeCount: 1,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
-          rootId:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
-          moderation: 'THREAD_ONLY_MENTION',
-          modblockedctx: null,
-          modfollowedctx:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
-          modmentionedctx: null,
-          modLikedPost:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/4a20a1924dd087e348e2bfa1cc5827300e471687b9e5b631cc27453c715310a2',
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
-        },
+        subtype: 'REPLY',
+        type: 'POST',
       },
     ],
     'should return all replies of a ref'
   );
 
-  // @ts-ignore
   const post7 = await db.posts!.findAllLikedPostsByCreator(
     '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63',
     '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63',
@@ -676,102 +670,102 @@ tape('DBService', async t => {
     post7,
     [
       {
-        type: 'POST',
-        subtype: 'REPLY',
+        createdAt: '1647579193827',
+        hash: 'b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
-        hash: 'b645028d763c0564e89d58d000e4844eed66358e51ecdb84d2f7f2a5864d2292',
-        createdAt: '1647579193827',
+        meta: {
+          blocked: null,
+          interepGroup: null,
+          interepProvider: null,
+          likeCount: 1,
+          liked:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/4a20a1924dd087e348e2bfa1cc5827300e471687b9e5b631cc27453c715310a2',
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: 'THREAD_ONLY_MENTION',
+          modfollowedctx: null,
+          modFollowerUser:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
+          modLikedPost:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/4a20a1924dd087e348e2bfa1cc5827300e471687b9e5b631cc27453c715310a2',
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
+        },
         payload: {
-          topic: '',
-          title: '',
+          attachment: '',
           content: 'teest asdfasdf ',
           reference:
             '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
-          attachment: '',
+          title: '',
+          topic: '',
         },
-        meta: {
-          replyCount: 0,
-          likeCount: 1,
-          repostCount: 0,
-          liked:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/4a20a1924dd087e348e2bfa1cc5827300e471687b9e5b631cc27453c715310a2',
-          reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
-          rootId:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
-          moderation: 'THREAD_ONLY_MENTION',
-          modblockedctx: null,
-          modfollowedctx: null,
-          modmentionedctx: null,
-          modLikedPost:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/4a20a1924dd087e348e2bfa1cc5827300e471687b9e5b631cc27453c715310a2',
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
-        },
+        subtype: 'REPLY',
+        type: 'POST',
       },
       {
-        type: 'POST',
-        subtype: 'REPLY',
+        createdAt: '1647579176008',
+        hash: '1b18998ef35ecbb35760e71f6531f75912f79a9162eadfae90bb4e8740aa132b',
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/1b18998ef35ecbb35760e71f6531f75912f79a9162eadfae90bb4e8740aa132b',
-        hash: '1b18998ef35ecbb35760e71f6531f75912f79a9162eadfae90bb4e8740aa132b',
-        createdAt: '1647579176008',
+        meta: {
+          blocked: null,
+          interepGroup: null,
+          interepProvider: null,
+          likeCount: 1,
+          liked:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/086e741d1ad02c278e79ac8fc03d0dc9f886f1b00d10edffb4c21997b00c1352',
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: 'THREAD_ONLY_MENTION',
+          modfollowedctx: null,
+          modFollowerUser:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
+          modLikedPost:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/086e741d1ad02c278e79ac8fc03d0dc9f886f1b00d10edffb4c21997b00c1352',
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
+        },
         payload: {
-          topic: '',
-          title: '',
+          attachment: '',
           content: 'test',
           reference:
             '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/699a260463efd7d6173a4af8fae4bc8b7d62fa1a3e13bcff8ba3de652d676b82',
-          attachment: '',
+          title: '',
+          topic: '',
         },
-        meta: {
-          replyCount: 0,
-          likeCount: 1,
-          repostCount: 0,
-          liked:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/086e741d1ad02c278e79ac8fc03d0dc9f886f1b00d10edffb4c21997b00c1352',
-          reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
-          rootId:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/0de45d68f3ba31eb59b504a8a36266724fb104f865f55da662268b1caf0db58f',
-          moderation: 'THREAD_ONLY_MENTION',
-          modblockedctx: null,
-          modfollowedctx: null,
-          modmentionedctx: null,
-          modLikedPost:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/086e741d1ad02c278e79ac8fc03d0dc9f886f1b00d10edffb4c21997b00c1352',
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser:
-            '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/23fbb7d13fcb649bba8e0fbd8f5fb830df8bf35e08ab5134544fd5731ef21543',
-        },
+        subtype: 'REPLY',
+        type: 'POST',
       },
     ],
     'should return all liked posts by a user'
   );
 
-  // @ts-ignore
+  // @ts-expect-error
   const { updatedAt, ...profile1 } = await db.profiles!.findOne(
     '8118b718d403045f3632c5a7f811676b5b6ff51477383758b630e380b34ba1a3'
   );
   t.deepEqual(
     profile1,
     {
+      createdAt: '1634053438409',
+      creator: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
+      hash: '8118b718d403045f3632c5a7f811676b5b6ff51477383758b630e380b34ba1a3',
+      key: '',
       messageId:
         '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/8118b718d403045f3632c5a7f811676b5b6ff51477383758b630e380b34ba1a3',
-      hash: '8118b718d403045f3632c5a7f811676b5b6ff51477383758b630e380b34ba1a3',
-      creator: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-      type: 'PROFILE',
       subtype: 'NAME',
-      createdAt: '1634053438409',
-      key: '',
+      type: 'PROFILE',
       value: '夜神 月',
     },
     'should return profile'
@@ -779,126 +773,123 @@ tape('DBService', async t => {
 
   await db.posts!.createTwitterPosts([
     {
-      type: '@TWEET@',
-      messageId: 'testid',
-      hash: 'testhash',
-      subtype: '',
-      content: 'Hello World,',
-      creator: '',
-      createdAt: 1,
-      topic: '',
-      title: '',
-      reference: 'testref',
       attachment: '',
+      content: 'Hello World,',
+      createdAt: 1,
+      creator: '',
+      hash: 'testhash',
+      messageId: 'testid',
+      reference: 'testref',
+      subtype: '',
+      title: '',
+      topic: '',
+      type: '@TWEET@',
     },
   ]);
 
-  // @ts-ignore
+  // @ts-expect-error
   const { updatedAt, ...post8 } = await db.posts!.findLastTweetInConversation('testref');
   t.deepEqual(
     post8,
     {
+      attachment: '',
+      content: 'Hello World,',
+      createdAt: '1',
+      creator: '',
       hash: 'testhash',
       messageId: 'testid',
-      creator: '',
       proof: null,
-      signals: null,
-      type: '@TWEET@',
-      subtype: '',
-      createdAt: '1',
-      topic: '',
-      title: '',
-      content: 'Hello World,',
       reference: 'testref',
-      attachment: '',
+      signals: null,
+      subtype: '',
+      title: '',
+      topic: '',
+      type: '@TWEET@',
     },
     'should return last tweet replies in a thread'
   );
 
   await db.posts!.ensurePost('0xcreator/testensureid');
   await db.posts!.createPost({
-    messageId: '0xcreator/testensureid',
-    hash: 'testensureid',
-    content: 'hello create post!',
-    creator: '0xcreator',
-    type: 'POST',
-    subtype: '',
-    topic: '',
-    title: '',
     attachment: '',
-    reference: '',
+    content: 'hello create post!',
     createdAt: 1,
+    creator: '0xcreator',
+    hash: 'testensureid',
+    messageId: '0xcreator/testensureid',
+    reference: '',
+    subtype: '',
+    title: '',
+    topic: '',
+    type: 'POST',
   });
 
-  // @ts-ignore
   const post9 = await db.posts!.findOne('testensureid');
   t.deepEqual(
     post9,
     {
-      type: 'POST',
-      subtype: '',
-      messageId: '0xcreator/testensureid',
-      hash: 'testensureid',
       createdAt: '1',
-      payload: {
-        topic: '',
-        title: '',
-        content: 'hello create post!',
-        reference: '',
-        attachment: '',
-      },
+      hash: 'testensureid',
+      messageId: '0xcreator/testensureid',
       meta: {
-        replyCount: 0,
-        likeCount: 0,
-        repostCount: 0,
-        liked: null,
-        reposted: null,
         blocked: null,
-        interepProvider: null,
         interepGroup: null,
-        rootId: null,
-        moderation: null,
+        interepProvider: null,
+        likeCount: 0,
+        liked: null,
         modblockedctx: null,
-        modfollowedctx: null,
-        modmentionedctx: null,
-        modLikedPost: null,
         modBlockedPost: null,
         modBlockedUser: null,
+        moderation: null,
+        modfollowedctx: null,
         modFollowerUser: null,
+        modLikedPost: null,
+        modmentionedctx: null,
+        replyCount: 0,
+        repostCount: 0,
+        reposted: null,
+        rootId: null,
       },
+      payload: {
+        attachment: '',
+        content: 'hello create post!',
+        reference: '',
+        title: '',
+        topic: '',
+      },
+      subtype: '',
+      type: 'POST',
     },
     'should return created post'
   );
 
   await db.records!.updateOrCreateRecord({
-    soul: '#soul',
     field: '!field',
-    value: '@value',
     relation: '@utilrelation',
+    soul: '#soul',
     state: 1,
+    value: '@value',
   });
 
   await db.records!.updateOrCreateRecord({
-    soul: '#soul2',
     field: '!field2',
-    value: '@value2',
     relation: '@utilrelation2',
+    soul: '#soul2',
     state: 2,
+    value: '@value2',
   });
 
-  // @ts-ignore
-  const { updatedAt, createdAt, ...record1 } = await db.records!.findOne('#soul', '!field');
+  // @ts-expect-error
+  const { createdAt, updatedAt, ...record1 } = await db.records!.findOne('#soul', '!field');
   t.deepEqual(
     record1,
-    { id: 1, soul: '#soul', field: '!field', value: '@value', relation: '@utilrelation', state: 1 },
+    { field: '!field', id: 1, relation: '@utilrelation', soul: '#soul', state: 1, value: '@value' },
     'should return one record'
   );
 
-  // @ts-ignore
   const record2 = await db.records!.findAll('#soul');
   t.deepEqual(record2[0].value, '@value', 'should return all records of a sould');
 
-  // @ts-ignore
   const record3 = await db.records!.readAll();
   t.deepEqual(
     record3.map(d => d.value),
@@ -925,72 +916,72 @@ tape('DBService', async t => {
     tag1,
     [
       {
-        type: 'POST',
-        subtype: 'REPLY',
+        createdAt: '1647989094705',
+        hash: 'bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
         messageId:
           '0xd44a82dD160217d46D754a03C8f841edF06EBE3c/bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
-        hash: 'bdbcc91d89ad6953c90585641766f41554be6ed19b57389e42056a4a2f876f2a',
-        createdAt: '1647989094705',
+        meta: {
+          blocked: null,
+          interepGroup: null,
+          interepProvider: null,
+          likeCount: 0,
+          liked: null,
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: null,
+          modfollowedctx:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
+          modFollowerUser:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
+        },
         payload: {
-          topic: '',
-          title: '',
+          attachment: '',
           content: '#test',
           reference:
             '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-          attachment: '',
+          title: '',
+          topic: '',
         },
-        meta: {
-          replyCount: 0,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
-          rootId:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-          moderation: null,
-          modblockedctx: null,
-          modfollowedctx:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
-          modmentionedctx: null,
-          modLikedPost: null,
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
-        },
+        subtype: 'REPLY',
+        type: 'POST',
       },
       {
-        type: 'POST',
-        subtype: '',
+        createdAt: '1647989013660',
+        hash: 'f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
         messageId:
           '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-        hash: 'f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-        createdAt: '1647989013660',
-        payload: { topic: '', title: '', content: 'test #test', reference: '', attachment: '' },
         meta: {
-          replyCount: 3,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
           blocked: null,
-          interepProvider: null,
           interepGroup: null,
-          rootId:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-          moderation: null,
+          interepProvider: null,
+          likeCount: 0,
+          liked: null,
           modblockedctx: null,
-          modfollowedctx:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
-          modmentionedctx: null,
-          modLikedPost: null,
           modBlockedPost: null,
           modBlockedUser: null,
+          moderation: null,
+          modfollowedctx:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
           modFollowerUser: null,
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 3,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
         },
+        payload: { attachment: '', content: 'test #test', reference: '', title: '', topic: '' },
+        subtype: '',
+        type: 'POST',
       },
     ],
     'should return all posts by tag'
@@ -1011,72 +1002,72 @@ tape('DBService', async t => {
     tag2,
     [
       {
-        type: 'POST',
-        subtype: '',
+        createdAt: '1647989013660',
+        hash: 'f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
         messageId:
           '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-        hash: 'f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-        createdAt: '1647989013660',
-        payload: { topic: '', title: '', content: 'test #test', reference: '', attachment: '' },
         meta: {
-          replyCount: 3,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
           blocked: null,
-          interepProvider: null,
           interepGroup: null,
-          rootId:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
-          moderation: null,
+          interepProvider: null,
+          likeCount: 0,
+          liked: null,
           modblockedctx: null,
-          modfollowedctx:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
-          modmentionedctx: null,
-          modLikedPost: null,
           modBlockedPost: null,
           modBlockedUser: null,
+          moderation: null,
+          modfollowedctx:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
           modFollowerUser: null,
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 3,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/f0579814819379c975b732309aa52505ba55747a56fb1bb587e77929bfa8d2e5',
         },
+        payload: { attachment: '', content: 'test #test', reference: '', title: '', topic: '' },
+        subtype: '',
+        type: 'POST',
       },
       {
-        type: 'POST',
-        subtype: 'REPLY',
+        createdAt: '1647575979244',
+        hash: '30d6bb9d8275795bdab6d5eb5f14010fe98793f42f633024aa9de4c83e5a60f1',
         messageId:
           '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63/30d6bb9d8275795bdab6d5eb5f14010fe98793f42f633024aa9de4c83e5a60f1',
-        hash: '30d6bb9d8275795bdab6d5eb5f14010fe98793f42f633024aa9de4c83e5a60f1',
-        createdAt: '1647575979244',
+        meta: {
+          blocked: null,
+          interepGroup: null,
+          interepProvider: null,
+          likeCount: 0,
+          liked: null,
+          modblockedctx: null,
+          modBlockedPost: null,
+          modBlockedUser: null,
+          moderation: 'THREAD_HIDE_BLOCK',
+          modfollowedctx:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
+          modFollowerUser:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/523017325d3ff5b7afbdb427b8ac3158adfe88256b76f597588a1ceb8ce2ef09',
+          modLikedPost: null,
+          modmentionedctx: null,
+          replyCount: 0,
+          repostCount: 0,
+          reposted: null,
+          rootId:
+            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/dd528f6c8f108072ea6c055bb8cfe0f5cff406012a2e49794e3511f7ac62154a',
+        },
         payload: {
-          topic: '',
-          title: '',
+          attachment: '',
           content: 'hey!!!! #test',
           reference:
             '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/dd528f6c8f108072ea6c055bb8cfe0f5cff406012a2e49794e3511f7ac62154a',
-          attachment: '',
+          title: '',
+          topic: '',
         },
-        meta: {
-          replyCount: 0,
-          likeCount: 0,
-          repostCount: 0,
-          liked: null,
-          reposted: null,
-          blocked: null,
-          interepProvider: null,
-          interepGroup: null,
-          rootId:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/dd528f6c8f108072ea6c055bb8cfe0f5cff406012a2e49794e3511f7ac62154a',
-          moderation: 'THREAD_HIDE_BLOCK',
-          modblockedctx: null,
-          modfollowedctx:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/2b002393948d0b27fd8d4ef2b8da12b966d5dcac113badeb616c076b07046f7a',
-          modmentionedctx: null,
-          modLikedPost: null,
-          modBlockedPost: null,
-          modBlockedUser: null,
-          modFollowerUser:
-            '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb/523017325d3ff5b7afbdb427b8ac3158adfe88256b76f597588a1ceb8ce2ef09',
-        },
+        subtype: 'REPLY',
+        type: 'POST',
       },
     ],
     'should return all posts by tag'
@@ -1107,78 +1098,78 @@ tape('DBService', async t => {
   );
   t.notok(thread2[0][0], 'should remove thread data');
 
-  // @ts-ignore
-  const { updatedAt, createdAt, ...um1 } = await db.userMeta!.findOne(
+  // @ts-expect-error
+  const { createdAt, updatedAt, ...um1 } = await db.userMeta!.findOne(
     '0xd44a82dD160217d46D754a03C8f841edF06EBE3c'
   );
   t.deepEqual(
     um1,
     {
-      name: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-      followerCount: '4',
-      followingCount: '4',
       blockedCount: '0',
       blockingCount: '0',
+      followerCount: '4',
+      followingCount: '4',
       mentionedCount: '2',
+      name: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
       postingCount: '22',
     },
     'should return user meta by name'
   );
 
-  // @ts-ignore
-  const { updatedAt, createdAt, ...user1 } = await db.users!.findOneByName(
+  // @ts-expect-error
+  const { createdAt, updatedAt, ...user1 } = await db.users!.findOneByName(
     '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
     '0x3F425586D68616A113C29c303766DAD444167EE8'
   );
   t.deepEqual(
     user1,
     {
-      username: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
       address: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-      joinedTx: '0x9e532171096cf4f4fe68cd384addf3baaf31644c48506cb4550efb586a165c5a',
-      type: 'arbitrum',
-      pubkey:
-        'dBgXJATrP4KeE6zfuR4_arauMIeT_86MrQg6JbbnuxM.yJXykCW6qjB54B29by8vIWoMwk8T5NG_3awHdKC9Bgc',
-      joinedAt: 1644251733000,
-      name: 'yagamilight',
       bio: '',
-      profileImage: 'https://i1.sndcdn.com/artworks-000452560338-e3uzc2-t500x500.jpg',
       coverImage: 'https://s3.amazonaws.com/99Covers-Facebook-Covers/watermark/14238.jpg',
-      group: false,
-      twitterVerification: 'https://twitter.com/0xTsukino/status/1465332814937690114',
-      website: '',
       ecdh: '',
+      group: false,
       idcommitment: '',
+      joinedAt: 1644251733000,
+      joinedTx: '0x9e532171096cf4f4fe68cd384addf3baaf31644c48506cb4550efb586a165c5a',
       meta: {
-        inviteSent: null,
         acceptanceReceived: null,
-        inviteReceived: null,
         acceptanceSent: null,
+        blocked: null,
         blockedCount: 0,
         blockingCount: 0,
-        followerCount: 4,
-        followingCount: 4,
-        postingCount: 22,
-        mentionedCount: 2,
         followed:
           '0x3F425586D68616A113C29c303766DAD444167EE8/6cb3a3eea1355ead9cbcb0907e282eac3d1f606d7a8d77252445404a09d58584',
-        blocked: null,
+        followerCount: 4,
+        followingCount: 4,
+        inviteReceived: null,
+        inviteSent: null,
+        mentionedCount: 2,
+        postingCount: 22,
       },
+      name: 'yagamilight',
+      profileImage: 'https://i1.sndcdn.com/artworks-000452560338-e3uzc2-t500x500.jpg',
+      pubkey:
+        'dBgXJATrP4KeE6zfuR4_arauMIeT_86MrQg6JbbnuxM.yJXykCW6qjB54B29by8vIWoMwk8T5NG_3awHdKC9Bgc',
+      twitterVerification: 'https://twitter.com/0xTsukino/status/1465332814937690114',
+      type: 'arbitrum',
+      username: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
+      website: '',
     },
     'should return user by name'
   );
 
-  // @ts-ignore
-  const { updatedAt, createdAt, ...user2 } = await db.users!.findOneByPubkey(
+  // @ts-expect-error
+  const { createdAt, updatedAt, ...user2 } = await db.users!.findOneByPubkey(
     'MNw7njaTh0k835aq0JKtmpq33izkGwFxdldqf3txB64.a-yzwTFi1hNP-4lrpHB5NAw7p100oAOUefpYwfLPer8'
   );
   t.deepEqual(
     user2,
     {
+      joinedAt: '1644254074000',
       name: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb',
       pubkey:
         'MNw7njaTh0k835aq0JKtmpq33izkGwFxdldqf3txB64.a-yzwTFi1hNP-4lrpHB5NAw7p100oAOUefpYwfLPer8',
-      joinedAt: '1644254074000',
       tx: '0xfde1d05921ccb073f71b747fd323fa313d51c77db82311993555692881ff9387',
       type: 'arbitrum',
     },
@@ -1190,166 +1181,166 @@ tape('DBService', async t => {
     user3,
     [
       {
-        username: '0x09581b207F27b3E941D62d353194543d38182651',
         address: '0x09581b207F27b3E941D62d353194543d38182651',
-        joinedTx: '0xa78e8c2e65ba073b29fbcb136b8f262c60464a3413ad6759d4cf41426573f35d',
-        type: 'arbitrum',
-        pubkey:
-          'INXAI0WyuO24U2fdeN_m70gqLx2CXm49kKT_Mx3R6Cw.Uya6GtBfuHfrHR4Lkc8_BiN2HPFpQ_1Yr95S-AomGiM',
-        joinedAt: 1645743703000,
-        name: '',
         bio: '',
-        profileImage: '',
         coverImage: '',
-        group: false,
-        twitterVerification: '',
-        website: '',
         ecdh: '',
+        group: false,
         idcommitment: '',
+        joinedAt: 1645743703000,
+        joinedTx: '0xa78e8c2e65ba073b29fbcb136b8f262c60464a3413ad6759d4cf41426573f35d',
         meta: {
-          inviteSent: null,
           acceptanceReceived: null,
-          inviteReceived: null,
           acceptanceSent: null,
+          blocked: null,
           blockedCount: 1,
           blockingCount: 0,
+          followed: null,
           followerCount: 0,
           followingCount: 0,
-          postingCount: 0,
+          inviteReceived: null,
+          inviteSent: null,
           mentionedCount: 0,
-          followed: null,
-          blocked: null,
+          postingCount: 0,
         },
+        name: '',
+        profileImage: '',
+        pubkey:
+          'INXAI0WyuO24U2fdeN_m70gqLx2CXm49kKT_Mx3R6Cw.Uya6GtBfuHfrHR4Lkc8_BiN2HPFpQ_1Yr95S-AomGiM',
+        twitterVerification: '',
+        type: 'arbitrum',
+        username: '0x09581b207F27b3E941D62d353194543d38182651',
+        website: '',
       },
       {
-        username: '0x5d432ce201d2c03234e314d4703559102Ebf365C',
         address: '0x5d432ce201d2c03234e314d4703559102Ebf365C',
-        joinedTx: '0x4522e7854fba0bafeadbe93f4242290699b0f47dc43b119148636c6c69506d3b',
-        type: 'arbitrum',
-        pubkey:
-          'ohfgrR0yWExZj-zxb_dXLgL2q4WcqfUWjLpD9kpMSjc.odeQ30shx28Dscix1Ywfw0o1ofLgU0qJ8-URAr2xTeA',
-        joinedAt: 1647991582000,
-        name: 'Mr.Poopybutthole',
         bio: '',
-        profileImage:
-          'https://hips.hearstapps.com/hmg-prod.s3.amazonaws.com/images/rick-and-morty-poopybuthole-1574420029.jpg?crop=0.704xw:1.00xh;0,0&resize=480:*',
         coverImage:
           'https://imagesvc.meredithcorp.io/v3/mm/image?q=85&c=sc&poi=face&w=2000&h=1000&url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F6%2F2017%2F07%2Fmr-poopybutthole-season-2-episode-4-2000.jpg',
-        group: false,
-        twitterVerification: '',
-        website: '',
         ecdh: '',
+        group: false,
         idcommitment: '',
+        joinedAt: 1647991582000,
+        joinedTx: '0x4522e7854fba0bafeadbe93f4242290699b0f47dc43b119148636c6c69506d3b',
         meta: {
-          inviteSent: null,
           acceptanceReceived: null,
-          inviteReceived: null,
           acceptanceSent: null,
+          blocked: null,
           blockedCount: 0,
           blockingCount: 0,
+          followed: null,
           followerCount: 1,
           followingCount: 1,
-          postingCount: 0,
+          inviteReceived: null,
+          inviteSent: null,
           mentionedCount: 2,
-          followed: null,
-          blocked: null,
+          postingCount: 0,
         },
+        name: 'Mr.Poopybutthole',
+        profileImage:
+          'https://hips.hearstapps.com/hmg-prod.s3.amazonaws.com/images/rick-and-morty-poopybuthole-1574420029.jpg?crop=0.704xw:1.00xh;0,0&resize=480:*',
+        pubkey:
+          'ohfgrR0yWExZj-zxb_dXLgL2q4WcqfUWjLpD9kpMSjc.odeQ30shx28Dscix1Ywfw0o1ofLgU0qJ8-URAr2xTeA',
+        twitterVerification: '',
+        type: 'arbitrum',
+        username: '0x5d432ce201d2c03234e314d4703559102Ebf365C',
+        website: '',
       },
       {
-        username: '0x3aec555a667EF810C4B0a0D064D6Fb7c66161360',
         address: '0x3aec555a667EF810C4B0a0D064D6Fb7c66161360',
-        joinedTx: '0x0024f0472ec847e220d664202e37c4c2588df48c7d7a631d73f71dc23c33019c',
-        type: 'arbitrum',
-        pubkey:
-          'gxQnqpLxu8E74yn4t0N5mCoaE7MfRxEg8LiSGoBpMMw.Hkk05CtLQZEVTorgPVEYj97PHBnK-atlOdixjvF0Kn4',
-        joinedAt: 1648086605000,
-        name: 'kanna chan',
         bio: '',
-        profileImage: 'https://media3.giphy.com/media/WcEvIajIk332g/giphy.gif',
         coverImage: '',
-        group: false,
-        twitterVerification: '',
-        website: '',
         ecdh: '',
+        group: false,
         idcommitment: '',
+        joinedAt: 1648086605000,
+        joinedTx: '0x0024f0472ec847e220d664202e37c4c2588df48c7d7a631d73f71dc23c33019c',
         meta: {
-          inviteSent: null,
           acceptanceReceived: null,
-          inviteReceived: null,
           acceptanceSent: null,
+          blocked: null,
           blockedCount: 0,
           blockingCount: 0,
+          followed: null,
           followerCount: 0,
           followingCount: 0,
-          postingCount: 2,
+          inviteReceived: null,
+          inviteSent: null,
           mentionedCount: 2,
-          followed: null,
-          blocked: null,
+          postingCount: 2,
         },
+        name: 'kanna chan',
+        profileImage: 'https://media3.giphy.com/media/WcEvIajIk332g/giphy.gif',
+        pubkey:
+          'gxQnqpLxu8E74yn4t0N5mCoaE7MfRxEg8LiSGoBpMMw.Hkk05CtLQZEVTorgPVEYj97PHBnK-atlOdixjvF0Kn4',
+        twitterVerification: '',
+        type: 'arbitrum',
+        username: '0x3aec555a667EF810C4B0a0D064D6Fb7c66161360',
+        website: '',
       },
       {
-        username: '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63',
         address: '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63',
-        joinedTx: '0xc35bd6dbbeec827b2b6cccc1acaae032e6e9a0ebb190ba5d7c276d7c6cce0fc6',
-        type: 'arbitrum',
-        pubkey:
-          'z-CGdwpcNR39Ib3j_uTnAVtEoWyCuhMIXhZijh272lo.3KcFAl0dkDzuAGj54PUVq1fpJzVpGlFeuTf3j8NabUI',
-        joinedAt: 1647393506000,
-        name: '0xFEBc',
         bio: '',
-        profileImage: '',
         coverImage: '',
-        group: false,
-        twitterVerification: '',
-        website: '',
         ecdh: '',
+        group: false,
         idcommitment: '',
+        joinedAt: 1647393506000,
+        joinedTx: '0xc35bd6dbbeec827b2b6cccc1acaae032e6e9a0ebb190ba5d7c276d7c6cce0fc6',
         meta: {
-          inviteSent: null,
           acceptanceReceived: null,
-          inviteReceived: null,
           acceptanceSent: null,
+          blocked: null,
           blockedCount: 0,
           blockingCount: 1,
+          followed: null,
           followerCount: 1,
           followingCount: 2,
-          postingCount: 5,
+          inviteReceived: null,
+          inviteSent: null,
           mentionedCount: 3,
-          followed: null,
-          blocked: null,
+          postingCount: 5,
         },
+        name: '0xFEBc',
+        profileImage: '',
+        pubkey:
+          'z-CGdwpcNR39Ib3j_uTnAVtEoWyCuhMIXhZijh272lo.3KcFAl0dkDzuAGj54PUVq1fpJzVpGlFeuTf3j8NabUI',
+        twitterVerification: '',
+        type: 'arbitrum',
+        username: '0xFEBc214765f6201d15F06e4bb882a7400B0FDf63',
+        website: '',
       },
       {
-        username: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb',
         address: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb',
-        joinedTx: '0xfde1d05921ccb073f71b747fd323fa313d51c77db82311993555692881ff9387',
-        type: 'arbitrum',
-        pubkey:
-          'MNw7njaTh0k835aq0JKtmpq33izkGwFxdldqf3txB64.a-yzwTFi1hNP-4lrpHB5NAw7p100oAOUefpYwfLPer8',
-        joinedAt: 1644254074000,
-        name: 'Ohwee',
         bio: '',
-        profileImage: '',
         coverImage: '',
-        group: false,
-        twitterVerification: '',
-        website: '',
         ecdh: '',
+        group: false,
         idcommitment: '',
+        joinedAt: 1644254074000,
+        joinedTx: '0xfde1d05921ccb073f71b747fd323fa313d51c77db82311993555692881ff9387',
         meta: {
-          inviteSent: null,
           acceptanceReceived: null,
-          inviteReceived: null,
           acceptanceSent: null,
+          blocked: null,
           blockedCount: 0,
           blockingCount: 0,
+          followed: null,
           followerCount: 2,
           followingCount: 3,
-          postingCount: 7,
+          inviteReceived: null,
+          inviteSent: null,
           mentionedCount: 2,
-          followed: null,
-          blocked: null,
+          postingCount: 7,
         },
+        name: 'Ohwee',
+        profileImage: '',
+        pubkey:
+          'MNw7njaTh0k835aq0JKtmpq33izkGwFxdldqf3txB64.a-yzwTFi1hNP-4lrpHB5NAw7p100oAOUefpYwfLPer8',
+        twitterVerification: '',
+        type: 'arbitrum',
+        username: '0x3E1E26f055Cd29053D44Fc65aa1FCa216DedFceb',
+        website: '',
       },
     ],
     'should return all users'
@@ -1360,37 +1351,37 @@ tape('DBService', async t => {
     user4,
     [
       {
-        username: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
         address: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-        joinedTx: '0x9e532171096cf4f4fe68cd384addf3baaf31644c48506cb4550efb586a165c5a',
-        type: 'arbitrum',
-        pubkey:
-          'dBgXJATrP4KeE6zfuR4_arauMIeT_86MrQg6JbbnuxM.yJXykCW6qjB54B29by8vIWoMwk8T5NG_3awHdKC9Bgc',
-        joinedAt: 1644251733000,
-        name: 'yagamilight',
         bio: '',
-        profileImage: 'https://i1.sndcdn.com/artworks-000452560338-e3uzc2-t500x500.jpg',
         coverImage: 'https://s3.amazonaws.com/99Covers-Facebook-Covers/watermark/14238.jpg',
-        group: false,
-        twitterVerification: 'https://twitter.com/0xTsukino/status/1465332814937690114',
-        website: '',
         ecdh: '',
+        group: false,
         idcommitment: '',
+        joinedAt: 1644251733000,
+        joinedTx: '0x9e532171096cf4f4fe68cd384addf3baaf31644c48506cb4550efb586a165c5a',
         meta: {
-          inviteSent: null,
           acceptanceReceived: null,
-          inviteReceived: null,
           acceptanceSent: null,
+          blocked: null,
           blockedCount: 0,
           blockingCount: 0,
-          followerCount: 4,
-          followingCount: 4,
-          postingCount: 22,
-          mentionedCount: 2,
           followed:
             '0x3F425586D68616A113C29c303766DAD444167EE8/6cb3a3eea1355ead9cbcb0907e282eac3d1f606d7a8d77252445404a09d58584',
-          blocked: null,
+          followerCount: 4,
+          followingCount: 4,
+          inviteReceived: null,
+          inviteSent: null,
+          mentionedCount: 2,
+          postingCount: 22,
         },
+        name: 'yagamilight',
+        profileImage: 'https://i1.sndcdn.com/artworks-000452560338-e3uzc2-t500x500.jpg',
+        pubkey:
+          'dBgXJATrP4KeE6zfuR4_arauMIeT_86MrQg6JbbnuxM.yJXykCW6qjB54B29by8vIWoMwk8T5NG_3awHdKC9Bgc',
+        twitterVerification: 'https://twitter.com/0xTsukino/status/1465332814937690114',
+        type: 'arbitrum',
+        username: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
+        website: '',
       },
     ],
     'should search user by name'

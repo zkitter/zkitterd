@@ -1,9 +1,9 @@
-import tape from 'tape';
 import sinon from 'sinon';
-
-import ArbitrumService from './arbitrum';
+import tape from 'tape';
 
 import { stubCall } from '@util/testUtils';
+
+import ArbitrumService from './arbitrum';
 
 tape.skip('ArbitrumService', async t => {
   const arb = new ArbitrumService();
@@ -19,13 +19,13 @@ tape.skip('ArbitrumService', async t => {
 
   const events: any[] = [
     {
-      transactionHash: '',
       blockNumber: '',
       returnValues: {
+        account: '0xmyuser',
         value:
           '0x616161616161616161616161616161616161616161616161616161616161616161616161616161616161612e61616161616161616161616161616161616161616161616161616161616161616161616161616161616161',
-        account: '0xmyuser',
       },
+      transactionHash: '',
     },
   ];
 
@@ -60,10 +60,10 @@ tape.skip('ArbitrumService', async t => {
   t.deepEqual(stubs.users.updateOrCreateUser.args, [
     [
       {
+        joinedAt: 1648624746000,
         name: '0xmyuser',
         pubkey:
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        joinedAt: 1648624746000,
         tx: '0xtxhash',
         type: 'arbitrum',
       },

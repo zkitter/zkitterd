@@ -1,16 +1,9 @@
 import 'isomorphic-fetch';
-import { MainService } from './util/svc';
-import ENSService from './services/ens';
-import logger from './util/logger';
-import DBService from './services/db';
-import HttpService from './services/http';
-import GunService from './services/gun';
-import InterrepService from './services/interrep';
 import ArbitrumService from './services/arbitrum';
-import IPFSService from './services/ipfs';
-import ZKChatService from './services/zkchat';
-import MerkleService from './services/merkle';
-import { ReputationService } from './services/reputation';
+import DBService from './services/db';
+import ENSService from './services/ens';
+import GunService from './services/gun';
+import HttpService from './services/http';
 import {
   AuthController,
   EventsController,
@@ -23,6 +16,13 @@ import {
   UsersController,
   ZkChatController,
 } from './services/http/controllers';
+import InterrepService from './services/interrep';
+import IPFSService from './services/ipfs';
+import MerkleService from './services/merkle';
+import { ReputationService } from './services/reputation';
+import ZKChatService from './services/zkchat';
+import logger from './util/logger';
+import { MainService } from './util/svc';
 
 (async function initApp() {
   try {

@@ -1,8 +1,8 @@
 import tape from 'tape';
 
-import { UsersController } from './Users';
 import { newRequest, newResponse, stubCall } from '../../../util/testUtils';
 import { post } from '../../http/_fixtures';
+import { UsersController } from './Users';
 
 let controller: UsersController;
 let call: ReturnType<typeof stubCall>[0];
@@ -38,11 +38,11 @@ tape('UsersController', t => {
       res.send.args[0],
       [
         {
+          error: undefined,
           payload: [
             { ens: '', username: '0xuser1' },
             { ens: '', username: '0xuser2' },
           ],
-          error: undefined,
         },
       ],
       'should return list of users'
@@ -67,11 +67,11 @@ tape('UsersController', t => {
       res.send.args[0],
       [
         {
+          error: undefined,
           payload: [
             { ens: '', username: '0xsearchuser1' },
             { ens: '', username: '0xsearchuser2' },
           ],
-          error: undefined,
         },
       ],
       'should return list of users'
@@ -98,12 +98,12 @@ tape('UsersController', t => {
       res.send.args[0],
       [
         {
-          payload: {
-            username: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-            ens: '',
-            address: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-          },
           error: undefined,
+          payload: {
+            address: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
+            ens: '',
+            username: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
+          },
         },
       ],
       'should return user'
@@ -113,8 +113,8 @@ tape('UsersController', t => {
   t.test('POST /v1/users', async t => {
     init(null, {
       account: '0xd44a82dD160217d46D754a03C8f841edF06EBE3c',
-      publicKey: '0xpubkey',
       proof: '0xproof',
+      publicKey: '0xpubkey',
     });
     stubs.users.findOneByName.returns(
       Promise.resolve({
@@ -154,8 +154,8 @@ tape('UsersController', t => {
       res.send.args[0],
       [
         {
-          payload: '0xtxhash',
           error: undefined,
+          payload: '0xtxhash',
         },
       ],
       'should return tx hash'
@@ -219,7 +219,7 @@ tape('UsersController', t => {
     );
     t.deepEqual(
       res.send.args[0],
-      [{ payload: [post], error: undefined }],
+      [{ error: undefined, payload: [post] }],
       'should return all replies'
     );
   });
@@ -239,7 +239,7 @@ tape('UsersController', t => {
     );
     t.deepEqual(
       res.send.args[0],
-      [{ payload: [post], error: undefined }],
+      [{ error: undefined, payload: [post] }],
       'should return all likes'
     );
   });

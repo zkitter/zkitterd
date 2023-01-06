@@ -14,35 +14,35 @@ tape.skip('InterepService.start', async (t: any) => {
   const datas = [
     [
       {
-        provider: 'twitter',
+        depth: 20,
         name: 'gold',
-        depth: 20,
-        root: '19217088683336594659449020493828377907203207941212636669271704950158751593251',
         numberOfLeaves: 0,
+        provider: 'twitter',
+        root: '19217088683336594659449020493828377907203207941212636669271704950158751593251',
         size: 0,
       },
       {
-        provider: 'poap',
+        depth: 20,
         name: 'devcon5',
-        depth: 20,
-        root: '19217088683336594659449020493828377907203207941212636669271704950158751593251',
         numberOfLeaves: 0,
+        provider: 'poap',
+        root: '19217088683336594659449020493828377907203207941212636669271704950158751593251',
         size: 0,
       },
       {
-        provider: 'telegram',
+        depth: 20,
         name: '-1001396261340',
-        depth: 20,
-        root: '19217088683336594659449020493828377907203207941212636669271704950158751593251',
         numberOfLeaves: 0,
+        provider: 'telegram',
+        root: '19217088683336594659449020493828377907203207941212636669271704950158751593251',
         size: 0,
       },
       {
-        provider: 'email',
-        name: 'hotmail',
         depth: 20,
-        root: '19217088683336594659449020493828377907203207941212636669271704950158751593251',
+        name: 'hotmail',
         numberOfLeaves: 0,
+        provider: 'email',
+        root: '19217088683336594659449020493828377907203207941212636669271704950158751593251',
         size: 0,
       },
     ],
@@ -107,8 +107,8 @@ tape.skip('InterepService.getBatchFromRootHash', async t => {
       json: async () => ({
         data: {
           group: {
-            provider: 'autism',
             name: 'diamond',
+            provider: 'autism',
           },
         },
       }),
@@ -123,8 +123,8 @@ tape.skip('InterepService.getBatchFromRootHash', async t => {
   t.same(
     res,
     {
-      provider: 'autism',
       name: 'diamond',
+      provider: 'autism',
       root_hash: '0x123456',
     },
     'should return batch from interep'

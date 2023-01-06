@@ -111,17 +111,17 @@ export class Post extends Message {
     const [attachment] = decodeString(d, 3, cb);
 
     return new Post({
-      type: type as MessageType.Post,
-      subtype: subtype as PostMessageSubType,
-      creator,
       createdAt: new Date(createdAt),
+      creator,
       payload: {
-        topic,
-        title,
+        attachment,
         content,
         reference,
-        attachment,
+        title,
+        topic,
       },
+      subtype: subtype as PostMessageSubType,
+      type: type as MessageType.Post,
     });
 
     function cb(n: number) {
@@ -152,11 +152,11 @@ export class Post extends Message {
     this.tweetId = opt.type === MessageType._TWEET ? opt.hash : undefined;
     this.subtype = Post.getSubtype(opt.subtype);
     this.payload = {
-      topic: opt.payload.topic || '',
-      title: opt.payload.title || '',
+      attachment: opt.payload.attachment || '',
       content: opt.payload.content || '',
       reference: opt.payload.reference || '',
-      attachment: opt.payload.attachment || '',
+      title: opt.payload.title || '',
+      topic: opt.payload.topic || '',
     };
   }
 
@@ -168,12 +168,12 @@ export class Post extends Message {
   toJSON(): PostJSON {
     const hash = this.hash();
     return {
-      messageId: this.creator ? `${this.creator}/${hash}` : hash,
-      hash: hash,
-      type: this.type,
-      subtype: this.subtype,
       createdAt: this.createdAt.getTime(),
+      hash: hash,
+      messageId: this.creator ? `${this.creator}/${hash}` : hash,
       payload: this.payload,
+      subtype: this.subtype,
+      type: this.type,
     };
   }
 
@@ -236,13 +236,13 @@ export class Moderation extends Message {
     const [reference] = decodeString(d, 3, cb);
 
     return new Moderation({
-      type: type as MessageType.Moderation,
-      subtype: subtype as ModerationMessageSubType,
-      creator,
       createdAt: new Date(createdAt),
+      creator,
       payload: {
         reference,
       },
+      subtype: subtype as ModerationMessageSubType,
+      type: type as MessageType.Moderation,
     });
 
     function cb(n: number) {
@@ -285,12 +285,12 @@ export class Moderation extends Message {
   toJSON(): ModerationJSON {
     const hash = this.hash();
     return {
-      messageId: `${this.creator}/${hash}`,
-      hash: hash,
-      type: this.type,
-      subtype: this.subtype,
       createdAt: this.createdAt.getTime(),
+      hash: hash,
+      messageId: `${this.creator}/${hash}`,
       payload: this.payload,
+      subtype: this.subtype,
+      type: this.type,
     };
   }
 
@@ -349,13 +349,13 @@ export class Connection extends Message {
     const [name] = decodeString(d, 3, cb);
 
     return new Connection({
-      type: type as MessageType.Profile,
-      subtype: subtype as ConnectionMessageSubType,
-      creator,
       createdAt: new Date(createdAt),
+      creator,
       payload: {
         name,
       },
+      subtype: subtype as ConnectionMessageSubType,
+      type: type as MessageType.Profile,
     });
 
     function cb(n: number) {
@@ -394,12 +394,12 @@ export class Connection extends Message {
   toJSON(): ConnectionJSON {
     const hash = this.hash();
     return {
-      messageId: `${this.creator}/${hash}`,
-      hash: hash,
-      type: this.type,
-      subtype: this.subtype,
       createdAt: this.createdAt.getTime(),
+      hash: hash,
+      messageId: `${this.creator}/${hash}`,
       payload: this.payload,
+      subtype: this.subtype,
+      type: this.type,
     };
   }
 
@@ -463,14 +463,14 @@ export class Profile extends Message {
     const [value] = decodeString(d, 3, cb);
 
     return new Profile({
-      type: type as MessageType.Profile,
-      subtype: subtype as ProfileMessageSubType,
-      creator,
       createdAt: new Date(createdAt),
+      creator,
       payload: {
         key,
         value,
       },
+      subtype: subtype as ProfileMessageSubType,
+      type: type as MessageType.Profile,
     });
 
     function cb(n: number) {
@@ -518,12 +518,12 @@ export class Profile extends Message {
   toJSON(): ProfileJSON {
     const hash = this.hash();
     return {
-      messageId: `${this.creator}/${hash}`,
-      hash: hash,
-      type: this.type,
-      subtype: this.subtype,
       createdAt: this.createdAt.getTime(),
+      hash: hash,
+      messageId: `${this.creator}/${hash}`,
       payload: this.payload,
+      subtype: this.subtype,
+      type: this.type,
     };
   }
 
@@ -571,8 +571,8 @@ export function parseMessageId(id: string) {
 
   if (parsed.length > 2) {
     return {
-      hash: '',
       creator: '',
+      hash: '',
     };
   }
 
@@ -587,8 +587,8 @@ export function parseMessageId(id: string) {
 
   if (!hash || !HEX_64_REGEX.test(hash)) {
     return {
-      hash: '',
       creator: '',
+      hash: '',
     };
   }
 

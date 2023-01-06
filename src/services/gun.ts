@@ -1,11 +1,11 @@
 /* eslint-disable no-case-declarations */
-import Gun from 'gun';
-import { IGunChainReference } from 'gun/types/chain';
-import express from 'express';
-import { Mutex } from 'async-mutex';
 import { Semaphore } from '@zk-kit/protocols';
+import { Mutex } from 'async-mutex';
+import express from 'express';
+import Gun from 'gun';
+import merkleRoot from '@models/merkle_root';
 
-import { GenericService } from '@util/svc';
+import { UserModel } from '@models/users';
 import config from '@util/config';
 import logger from '@util/logger';
 import {
@@ -21,12 +21,12 @@ import {
   Profile,
   ProfileMessageSubType,
 } from '@util/message';
-import { UserModel } from '@models/users';
 import { HASHTAG_REGEX, MENTION_REGEX } from '@util/regex';
-import vKey from '#/verification_key.json';
-import { showStatus } from '@util/twitter';
-import merkleRoot from '@models/merkle_root';
 import { sequelize } from '@util/sequelize';
+import { GenericService } from '@util/svc';
+import { showStatus } from '@util/twitter';
+import vKey from '#/verification_key.json';
+import { IGunChainReference } from 'gun/types/chain';
 
 const Graph = require('~/gun/graph.js');
 const State = require('~/gun/state.js');
@@ -109,65 +109,65 @@ export default class GunService extends GenericService {
       switch (type) {
         case MessageType.Post:
           const post = new Post({
-            type: type,
-            subtype: Post.getSubtype(data.subtype),
-            creator: creator,
             createdAt: new Date(Number(data.createdAt)),
+            creator: creator,
             payload: {
-              topic: payload.topic,
-              title: payload.title,
+              attachment: payload.attachment,
               content: payload.content,
               reference: payload.reference,
-              attachment: payload.attachment,
+              title: payload.title,
+              topic: payload.topic,
             },
+            subtype: Post.getSubtype(data.subtype),
+            type: type,
           });
           await this.insertPost(
             post,
             !data.proof
               ? undefined
               : {
+                  epoch: data.epoch,
+                  group: data.group,
                   proof: data.proof,
                   publicSignals: data.publicSignals,
                   x_share: data.x_share,
-                  epoch: data.epoch,
-                  group: data.group,
                 }
           );
           return;
         case MessageType.Moderation:
           const moderation = new Moderation({
-            type: type,
-            subtype: Moderation.getSubtype(data.subtype),
-            creator: creator,
             createdAt: new Date(Number(data.createdAt)),
+            creator: creator,
             payload: {
               reference: payload.reference,
             },
+            subtype: Moderation.getSubtype(data.subtype),
+            type: type,
           });
           await this.insertModeration(moderation);
           return;
         case MessageType.Connection:
           const connection = new Connection({
-            type: type,
-            subtype: Connection.getSubtype(data.subtype),
-            creator: creator,
             createdAt: new Date(Number(data.createdAt)),
+            creator: creator,
             payload: {
               name: payload.name,
             },
+            subtype: Connection.getSubtype(data.subtype),
+            type: type,
           });
           await this.insertConnection(connection);
           return;
         case MessageType.Profile:
           const profile = new Profile({
-            type: type,
-            subtype: Profile.getSubtype(data.subtype),
-            creator: creator,
             createdAt: new Date(Number(data.createdAt)),
+            creator: creator,
             payload: {
               key: payload.key,
               value: payload.value,
             },
+            subtype: Profile.getSubtype(data.subtype),
+            type: type,
           });
           await this.insertProfile(profile);
           return;
@@ -259,7 +259,7 @@ export default class GunService extends GenericService {
   ) {
     const json = await post.toJSON();
 
-    const { type, subtype, createdAt, payload, messageId, hash } = json;
+    const { createdAt, hash, messageId, payload, subtype, type } = json;
 
     const creator = post.creator;
     const postDB = await this.call('db', 'getPosts');
@@ -277,8 +277,8 @@ export default class GunService extends GenericService {
 
     if (result) {
       logger.debug('post already exist', {
-        origin: 'gun',
         messageId,
+        origin: 'gun',
       });
       return;
     }
@@ -303,20 +303,20 @@ export default class GunService extends GenericService {
           if (!verified) return;
         } else {
           verified = await this.call('zkchat', 'verifyRLNProof', {
+            epoch: data.epoch,
             proof,
             publicSignals,
             x_share: data.x_share,
-            epoch: data.epoch,
           });
 
           const share = {
-            nullifier: publicSignals.internalNullifier,
             epoch: publicSignals.epoch,
-            y_share: publicSignals.yShare,
+            nullifier: publicSignals.internalNullifier,
             x_share: data.x_share,
+            y_share: publicSignals.yShare,
           };
 
-          const { isSpam, isDuplicate } = await this.call('zkchat', 'checkShare', share);
+          const { isDuplicate, isSpam } = await this.call('zkchat', 'checkShare', share);
 
           if (isSpam || isDuplicate || !verified) return;
         }
@@ -334,19 +334,19 @@ export default class GunService extends GenericService {
       }
 
       await postDB.createPost({
-        messageId: messageId,
-        hash: hash,
-        proof: data?.proof,
-        signals: data?.publicSignals,
-        type: type,
-        subtype: subtype,
-        creator: creator || '',
-        createdAt: createdAt,
-        topic: payload.topic,
-        title: payload.title,
-        content: payload.content,
-        reference: payload.reference,
         attachment: payload.attachment,
+        content: payload.content,
+        createdAt: createdAt,
+        creator: creator || '',
+        hash: hash,
+        messageId: messageId,
+        proof: data?.proof,
+        reference: payload.reference,
+        signals: data?.publicSignals,
+        subtype: subtype,
+        title: payload.title,
+        topic: payload.topic,
+        type: type,
       });
 
       if (payload.reference) {
@@ -397,23 +397,23 @@ export default class GunService extends GenericService {
       }
 
       logger.info(`insert post`, {
-        origin: 'gun',
         messageId,
+        origin: 'gun',
       });
     } catch (e) {
       logger.error(`error inserting post`, {
         error: e.message,
-        stack: e.stack,
-        parent: e.parent,
-        origin: 'gun',
         messageId,
+        origin: 'gun',
+        parent: e.parent,
+        stack: e.stack,
       });
     }
   }
 
   async insertModeration(moderation: Moderation) {
     const json = await moderation.toJSON();
-    const { type, subtype, createdAt, payload, messageId } = json;
+    const { createdAt, messageId, payload, subtype, type } = json;
 
     const { creator, hash } = parseMessageId(messageId);
 
@@ -429,8 +429,8 @@ export default class GunService extends GenericService {
 
     if (result) {
       logger.debug('moderation already exist', {
-        origin: 'gun',
         messageId,
+        origin: 'gun',
       });
       return;
     }
@@ -438,13 +438,13 @@ export default class GunService extends GenericService {
     try {
       await postDB.ensurePost(payload.reference);
       await moderationDB.createModeration({
-        messageId,
-        hash: hash,
-        type: type,
-        subtype: subtype,
-        creator: creator || '',
         createdAt: createdAt,
+        creator: creator || '',
+        hash: hash,
+        messageId,
         reference: payload.reference,
+        subtype: subtype,
+        type: type,
       });
 
       if (subtype === ModerationMessageSubType.Like && payload.reference) {
@@ -452,23 +452,23 @@ export default class GunService extends GenericService {
       }
 
       logger.info(`insert moderation`, {
-        origin: 'gun',
         messageId,
+        origin: 'gun',
       });
     } catch (e) {
       logger.error(`error inserting moderation`, {
         error: e.message,
-        stack: e.stack,
-        parent: e.parent,
-        origin: 'gun',
         messageId,
+        origin: 'gun',
+        parent: e.parent,
+        stack: e.stack,
       });
     }
   }
 
   async insertConnection(connection: Connection) {
     const json = await connection.toJSON();
-    const { type, subtype, createdAt, payload, messageId } = json;
+    const { createdAt, messageId, payload, subtype, type } = json;
     const [creator, hash] = messageId.split('/');
 
     const connDB = await this.call('db', 'getConnections');
@@ -483,8 +483,8 @@ export default class GunService extends GenericService {
 
     if (result) {
       logger.debug('connection already exist', {
-        origin: 'gun',
         messageId,
+        origin: 'gun',
       });
       return;
     }
@@ -493,13 +493,13 @@ export default class GunService extends GenericService {
       await userDB.ensureUser(payload.name);
 
       await connDB.createConnection({
-        messageId,
-        hash: hash,
-        type: type,
-        subtype: subtype,
-        creator: creator || '',
         createdAt: createdAt,
+        creator: creator || '',
+        hash: hash,
+        messageId,
         name: payload.name,
+        subtype: subtype,
+        type: type,
       });
 
       if (subtype === ConnectionMessageSubType.Follow) {
@@ -511,23 +511,23 @@ export default class GunService extends GenericService {
       }
 
       logger.info(`insert connection`, {
-        origin: 'gun',
         messageId,
+        origin: 'gun',
       });
     } catch (e) {
       logger.error(`error inserting connection`, {
         error: e.message,
-        stack: e.stack,
-        parent: e.parent,
-        origin: 'gun',
         messageId,
+        origin: 'gun',
+        parent: e.parent,
+        stack: e.stack,
       });
     }
   }
 
   async insertProfile(profile: Profile) {
     const json = await profile.toJSON();
-    const { type, subtype, createdAt, payload, messageId } = json;
+    const { createdAt, messageId, payload, subtype, type } = json;
     const { creator, hash } = parseMessageId(messageId);
 
     const profileDB = await this.call('db', 'getProfiles');
@@ -541,8 +541,8 @@ export default class GunService extends GenericService {
 
     if (result) {
       logger.debug('profile already exist', {
-        origin: 'gun',
         messageId,
+        origin: 'gun',
       });
       return;
     }
@@ -576,27 +576,27 @@ export default class GunService extends GenericService {
 
     try {
       await profileDB.createProfile({
-        messageId,
-        hash: hash,
-        type: type,
-        subtype: subtype,
-        creator: creator,
         createdAt: createdAt,
+        creator: creator,
+        hash: hash,
         key: payload.key,
+        messageId,
+        subtype: subtype,
+        type: type,
         value: payload.value,
       });
 
       logger.info(`insert profile`, {
-        origin: 'gun',
         messageId,
+        origin: 'gun',
       });
     } catch (e) {
       logger.error(`error inserting profile`, {
         error: e.message,
-        stack: e.stack,
-        parent: e.parent,
-        origin: 'gun',
         messageId,
+        origin: 'gun',
+        parent: e.parent,
+        stack: e.stack,
       });
     }
   }
@@ -611,8 +611,8 @@ export default class GunService extends GenericService {
 
     const gun = Gun({
       file: gunPath,
-      web: server,
       peers: config.gunPeers,
+      web: server,
     });
 
     // @ts-expect-error
@@ -657,21 +657,21 @@ export default class GunService extends GenericService {
           }
 
           await recordDB.updateOrCreateRecord({
-            soul,
             field,
+            relation,
+            soul,
             state,
             value: relation ? null : value,
-            relation,
           });
 
           logger.debug('handled PUT', {
-            soul,
             field,
             origin: 'gun',
+            soul,
           });
 
           // Send ack back
-          // @ts-ignore
+          // @ts-expect-error
           gun.on('in', {
             '@': msg['@'],
             ok: 0,
@@ -679,9 +679,9 @@ export default class GunService extends GenericService {
         } catch (e) {
           logger.error('error processing PUT', {
             error: e.message,
+            origin: 'gun',
             parent: e.parent,
             stack: e.stack,
-            origin: 'gun',
           });
         }
       });
@@ -705,23 +705,23 @@ export default class GunService extends GenericService {
 
             if (!record) throw new Error(`no record found`);
 
-            const { state, value, relation } = record;
+            const { relation, state, value } = record;
             const val = relation ? Val.rel.ify(relation) : value;
             node = State.ify(node, record.field, state, val, soul);
             node = State.to(node, field);
           } else {
             const records = await recordDB.findAll(soul);
             for (const record of records) {
-              const { state, value, relation } = record;
+              const { relation, state, value } = record;
               const val = relation ? Val.rel.ify(relation) : value;
               node = State.ify(node, record.field, state, val, soul);
             }
           }
 
           logger.debug('handled GET', {
-            soul,
             field,
             origin: 'gun',
+            soul,
           });
 
           // @ts-expect-error
@@ -732,10 +732,10 @@ export default class GunService extends GenericService {
         } catch (e) {
           logger.error('error processing GET', {
             error: e.message,
-            stack: e.stack,
+            field,
             origin: 'gun',
             soul,
-            field,
+            stack: e.stack,
           });
         }
       });

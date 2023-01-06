@@ -9,8 +9,8 @@ import { UploadModel } from '@models/uploads';
 import { verifySignatureP256 } from '@util/crypto';
 import vKey from '#/verification_key.json';
 import { MAX_FILE_SIZE, MAX_PER_USER_SIZE } from '../constants';
-import { Controller } from './interface';
 import { makeResponse, upload } from '../utils';
+import { Controller } from './interface';
 
 export class MiscController extends Controller {
   prefix = '/v1';
@@ -63,13 +63,13 @@ export class MiscController extends Controller {
 
     const preview: any = await getLinkPreview(url);
     const data = {
+      contentType: preview.contentType || '',
+      description: preview.description || '',
+      favicon: preview.favicon || '',
+      image: preview.images ? preview.images[0] : '',
       link: preview.url,
       mediaType: preview.mediaType || '',
-      contentType: preview.contentType || '',
       title: preview.title || '',
-      description: preview.description || '',
-      image: preview.images ? preview.images[0] : '',
-      favicon: preview.favicon || '',
     };
 
     await linkDB.update(data);
@@ -83,7 +83,7 @@ export class MiscController extends Controller {
     const username = req.username;
 
     // @ts-expect-error
-    const { path: relPath, filename, size, mimetype } = req.files[0];
+    const { filename, mimetype, path: relPath, size } = req.files[0];
     const uploadDB = await this.call('db', 'getUploads');
     const filepath = path.join(process.cwd(), relPath);
 
@@ -108,9 +108,9 @@ export class MiscController extends Controller {
     if (username) {
       const uploadData: UploadModel = {
         cid,
+        filename,
         mimetype,
         size,
-        filename,
         username: username,
       };
       await uploadDB.addUploadData(uploadData);
@@ -170,21 +170,21 @@ export class MiscController extends Controller {
           return;
         }
       } else if (rlnProof) {
-        const { proof, publicSignals, x_share, epoch } = JSON.parse(rlnProof);
+        const { epoch, proof, publicSignals, x_share } = JSON.parse(rlnProof);
         const verified = await this.call('zkchat', 'verifyRLNProof', {
+          epoch: epoch,
           proof,
           publicSignals,
           x_share: x_share,
-          epoch: epoch,
         });
         const share = {
-          nullifier: publicSignals.internalNullifier,
           epoch: publicSignals.epoch,
-          y_share: publicSignals.yShare,
+          nullifier: publicSignals.internalNullifier,
           x_share: x_share,
+          y_share: publicSignals.yShare,
         };
 
-        const { isSpam, isDuplicate } = await this.call('zkchat', 'checkShare', share);
+        const { isDuplicate, isSpam } = await this.call('zkchat', 'checkShare', share);
 
         const group = await this.call(
           'merkle',
@@ -207,7 +207,7 @@ export class MiscController extends Controller {
     const context = req.params.context;
     const { lastread } = req.body;
     const lastReadDB = await this.call('db', 'getLastRead');
-    await lastReadDB.update({ reader, context: context || '', lastread });
+    await lastReadDB.update({ context: context || '', lastread, reader });
     res.send(makeResponse('ok'));
   };
 }

@@ -1,29 +1,30 @@
 import { Sequelize } from 'sequelize';
 
-import { GenericService } from '@util/svc';
 import app from '@models/app';
-import users from '@models/users';
-import records from '@models/records';
-import posts from '@models/posts';
+import auth from '@models/auth';
+import connections from '@models/connections';
+import ens from '@models/ens';
+import interepGroups from '@models/interepGroups';
+import lastread from '@models/lastread';
+import linkPreview from '@models/linkPreview';
+import merkleRoot from '@models/merkle_root';
 import meta from '@models/meta';
 import moderations from '@models/moderations';
+import posts from '@models/posts';
 import profiles from '@models/profiles';
-import userMeta from '@models/userMeta';
-import connections from '@models/connections';
+import records from '@models/records';
 import semaphore from '@models/semaphore';
-import tags from '@models/tags';
-import linkPreview from '@models/linkPreview';
-import ens from '@models/ens';
-import twitterAuth from '@models/twitterAuth';
-import auth from '@models/auth';
-import interepGroups from '@models/interepGroups';
 import semaphoreCreators from '@models/semaphore_creators';
+import tags from '@models/tags';
 import threads from '@models/thread';
+import twitterAuth from '@models/twitterAuth';
 import uploads from '@models/uploads';
-import merkleRoot from '@models/merkle_root';
-import { sequelize } from '@util/sequelize';
+import userMeta from '@models/userMeta';
+import users from '@models/users';
 import config from '@util/config';
-import lastread from '@models/lastread';
+import logger from '@util/logger';
+import { sequelize } from '@util/sequelize';
+import { GenericService } from '@util/svc';
 
 export default class DBService extends GenericService {
   sequelize: Sequelize;
@@ -56,8 +57,8 @@ export default class DBService extends GenericService {
 
     this.sqlite = new Sequelize({
       dialect: 'sqlite',
-      storage: process.env.NODE_ENV === 'test' ? './gun.test.db' : './gun.db',
       logging: false,
+      storage: process.env.NODE_ENV === 'test' ? './gun.test.db' : './gun.db',
     });
 
     this.sequelize = sequelize;
@@ -242,7 +243,7 @@ export default class DBService extends GenericService {
     await this.connections?.model.sync({ force: !!process.env.FORCE });
     await this.profiles?.model.sync({ force: !!process.env.FORCE });
     await this.posts?.model.sync({ force: !!process.env.FORCE });
-    await this.posts.vectorizeContent().catch(e => console.error(e));
+    await this.posts.vectorizeContent().catch(e => logger.error(e));
     await this.tags?.model.sync({ force: !!process.env.FORCE });
 
     await this.userMeta?.model.sync({ force: !!process.env.FORCE });

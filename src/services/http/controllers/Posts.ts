@@ -2,8 +2,8 @@ import { Request, Response } from 'express';
 
 import { parseMessageId, PostMessageSubType } from '@util/message';
 import { getReplies } from '@util/twitter';
-import { Controller } from './interface';
 import { makeResponse } from '../utils';
+import { Controller } from './interface';
 
 export class PostsController extends Controller {
   prefix = '/v1';

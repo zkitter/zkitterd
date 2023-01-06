@@ -3,8 +3,8 @@ import { QueryTypes } from 'sequelize';
 import Web3 from 'web3';
 
 import { sequelize } from '@util/sequelize';
-import { Controller } from './interface';
 import { makeResponse } from '../utils';
+import { Controller } from './interface';
 
 export class UsersController extends Controller {
   prefix = '/v1';
@@ -45,7 +45,7 @@ export class UsersController extends Controller {
   };
 
   addOne = async (req: Request, res: Response) => {
-    const { account, publicKey, proof } = req.body;
+    const { account, proof, publicKey } = req.body;
 
     if (!account || !Web3.utils.isAddress(account)) {
       res.status(400).send(makeResponse('invalid account'));
@@ -95,8 +95,8 @@ export class UsersController extends Controller {
     res.send(
       makeResponse({
         ...user,
-        ens: ens,
         address: address,
+        ens: ens,
         username: address,
       })
     );
@@ -159,10 +159,10 @@ export class UsersController extends Controller {
               JOIN connections accept ON accept.subtype = 'MEMBER_ACCEPT' AND accept.creator = :member_address AND accept.name = u.name
       `,
       {
-        type: QueryTypes.SELECT,
         replacements: {
           member_address: address,
         },
+        type: QueryTypes.SELECT,
       }
     );
     res.send(makeResponse(values));
@@ -223,12 +223,12 @@ export class UsersController extends Controller {
         LIMIT :limit OFFSET :offset
       `,
       {
-        type: QueryTypes.SELECT,
         replacements: {
           address: address,
           limit,
           offset,
         },
+        type: QueryTypes.SELECT,
       }
     );
     res.send(makeResponse(values));
@@ -282,11 +282,11 @@ export class UsersController extends Controller {
         ORDER BY type
       `,
       {
-        type: QueryTypes.SELECT,
         replacements: {
           address: address,
           lastRead,
         },
+        type: QueryTypes.SELECT,
       }
     );
     res.send(

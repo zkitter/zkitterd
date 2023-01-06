@@ -6,7 +6,7 @@ export const upload = multer({
 
 export function makeResponse(payload: any, error?: boolean) {
   return {
-    payload,
     error,
+    payload,
   };
 }

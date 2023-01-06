@@ -1,5 +1,5 @@
-import { Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { Sequelize, STRING } from 'sequelize';
 
 const mutex = new Mutex();
 
@@ -22,8 +22,8 @@ const threads = (sequelize: Sequelize) => {
   const addThreadData = async (rootId: string, messageId: string) => {
     return mutex.runExclusive(async () => {
       return await model.create({
-        root_id: rootId,
         message_id: messageId,
+        root_id: rootId,
       });
     });
   };
@@ -33,8 +33,8 @@ const threads = (sequelize: Sequelize) => {
       try {
         return await model.destroy({
           where: {
-            root_id: rootId,
             message_id: messageId,
+            root_id: rootId,
           },
         });
       } catch (e) {
@@ -44,8 +44,8 @@ const threads = (sequelize: Sequelize) => {
   };
 
   return {
-    model,
     addThreadData,
+    model,
     removeThreadData,
   };
 };

@@ -1,8 +1,8 @@
 import tape from 'tape';
 
-import { PostsController } from './Posts';
-import { newRequest, newResponse, stubCall, stubFetch } from '@util/testUtils';
 import { post } from '@services/http/_fixtures';
+import { newRequest, newResponse, stubCall, stubFetch } from '@util/testUtils';
+import { PostsController } from './Posts';
 
 let controller: PostsController;
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -34,7 +34,7 @@ tape('PostsController', t => {
     );
     t.deepEqual(
       res.send.args[0],
-      [{ payload: [post], error: undefined }],
+      [{ error: undefined, payload: [post] }],
       'should return all posts'
     );
   });
@@ -50,7 +50,7 @@ tape('PostsController', t => {
     t.deepEqual(stubs.posts.getHomeFeed.args[0], [undefined, 0, 10], 'should find home feed');
     t.deepEqual(
       res.send.args[0],
-      [{ payload: [post], error: undefined }],
+      [{ error: undefined, payload: [post] }],
       'should return home feed'
     );
   });
@@ -85,8 +85,8 @@ tape('PostsController', t => {
     });
     stubs.posts.findOne.returns(
       Promise.resolve({
-        subtype: '',
         payload: {},
+        subtype: '',
       })
     );
     stubs.posts.findAllReplies.returns(Promise.resolve([{ hash: '0xposthash' }]));
@@ -110,12 +110,12 @@ tape('PostsController', t => {
       res.send.args[0],
       [
         {
+          error: undefined,
           payload: [
             {
               hash: '0xposthash',
             },
           ],
-          error: undefined,
         },
       ],
       'should return replies'
@@ -123,10 +123,10 @@ tape('PostsController', t => {
 
     stubs.posts.findOne.returns(
       Promise.resolve({
-        subtype: 'M_POST',
         payload: {
           topic: 'https://twitter.com/0xTsukino/status/1465780936314740736',
         },
+        subtype: 'M_POST',
       })
     );
     stubs.posts.findAllReplies.returns(Promise.resolve([{ hash: '0xposthash' }]));
@@ -139,12 +139,12 @@ tape('PostsController', t => {
           data: [
             {
               author_id: 'yagami',
-              created_at: '1234',
               coversation_id: 'threadid',
-              in_reply_to_user_id: 'replyid',
-              text: 'hello!',
+              created_at: '1234',
               id: '',
+              in_reply_to_user_id: 'replyid',
               referenced_tweets: [],
+              text: 'hello!',
             },
           ],
         }),
@@ -158,10 +158,10 @@ tape('PostsController', t => {
       [
         'https://api.twitter.com/2/tweets/search/recent?query=conversation_id:1465780936314740736&since_id=0xtweethash&max_results=100&expansions=author_id,in_reply_to_user_id&tweet.fields=referenced_tweets,in_reply_to_user_id,author_id,created_at,conversation_id&user.fields=name,username',
         {
-          method: 'GET',
           headers: {
             Authorization: 'Bearer twBearerToken',
           },
+          method: 'GET',
         },
       ],
       'should fetch twitter replies'
@@ -171,17 +171,17 @@ tape('PostsController', t => {
       [
         [
           {
-            messageId: '',
-            hash: '',
-            creator: 'yagami',
-            type: '@TWEET@',
-            subtype: '',
-            createdAt: -23225875200000,
-            topic: '',
-            title: '',
-            content: 'hello!',
-            reference: '1465780936314740736',
             attachment: '',
+            content: 'hello!',
+            createdAt: -23225875200000,
+            creator: 'yagami',
+            hash: '',
+            messageId: '',
+            reference: '1465780936314740736',
+            subtype: '',
+            title: '',
+            topic: '',
+            type: '@TWEET@',
           },
         ],
       ],

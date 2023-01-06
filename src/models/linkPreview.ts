@@ -14,13 +14,16 @@ const linkPreview = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'link',
     {
-      title: {
-        type: STRING,
-      },
-      image: {
+      contentType: {
         type: STRING,
       },
       description: {
+        type: STRING,
+      },
+      favicon: {
+        type: STRING,
+      },
+      image: {
         type: STRING,
       },
       link: {
@@ -30,10 +33,7 @@ const linkPreview = (sequelize: Sequelize) => {
       mediaType: {
         type: STRING,
       },
-      contentType: {
-        type: STRING,
-      },
-      favicon: {
+      title: {
         type: STRING,
       },
     },

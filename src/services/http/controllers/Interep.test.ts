@@ -1,7 +1,7 @@
 import tape from 'tape';
 
-import { InterepController } from './Interep';
 import { newRequest, newResponse, stubCall, stubFetch } from '../../../util/testUtils';
+import { InterepController } from './Interep';
 
 let controller: InterepController;
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -71,8 +71,8 @@ tape('InterepController', t => {
     stubs.semaphore.findAllByCommitment.returns(
       Promise.resolve([
         {
-          provider: 'twitter',
           name: 'diamond',
+          provider: 'twitter',
         },
       ])
     );
@@ -88,12 +88,12 @@ tape('InterepController', t => {
       res.send.args[0],
       [
         {
-          payload: {
-            siblings: [0, 1, 0],
-            provider: 'twitter',
-            name: 'diamond',
-          },
           error: undefined,
+          payload: {
+            name: 'diamond',
+            provider: 'twitter',
+            siblings: [0, 1, 0],
+          },
         },
       ],
       'should return correct result from interep'

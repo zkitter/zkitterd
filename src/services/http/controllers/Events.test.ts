@@ -1,7 +1,7 @@
 import tape from 'tape';
 
-import { EventsController } from './Events';
 import { newRequest, newResponse, stubCall } from '@util/testUtils';
+import { EventsController } from './Events';
 
 let controller: EventsController;
 /* eslint-disable @typescript-eslint/no-unused-vars */

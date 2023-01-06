@@ -1,13 +1,76 @@
-import { BindOrReplacements, QueryOptions, QueryTypes } from 'sequelize';
-import { generateMerkleTree } from '@zk-kit/protocols';
-// @ts-ignore
-// eslint-disable-next-line import/no-unresolved
 import { IncrementalMerkleTree, MerkleProof } from '@zk-kit/incremental-merkle-tree';
+import { generateMerkleTree } from '@zk-kit/protocols';
+import { BindOrReplacements, QueryOptions, QueryTypes } from 'sequelize';
 
-import { GenericService } from '@util/svc';
 import merkleRoot from '@models/merkle_root';
-import { sequelize } from '@util/sequelize';
 import semaphore from '@models/semaphore';
+import { sequelize } from '@util/sequelize';
+import { GenericService } from '@util/svc';
+
+export const customGroupSQL = `
+    SELECT
+        u.name as address,
+        name.value as name,
+        idcommitment.value as id_commitment 
+    FROM users u
+    LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
+    JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
+       JOIN connections invite ON invite."messageId" = (SELECT "messageId" FROM connections WHERE connections.subtype = 'MEMBER_INVITE' AND connections.creator = :group_address AND connections.name = u.name ORDER BY "createdAt" DESC LIMIT 1)
+    JOIN connections accept ON accept."messageId" = (SELECT "messageId" FROM connections WHERE connections.subtype = 'MEMBER_ACCEPT' AND connections.creator = u.name AND connections.name = :group_address ORDER BY "createdAt" DESC LIMIT 1)
+`;
+
+const SQL: {
+  [protocol: string]: {
+    [groupName: string]: {
+      [groupType: string]: {
+        sql: string;
+        replacement?: BindOrReplacements;
+      };
+    };
+  };
+} = {
+  interrep: {
+    github: {
+      bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+    },
+    reddit: {
+      bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+    },
+    twitter: {
+      bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+      unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+    },
+  },
+  semaphore: {
+    taz: {
+      members: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
+    },
+  },
+  zksocial: {
+    all: {
+      '': {
+        sql: `
+                    SELECT u.name as address, pf.value as id_commitment FROM users u
+                    LEFT JOIN profiles pf ON pf."messageId" = (
+                        SELECT "messageId" FROM profiles 
+                        WHERE creator = u.name AND subtype = 'CUSTOM' 
+                        AND key = 'id_commitment' 
+                        ORDER BY "createdAt" DESC LIMIT 1
+                    )
+                    WHERE pf.value IS NOT NULL
+                `,
+      },
+    },
+  },
+};
 
 export default class MerkleService extends GenericService {
   merkleRoot: ReturnType<typeof merkleRoot>;
@@ -23,7 +86,7 @@ export default class MerkleService extends GenericService {
     const [protocol, groupName, groupType = ''] = group.split('_');
     const protocolBucket = SQL[protocol] || {};
     const groupBucket = protocolBucket[groupName] || {};
-    const { sql, replacement } = groupBucket[groupType] || {};
+    const { replacement, sql } = groupBucket[groupType] || {};
     let query = '';
     const options: QueryOptions = { type: QueryTypes.SELECT };
 
@@ -52,7 +115,7 @@ export default class MerkleService extends GenericService {
     const [protocol, groupName, groupType = ''] = group.split('_');
     const protocolBucket = SQL[protocol] || {};
     const groupBucket = protocolBucket[groupName] || {};
-    const { sql, replacement } = groupBucket[groupType] || {};
+    const { replacement, sql } = groupBucket[groupType] || {};
     let query = '';
     const options: QueryOptions = { type: QueryTypes.SELECT };
 
@@ -136,16 +199,15 @@ export default class MerkleService extends GenericService {
     await this.addRoot(root, group);
 
     const retProof = {
+      group: group,
+      leaf: '0x' + proof.leaf.toString(16),
+      pathIndices: proof.pathIndices,
       root,
-      // @ts-ignore
       siblings: proof.siblings.map(siblings =>
         Array.isArray(siblings)
           ? siblings.map(element => '0x' + element.toString(16))
           : '0x' + siblings.toString(16)
       ),
-      pathIndices: proof.pathIndices,
-      leaf: '0x' + proof.leaf.toString(16),
-      group: group,
     };
 
     return retProof;
@@ -160,68 +222,3 @@ export default class MerkleService extends GenericService {
     return cached?.group_id;
   };
 }
-
-const SQL: {
-  [protocol: string]: {
-    [groupName: string]: {
-      [groupType: string]: {
-        sql: string;
-        replacement?: BindOrReplacements;
-      };
-    };
-  };
-} = {
-  zksocial: {
-    all: {
-      '': {
-        sql: `
-                    SELECT u.name as address, pf.value as id_commitment FROM users u
-                    LEFT JOIN profiles pf ON pf."messageId" = (
-                        SELECT "messageId" FROM profiles 
-                        WHERE creator = u.name AND subtype = 'CUSTOM' 
-                        AND key = 'id_commitment' 
-                        ORDER BY "createdAt" DESC LIMIT 1
-                    )
-                    WHERE pf.value IS NOT NULL
-                `,
-      },
-    },
-  },
-  interrep: {
-    twitter: {
-      unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-      bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-      silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-      gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-    },
-    github: {
-      unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-      bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-      silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-      gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-    },
-    reddit: {
-      unrated: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-      bronze: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-      silver: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-      gold: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-    },
-  },
-  semaphore: {
-    taz: {
-      members: { sql: `SELECT id_commitment FROM semaphores WHERE group_id = :group_id` },
-    },
-  },
-};
-
-export const customGroupSQL = `
-    SELECT
-        u.name as address,
-        name.value as name,
-        idcommitment.value as id_commitment 
-    FROM users u
-    LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
-    JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = u.name AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
-       JOIN connections invite ON invite."messageId" = (SELECT "messageId" FROM connections WHERE connections.subtype = 'MEMBER_INVITE' AND connections.creator = :group_address AND connections.name = u.name ORDER BY "createdAt" DESC LIMIT 1)
-    JOIN connections accept ON accept."messageId" = (SELECT "messageId" FROM connections WHERE connections.subtype = 'MEMBER_ACCEPT' AND connections.creator = u.name AND connections.name = :group_address ORDER BY "createdAt" DESC LIMIT 1)
-`;

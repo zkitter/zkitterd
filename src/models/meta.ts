@@ -1,5 +1,5 @@
-import { BIGINT, QueryTypes, Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { BIGINT, QueryTypes, Sequelize, STRING } from 'sequelize';
 
 type MetaModel = {
   reference: string;
@@ -12,28 +12,28 @@ type MetaModel = {
 const mutex = new Mutex();
 
 const emptyMeta = {
-  replyCount: 0,
   likeCount: 0,
-  repostCount: 0,
   postCount: 0,
+  replyCount: 0,
+  repostCount: 0,
 };
 
 const meta = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'meta',
     {
-      reference: {
-        type: STRING,
-        allowNull: false,
-        primaryKey: true,
+      likeCount: {
+        type: BIGINT,
       },
       postCount: {
         type: BIGINT,
       },
-      replyCount: {
-        type: BIGINT,
+      reference: {
+        allowNull: false,
+        primaryKey: true,
+        type: STRING,
       },
-      likeCount: {
+      replyCount: {
         type: BIGINT,
       },
       repostCount: {
@@ -64,12 +64,12 @@ const meta = (sequelize: Sequelize) => {
     for (const r of result) {
       const row = r as any;
       const meta = {
+        likeCount: row.likeCount ? Number(row.likeCount) : 0,
         liked: row.liked,
-        reposted: row.reposted,
+        postCount: row.postCount ? Number(row.postCount) : 0,
         replyCount: row.replyCount ? Number(row.replyCount) : 0,
         repostCount: row.repostCount ? Number(row.repostCount) : 0,
-        likeCount: row.likeCount ? Number(row.likeCount) : 0,
-        postCount: row.postCount ? Number(row.postCount) : 0,
+        reposted: row.reposted,
       };
       values.push(meta);
     }
@@ -104,8 +104,8 @@ const meta = (sequelize: Sequelize) => {
     );
 
     return result.map((r: any) => ({
-      tagName: r.reference,
       postCount: Number(r.postCount),
+      tagName: r.reference,
     }));
   };
 
@@ -116,18 +116,18 @@ const meta = (sequelize: Sequelize) => {
   };
 
   return {
-    model,
-    findOne,
-    findTags,
-    update,
     addLike: makeIncrementer('likeCount', 1),
+    addPost: makeIncrementer('postCount', 1),
     addReply: makeIncrementer('replyCount', 1),
     addRepost: makeIncrementer('repostCount', 1),
-    addPost: makeIncrementer('postCount', 1),
+    findOne,
+    findTags,
+    model,
     removeLike: makeIncrementer('likeCount', -1),
+    removePost: makeIncrementer('postCount', -1),
     removeReply: makeIncrementer('replyCount', -1),
     removeRepost: makeIncrementer('repostCount', -1),
-    removePost: makeIncrementer('postCount', -1),
+    update,
   };
 
   function makeIncrementer(key: string, delta: number) {

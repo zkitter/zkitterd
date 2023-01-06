@@ -20,13 +20,15 @@
     "test": "FORCE=true NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' tape -r module-alias/register -r ts-node/register './src/**/*.test.ts' | tap-spec",
     "test:coverage": "nyc npm run test",
     "test:some": "_some() { find ./src -path *$1*.test.ts -exec tape -r ts-node/register {} \\; | tap-spec; }; FORCE=true NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' _some",
+    "fix": "npm run lint:fix && npm run format:fix",
     "format:check": "prettier --check .",
     "format:ci": "prettier --check 'src/**/*.ts' --loglevel warn",
-    "format:write": "prettier -w .",
+    "format:fix": "prettier -w .",
     "lint:check": "eslint . --ext .js,.ts",
     "lint:ci": "eslint . --ext .js,.ts --quiet",
     "lint:fix": "eslint . --ext .js,.ts --fix",
-    "prepare": "is-ci || husky install"
+    "prepare": "is-ci || husky install",
+    "validate": "concurrently tsc 'npm run lint:check' 'npm run format:check' 'npm run test' 'npm run build'"
   },
   "author": "",
   "license": "ISC",

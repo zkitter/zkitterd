@@ -16,31 +16,31 @@ const moderations = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'moderations',
     {
-      messageId: {
-        type: STRING,
+      createdAt: {
         allowNull: false,
-      },
-      hash: {
-        type: STRING,
-        allowNull: false,
-        primaryKey: true,
+        type: BIGINT,
       },
       creator: {
-        type: STRING,
         allowNull: false,
+        type: STRING,
       },
-      type: {
-        type: STRING,
+      hash: {
         allowNull: false,
+        primaryKey: true,
+        type: STRING,
+      },
+      messageId: {
+        allowNull: false,
+        type: STRING,
+      },
+      reference: {
+        type: STRING,
       },
       subtype: {
         type: STRING,
       },
-      createdAt: {
-        type: BIGINT,
+      type: {
         allowNull: false,
-      },
-      reference: {
         type: STRING,
       },
     },
@@ -115,12 +115,12 @@ const moderations = (sequelize: Sequelize) => {
     order: 'DESC' | 'ASC' = 'DESC'
   ): Promise<ModerationJSON[]> => {
     const result = await model.findAll({
+      limit,
+      offset,
+      order: [['createdAt', order]],
       where: {
         reference,
       },
-      offset,
-      limit,
-      order: [['createdAt', order]],
     });
 
     return result.map((r: any) => r.toJSON() as ModerationJSON);
@@ -134,10 +134,10 @@ const moderations = (sequelize: Sequelize) => {
   ): Promise<string[]> => {
     const result = await model.findAll({
       attributes: ['creator'],
-      where: { reference, subtype: 'LIKE' },
-      offset,
       limit,
+      offset,
       order: [['createdAt', order]],
+      where: { reference, subtype: 'LIKE' },
     });
 
     return result.map((r: any) => r.toJSON().creator);
@@ -148,13 +148,13 @@ const moderations = (sequelize: Sequelize) => {
   };
 
   return {
-    model,
-    findOne,
-    remove,
+    createModeration,
     findAllByReference,
     findAllLikesByReference,
+    findOne,
     findThreadModeration,
-    createModeration,
+    model,
+    remove,
   };
 };
 

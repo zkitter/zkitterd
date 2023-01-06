@@ -55,7 +55,7 @@ const users = (sequelize: Sequelize) => {
             ],
         });
 
-        // @ts-ignore
+        // @ts-expect-error
         return res.map(data => data.toJSON());
     }
 
@@ -66,7 +66,7 @@ const users = (sequelize: Sequelize) => {
             },
         });
 
-        // @ts-ignore
+        // @ts-expect-error
         return res?.toJSON();
     }
 

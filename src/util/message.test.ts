@@ -14,39 +14,39 @@ import {
 
 tape('message.ts', async t => {
   const post1 = new Post({
-    type: MessageType.Post,
-    subtype: PostMessageSubType.Default,
     creator: '0xmyuser',
     payload: {
       content: 'hello world',
     },
+    subtype: PostMessageSubType.Default,
+    type: MessageType.Post,
   });
 
   const mod1 = new Moderation({
-    type: MessageType.Moderation,
-    subtype: ModerationMessageSubType.Like,
     creator: '0xmyuser',
     payload: {
       reference: '0xmyuser/' + post1.hash(),
     },
+    subtype: ModerationMessageSubType.Like,
+    type: MessageType.Moderation,
   });
 
   const conn1 = new Connection({
-    type: MessageType.Connection,
-    subtype: ConnectionMessageSubType.Follow,
     creator: '0xmyuser',
     payload: {
       name: '0xotheruser',
     },
+    subtype: ConnectionMessageSubType.Follow,
+    type: MessageType.Connection,
   });
 
   const pfp1 = new Profile({
-    type: MessageType.Profile,
-    subtype: ProfileMessageSubType.Name,
     creator: '0xmyuser',
     payload: {
       value: 'tsuk',
     },
+    subtype: ProfileMessageSubType.Name,
+    type: MessageType.Profile,
   });
 
   t.deepEqual(

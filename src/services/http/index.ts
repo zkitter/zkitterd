@@ -1,14 +1,14 @@
+import 'express-async-errors';
 import cors from 'cors';
 import express, { Express, json } from 'express';
-import 'express-async-errors';
 import session from 'express-session';
 import http from 'http';
 import passport from 'passport';
 
-import { GenericService } from '@util/svc';
-import logger from '@util/logger';
 import config from '@util/config';
+import logger from '@util/logger';
 import { sequelize } from '@util/sequelize';
+import { GenericService } from '@util/svc';
 
 import { CORS_OPTIONS, SESSION_OPTIONS } from './constants';
 import { staticRouter } from './controllers';

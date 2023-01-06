@@ -1,5 +1,5 @@
-import { Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { Sequelize, STRING } from 'sequelize';
 
 type InterepGroupModel = {
   provider: string;
@@ -14,16 +14,16 @@ const interepGroups = (sequelize: Sequelize) => {
     'interep_groups',
     {
       name: {
-        type: STRING,
         allowNull: false,
+        type: STRING,
       },
       provider: {
-        type: STRING,
         allowNull: false,
+        type: STRING,
       },
       root_hash: {
-        type: STRING,
         allowNull: false,
+        type: STRING,
       },
     },
     {
@@ -50,16 +50,16 @@ const interepGroups = (sequelize: Sequelize) => {
     return mutex.runExclusive(async () => {
       const result = await model.findOne({
         where: {
-          provider,
           name,
+          provider,
         },
       });
 
       if (!result) {
         return model.create({
-          root_hash,
-          provider,
           name,
+          provider,
+          root_hash,
         });
       } else {
         return result.update({
@@ -73,8 +73,8 @@ const interepGroups = (sequelize: Sequelize) => {
     return mutex.runExclusive(async () => {
       const result = await model.findOne({
         where: {
-          provider,
           name,
+          provider,
         },
       });
 
@@ -83,10 +83,10 @@ const interepGroups = (sequelize: Sequelize) => {
   };
 
   return {
-    model,
-    findOneByHash,
     addHash,
+    findOneByHash,
     getGroup,
+    model,
   };
 };
 

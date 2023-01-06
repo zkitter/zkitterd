@@ -17,12 +17,12 @@ export const MAX_FILE_SIZE = ONE_MB * 5;
 export const MAX_PER_USER_SIZE = ONE_MB * 100;
 
 export const SESSION_OPTIONS = {
+  cookie: {
+    maxAge: ms('30d'),
+    secure: false,
+  },
   proxy: true,
-  secret: 'autistic cat',
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    secure: false,
-    maxAge: ms('30d'),
-  },
+  secret: 'autistic cat',
 };

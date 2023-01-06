@@ -1,5 +1,5 @@
-import { Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { Sequelize, STRING } from 'sequelize';
 
 type SemaphoreModel = {
   id_commitment: string;
@@ -13,17 +13,17 @@ const semaphore = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'semaphore',
     {
-      id_commitment: {
-        type: STRING,
-        allowNull: false,
-      },
       group_id: {
-        type: STRING,
         allowNull: false,
+        type: STRING,
+      },
+      id_commitment: {
+        allowNull: false,
+        type: STRING,
       },
       root_hash: {
-        type: STRING,
         allowNull: false,
+        type: STRING,
       },
     },
     {
@@ -33,10 +33,10 @@ const semaphore = (sequelize: Sequelize) => {
 
   const findOneByCommitment = async (id_commitment: string): Promise<SemaphoreModel | null> => {
     const result = await model.findOne({
+      order: [['createdAt', 'DESC']],
       where: {
         id_commitment,
       },
-      order: [['createdAt', 'DESC']],
     });
 
     return result?.toJSON() as SemaphoreModel;
@@ -47,11 +47,11 @@ const semaphore = (sequelize: Sequelize) => {
     group_id: string
   ): Promise<SemaphoreModel | null> => {
     const result = await model.findOne({
-      where: {
-        id_commitment,
-        group_id,
-      },
       order: [['createdAt', 'DESC']],
+      where: {
+        group_id,
+        id_commitment,
+      },
     });
 
     return result?.toJSON() as SemaphoreModel;
@@ -81,15 +81,15 @@ const semaphore = (sequelize: Sequelize) => {
     return mutex.runExclusive(async () => {
       const result = await model.findOne({
         where: {
-          id_commitment,
           group_id,
+          id_commitment,
         },
       });
 
       if (!result) {
         return model.create({
-          id_commitment,
           group_id,
+          id_commitment,
           root_hash,
         });
       } else {
@@ -102,8 +102,8 @@ const semaphore = (sequelize: Sequelize) => {
     return mutex.runExclusive(async () => {
       return model.destroy({
         where: {
-          id_commitment,
           group_id,
+          id_commitment,
           root_hash,
         },
       });
@@ -111,13 +111,13 @@ const semaphore = (sequelize: Sequelize) => {
   };
 
   return {
-    model,
+    addID,
+    findAllByCommitment,
+    findAllByGroup,
     findOne,
     findOneByCommitment,
-    findAllByCommitment,
-    addID,
+    model,
     removeID,
-    findAllByGroup,
   };
 };
 

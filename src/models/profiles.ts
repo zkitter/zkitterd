@@ -24,31 +24,31 @@ const profiles = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'profiles',
     {
-      messageId: {
-        type: STRING,
+      createdAt: {
         allowNull: false,
-      },
-      hash: {
-        type: STRING,
-        allowNull: false,
-        primaryKey: true,
+        type: BIGINT,
       },
       creator: {
-        type: STRING,
         allowNull: false,
+        type: STRING,
       },
-      type: {
-        type: STRING,
+      hash: {
         allowNull: false,
+        primaryKey: true,
+        type: STRING,
+      },
+      key: {
+        type: STRING,
+      },
+      messageId: {
+        allowNull: false,
+        type: STRING,
       },
       subtype: {
         type: STRING,
       },
-      createdAt: {
-        type: BIGINT,
+      type: {
         allowNull: false,
-      },
-      key: {
         type: STRING,
       },
       value: {
@@ -93,10 +93,10 @@ const profiles = (sequelize: Sequelize) => {
   };
 
   return {
+    createProfile,
+    findOne,
     model,
     remove,
-    findOne,
-    createProfile,
   };
 };
 

@@ -1,7 +1,7 @@
 import tape from 'tape';
 
-import { accessToken, requestToken, verifyCredential } from './twitter';
 import { stubFetch } from './testUtils';
+import { accessToken, requestToken, verifyCredential } from './twitter';
 
 const fetchStub = stubFetch();
 
@@ -37,8 +37,8 @@ tape('twitter - accessToken', async t => {
 
 tape('twitter - verifyCredential', async t => {
   fetchStub.resolves({
-    status: 200,
     json: async () => 'token',
+    status: 200,
   });
 
   const ret = await verifyCredential('1', '2');

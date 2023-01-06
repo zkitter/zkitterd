@@ -1,7 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-
 import * as csv from 'csv';
+import fs from 'fs';
+
+import path from 'path';
 
 import DBService from '@services/db';
 
@@ -15,8 +15,8 @@ export const getMockDB = async () => {
 
   await Promise.all([
     parse('connections.csv', db.connections!.createConnection),
-    parse('ens.csv', ({ ens, address }) => db!.ens!.update(ens, address)),
-    parse('interep_groups.csv', ({ root_hash, provider, name }) =>
+    parse('ens.csv', ({ address, ens }) => db!.ens!.update(ens, address)),
+    parse('interep_groups.csv', ({ name, provider, root_hash }) =>
       db!.interepGroups!.addHash(root_hash, provider, name)
     ),
     parse('links.csv', db.linkPreview!.update),
@@ -24,14 +24,14 @@ export const getMockDB = async () => {
     parse('moderations.csv', db.moderations!.createModeration),
     parse('posts.csv', db.posts!.createPost),
     parse('profiles.csv', db.profiles!.createProfile),
-    parse('semaphore_creators.csv', ({ group, provider, message_id }) =>
+    parse('semaphore_creators.csv', ({ group, message_id, provider }) =>
       db!.semaphoreCreators!.addSemaphoreCreator(message_id, provider, group)
     ),
-    parse('semaphores.csv', ({ id_commitment, provider, name }) =>
+    parse('semaphores.csv', ({ id_commitment, name, provider }) =>
       db!.semaphore!.addID(id_commitment, provider, name)
     ),
-    parse('tags.csv', ({ tag_name, message_id }) => db!.tags!.addTagPost(tag_name, message_id)),
-    parse('threads.csv', ({ root_id, message_id }) =>
+    parse('tags.csv', ({ message_id, tag_name }) => db!.tags!.addTagPost(tag_name, message_id)),
+    parse('threads.csv', ({ message_id, root_id }) =>
       db!.threads!.addThreadData(root_id, message_id)
     ),
     parse('usermeta.csv', db.userMeta!.update),
@@ -51,9 +51,9 @@ const parse = async (filename: string, insertFn: (data: any) => any) => {
     csv.parse(
       buf,
       {
+        columns: true,
         delimiter: ',',
         skip_empty_lines: true,
-        columns: true,
       },
       async (err, rows) => {
         if (err) return reject(err);

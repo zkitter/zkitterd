@@ -1,5 +1,5 @@
-import { BIGINT, Sequelize } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { BIGINT, Sequelize } from 'sequelize';
 
 const mutex = new Mutex();
 
@@ -14,16 +14,16 @@ const app = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'app',
     {
-      lastENSBlockScanned: {
-        type: BIGINT,
-      },
-      lastInterrepBlockScanned: {
-        type: BIGINT,
-      },
       lastArbitrumBlockScanned: {
         type: BIGINT,
       },
+      lastENSBlockScanned: {
+        type: BIGINT,
+      },
       lastGroup42BlockScanned: {
+        type: BIGINT,
+      },
+      lastInterrepBlockScanned: {
         type: BIGINT,
       },
     },
@@ -104,10 +104,10 @@ const app = (sequelize: Sequelize) => {
   return {
     model,
     read,
-    updateLastENSBlock,
-    updateLastInterrepBlock,
     updateLastArbitrumBlock,
+    updateLastENSBlock,
     updateLastGroup42BlockScanned,
+    updateLastInterrepBlock,
   };
 };
 

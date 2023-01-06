@@ -123,8 +123,8 @@ export const stubCall = (
   const callStub = sinon.stub(service, 'call');
 
   const app = {
-    updateLastArbitrumBlock: sinon.stub(),
     read: sinon.stub(),
+    updateLastArbitrumBlock: sinon.stub(),
   };
 
   const ens = {
@@ -133,87 +133,87 @@ export const stubCall = (
 
   const semaphore = {
     addID: sinon.stub(),
-    removeID: sinon.stub(),
-    findOneByCommitment: sinon.stub(),
     findAllByCommitment: sinon.stub(),
+    findOneByCommitment: sinon.stub(),
+    removeID: sinon.stub(),
   };
 
   const interepGroups = {
-    findOneByHash: sinon.stub(),
     addHash: sinon.stub(),
+    findOneByHash: sinon.stub(),
   };
 
   const users = {
+    ensureUser: sinon.stub(),
     findOneByName: sinon.stub(),
+    findOneByPubkey: sinon.stub(),
     readAll: sinon.stub(),
     search: sinon.stub(),
-    ensureUser: sinon.stub(),
-    findOneByPubkey: sinon.stub(),
     updateOrCreateUser: sinon.stub(),
   };
 
   const posts = {
-    findLastTweetInConversation: sinon.stub(),
-    findAllRepliesFromCreator: sinon.stub(),
+    createPost: sinon.stub(),
+    createTwitterPosts: sinon.stub(),
+    ensurePost: sinon.stub(),
     findAllLikedPostsByCreator: sinon.stub(),
-    findAllRetweets: sinon.stub(),
-    getHomeFeed: sinon.stub(),
     findAllPosts: sinon.stub(),
     findAllReplies: sinon.stub(),
-    createTwitterPosts: sinon.stub(),
-    findRoot: sinon.stub(),
-    ensurePost: sinon.stub(),
+    findAllRepliesFromCreator: sinon.stub(),
+    findAllRetweets: sinon.stub(),
+    findLastTweetInConversation: sinon.stub(),
     findOne: sinon.stub(),
-    createPost: sinon.stub(),
+    findRoot: sinon.stub(),
+    getHomeFeed: sinon.stub(),
     remove: sinon.stub(),
   };
 
   const moderations = {
-    findOne: sinon.stub(),
     createModeration: sinon.stub(),
-    remove: sinon.stub(),
     findAllLikesByReference: sinon.stub(),
+    findOne: sinon.stub(),
+    remove: sinon.stub(),
   };
 
   const connections = {
-    findOne: sinon.stub(),
     createConnection: sinon.stub(),
     findAllFollowersByName: sinon.stub(),
     findAllFollowingsByCreator: sinon.stub(),
+    findOne: sinon.stub(),
     remove: sinon.stub(),
   };
 
   const profiles = {
-    findOne: sinon.stub(),
     createProfile: sinon.stub(),
+    findOne: sinon.stub(),
     remove: sinon.stub(),
   };
 
   const meta = {
-    findTags: sinon.stub(),
+    addLike: sinon.stub(),
     addPost: sinon.stub(),
     addReply: sinon.stub(),
     addRepost: sinon.stub(),
-    addLike: sinon.stub(),
+    findTags: sinon.stub(),
+    removeLike: sinon.stub(),
     removePost: sinon.stub(),
     removeReply: sinon.stub(),
     removeRepost: sinon.stub(),
-    removeLike: sinon.stub(),
   };
 
   const userMeta = {
-    addPostingCount: sinon.stub(),
-    addMentionedCount: sinon.stub(),
-    addFollower: sinon.stub(),
-    addFollowing: sinon.stub(),
     addBlocked: sinon.stub(),
     addBlocking: sinon.stub(),
-    removePostingCount: sinon.stub(),
-    removeMentionedCount: sinon.stub(),
-    removeFollower: sinon.stub(),
-    removeFollowing: sinon.stub(),
+    addFollower: sinon.stub(),
+    addFollowing: sinon.stub(),
+    addMentionedCount: sinon.stub(),
+    addPostingCount: sinon.stub(),
     removeBlocked: sinon.stub(),
     removeBlocking: sinon.stub(),
+    removeFollower: sinon.stub(),
+    removeFollowing: sinon.stub(),
+    removeMentionedCount: sinon.stub(),
+    removePostingCount: sinon.stub(),
   };
 
   const semaphoreCreators = {
@@ -221,8 +221,8 @@ export const stubCall = (
   };
 
   const tags = {
-    getPostsByTag: sinon.stub(),
     addTagPost: sinon.stub(),
+    getPostsByTag: sinon.stub(),
     removeTagPost: sinon.stub(),
   };
 
@@ -241,8 +241,8 @@ export const stubCall = (
   };
 
   const zkchat = {
-    verifyRLNProof: sinon.stub(),
     checkShare: sinon.stub(),
+    verifyRLNProof: sinon.stub(),
   };
 
   callStub
@@ -285,21 +285,21 @@ export const stubCall = (
     callStub,
     {
       app,
-      ens,
-      semaphore,
-      interepGroups,
-      users,
-      posts,
-      moderations,
       connections,
+      ens,
+      interepGroups,
+      link,
       meta,
-      userMeta,
+      moderations,
+      posts,
+      profiles,
+      semaphore,
       semaphoreCreators,
       tags,
       threads,
-      profiles,
       twitterAuths,
-      link,
+      userMeta,
+      users,
       zkchat,
     },
   ];
@@ -307,14 +307,14 @@ export const stubCall = (
 
 export const newRequest = (params?: any, body?: any, query?: any): any => {
   return {
+    body,
+    header: () => null,
+    params,
     query: {
       limit: 10,
       offset: 0,
       ...query,
     },
-    params,
-    body,
-    header: () => null,
     session: {},
   };
 };

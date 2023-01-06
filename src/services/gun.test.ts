@@ -1,10 +1,10 @@
-import tape from 'tape';
-import sinon from 'sinon';
 import { Semaphore } from '@zk-kit/protocols';
-
-import GunService from './gun';
+import sinon from 'sinon';
+import tape from 'tape';
 
 import { stubCall, stubFetch } from '@util/testUtils';
+
+import GunService from './gun';
 
 const fetchStub = stubFetch();
 
@@ -18,28 +18,28 @@ tape('GunService - insert a post', async t => {
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
-      type: 'arbitrum',
       name: '0xmockuser',
+      type: 'arbitrum',
     })
   );
 
   // @ts-expect-error
   gun.gun.get.returns(
     Promise.resolve({
-      topic: 'unitest',
-      title: 'unit test post',
       content: 'hello world!',
+      title: 'unit test post',
+      topic: 'unitest',
     })
   );
 
   await gun.handleGunMessage(
     {
-      type: 'POST',
-      subtype: '',
       createdAt: 1648591319888,
       payload: {
         '#': '_id',
       },
+      subtype: '',
+      type: 'POST',
     },
     '0xmockuser/1726aab56ed23eca07e153b252361bec9c23d496905f480864dc0e51b8834501'
   );
@@ -54,19 +54,19 @@ tape('GunService - insert a post', async t => {
     stubs.posts.createPost.args[0],
     [
       {
-        messageId: '0xmockuser/1726aab56ed23eca07e153b252361bec9c23d496905f480864dc0e51b8834501',
-        hash: '1726aab56ed23eca07e153b252361bec9c23d496905f480864dc0e51b8834501',
-        proof: undefined,
-        signals: undefined,
-        type: 'POST',
-        subtype: '',
-        creator: '0xmockuser',
-        createdAt: 1648591319888,
-        topic: 'unitest',
-        title: 'unit test post',
-        content: 'hello world!',
-        reference: '',
         attachment: '',
+        content: 'hello world!',
+        createdAt: 1648591319888,
+        creator: '0xmockuser',
+        hash: '1726aab56ed23eca07e153b252361bec9c23d496905f480864dc0e51b8834501',
+        messageId: '0xmockuser/1726aab56ed23eca07e153b252361bec9c23d496905f480864dc0e51b8834501',
+        proof: undefined,
+        reference: '',
+        signals: undefined,
+        subtype: '',
+        title: 'unit test post',
+        topic: 'unitest',
+        type: 'POST',
       },
     ],
     'should create post'
@@ -104,8 +104,8 @@ tape('GunService - insert an anon post', async t => {
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
-      type: 'arbitrum',
       name: '0xmockuser',
+      type: 'arbitrum',
     })
   );
 
@@ -118,17 +118,17 @@ tape('GunService - insert an anon post', async t => {
 
   await gun.handleGunMessage(
     {
-      type: 'POST',
-      subtype: '',
       createdAt: 1659741179034,
+      payload: {
+        '#': '_id',
+      },
       proof:
         '{"pi_a":["10719373609680523485982312021646907110391592138267365521057142291191547653652","20889338013517845688726590862322915124049598328032969705161037916987649952972","1"],"pi_b":[["17991725371095382156928055899575073985240148184758790083942336263151354846252","1657664999162981395538901245632927690612273274856299328343199536743784155792"],["17325778964762002770606313427657139034069790547992386601106767917330439219030","19416397159649010876162621414769410299499393845713504422953930764881902338641"],["1","0"]],"pi_c":["17716869430758995796768492072228886076409298777156054528359501944105105396698","15918925710228209087156922486463196421892681140566259906347478528341362237104","1"],"protocol":"groth16","curve":"bn128"}',
       publicSignals:
         '{"yShare":"2596566450929043962761450092440142049519799633581076804768430467675269221368","merkleRoot":"21137000379541905758810616775680635874157808693894963417588670647874638987193","internalNullifier":"3249285416939345894614550347931138631805524933300401461693856407745800741248","signalHash":"322102638286753199086387914380100501154901403315461095472159328444195830498","epoch":"4022355745804610470485496540678469237263368715338490843445638578102916","rlnIdentifier":"58251097131773823298631486024345026366590187448202619704133287740687112771558"}',
+      subtype: '',
+      type: 'POST',
       x_share: '322102638286753199086387914380100501154901403315461095472159328444195830498',
-      payload: {
-        '#': '_id',
-      },
     },
     '334bf9fd2507878e566bd7805c46aab513a4e42cc5d1fb8e66f57e8864f50003'
   );
@@ -143,21 +143,21 @@ tape('GunService - insert an anon post', async t => {
     stubs.posts.createPost.args[0],
     [
       {
-        messageId: '334bf9fd2507878e566bd7805c46aab513a4e42cc5d1fb8e66f57e8864f50003',
+        attachment: '',
+        content: 'asdf',
+        createdAt: 1659741179034,
+        creator: '',
         hash: '334bf9fd2507878e566bd7805c46aab513a4e42cc5d1fb8e66f57e8864f50003',
+        messageId: '334bf9fd2507878e566bd7805c46aab513a4e42cc5d1fb8e66f57e8864f50003',
         proof:
           '{"pi_a":["10719373609680523485982312021646907110391592138267365521057142291191547653652","20889338013517845688726590862322915124049598328032969705161037916987649952972","1"],"pi_b":[["17991725371095382156928055899575073985240148184758790083942336263151354846252","1657664999162981395538901245632927690612273274856299328343199536743784155792"],["17325778964762002770606313427657139034069790547992386601106767917330439219030","19416397159649010876162621414769410299499393845713504422953930764881902338641"],["1","0"]],"pi_c":["17716869430758995796768492072228886076409298777156054528359501944105105396698","15918925710228209087156922486463196421892681140566259906347478528341362237104","1"],"protocol":"groth16","curve":"bn128"}',
+        reference: '',
         signals:
           '{"yShare":"2596566450929043962761450092440142049519799633581076804768430467675269221368","merkleRoot":"21137000379541905758810616775680635874157808693894963417588670647874638987193","internalNullifier":"3249285416939345894614550347931138631805524933300401461693856407745800741248","signalHash":"322102638286753199086387914380100501154901403315461095472159328444195830498","epoch":"4022355745804610470485496540678469237263368715338490843445638578102916","rlnIdentifier":"58251097131773823298631486024345026366590187448202619704133287740687112771558"}',
-        type: 'POST',
         subtype: '',
-        creator: '',
-        createdAt: 1659741179034,
-        topic: '',
         title: '',
-        content: 'asdf',
-        reference: '',
-        attachment: '',
+        topic: '',
+        type: 'POST',
       },
     ],
     'should create post'
@@ -192,19 +192,19 @@ tape('GunService - insert a reply', async t => {
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
-      type: 'arbitrum',
       name: '0xreplyuser',
+      type: 'arbitrum',
     })
   );
 
   // @ts-expect-error
   gun.gun.get.returns(
     Promise.resolve({
-      topic: 'reply',
-      title: 'unit test reply',
-      reference: '0x123/a1f3a12fbeb7f8087cec3be9252e2dc4859100dbdb77dd8a2816678dc17b1238',
       attachment: '',
       content: 'hello world! #reply @0x123456',
+      reference: '0x123/a1f3a12fbeb7f8087cec3be9252e2dc4859100dbdb77dd8a2816678dc17b1238',
+      title: 'unit test reply',
+      topic: 'reply',
     })
   );
 
@@ -212,12 +212,12 @@ tape('GunService - insert a reply', async t => {
 
   await gun.handleGunMessage(
     {
-      type: 'POST',
-      subtype: 'REPLY',
       createdAt: 1648591319888,
       payload: {
         '#': '_id',
       },
+      subtype: 'REPLY',
+      type: 'POST',
     },
     '0xreplyuser/a1f3a12fbeb7f8087cec3be9252e2dc4859100dbdb77dd8a2816678dc17b1238'
   );
@@ -232,19 +232,19 @@ tape('GunService - insert a reply', async t => {
     stubs.posts.createPost.args[0],
     [
       {
-        messageId: '0xreplyuser/d8064c6026b7f01bf3a8162a63ea2f4f1d7aaa8d935c35cd60913f8950a8cfa3',
-        hash: 'd8064c6026b7f01bf3a8162a63ea2f4f1d7aaa8d935c35cd60913f8950a8cfa3',
-        proof: undefined,
-        signals: undefined,
-        type: 'POST',
-        subtype: 'REPLY',
-        creator: '0xreplyuser',
-        createdAt: 1648591319888,
-        topic: 'reply',
-        title: 'unit test reply',
-        content: 'hello world! #reply @0x123456',
-        reference: '0x123/a1f3a12fbeb7f8087cec3be9252e2dc4859100dbdb77dd8a2816678dc17b1238',
         attachment: '',
+        content: 'hello world! #reply @0x123456',
+        createdAt: 1648591319888,
+        creator: '0xreplyuser',
+        hash: 'd8064c6026b7f01bf3a8162a63ea2f4f1d7aaa8d935c35cd60913f8950a8cfa3',
+        messageId: '0xreplyuser/d8064c6026b7f01bf3a8162a63ea2f4f1d7aaa8d935c35cd60913f8950a8cfa3',
+        proof: undefined,
+        reference: '0x123/a1f3a12fbeb7f8087cec3be9252e2dc4859100dbdb77dd8a2816678dc17b1238',
+        signals: undefined,
+        subtype: 'REPLY',
+        title: 'unit test reply',
+        topic: 'reply',
+        type: 'POST',
       },
     ],
     'should create post'
@@ -287,8 +287,8 @@ tape('GunService - insert a moderation', async t => {
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
-      type: 'arbitrum',
       name: '0xmockuser',
+      type: 'arbitrum',
     })
   );
 
@@ -301,12 +301,12 @@ tape('GunService - insert a moderation', async t => {
 
   await gun.handleGunMessage(
     {
-      type: 'MODERATION',
-      subtype: 'LIKE',
       createdAt: 1648591319888,
       payload: {
         '#': '_id',
       },
+      subtype: 'LIKE',
+      type: 'MODERATION',
     },
     '0xmockuser/1726aab56ed23eca07e153b252361bec9c23d496905f480864dc0e51b8834501'
   );
@@ -323,13 +323,13 @@ tape('GunService - insert a moderation', async t => {
     stubs.moderations.createModeration.args[0],
     [
       {
-        messageId: '0xmockuser/edaeea596a25b2df34f24a6b8d5a746957e8e0f5c184c924cc52a606852effa7',
-        hash: 'edaeea596a25b2df34f24a6b8d5a746957e8e0f5c184c924cc52a606852effa7',
-        type: 'MODERATION',
-        subtype: 'LIKE',
-        creator: '0xmockuser',
         createdAt: 1648591319888,
+        creator: '0xmockuser',
+        hash: 'edaeea596a25b2df34f24a6b8d5a746957e8e0f5c184c924cc52a606852effa7',
+        messageId: '0xmockuser/edaeea596a25b2df34f24a6b8d5a746957e8e0f5c184c924cc52a606852effa7',
         reference: '0x123/3456',
+        subtype: 'LIKE',
+        type: 'MODERATION',
       },
     ],
     'should create moderation'
@@ -348,8 +348,8 @@ tape('GunService - insert a connection', async t => {
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
-      type: 'arbitrum',
       name: '0xmockuser',
+      type: 'arbitrum',
     })
   );
 
@@ -362,12 +362,12 @@ tape('GunService - insert a connection', async t => {
 
   await gun.handleGunMessage(
     {
-      type: 'CONNECTION',
-      subtype: 'FOLLOW',
       createdAt: 1648591319888,
       payload: {
         '#': '_id',
       },
+      subtype: 'FOLLOW',
+      type: 'CONNECTION',
     },
     '0xmockuser/1726aab56ed23eca07e153b252361bec9c23d496905f480864dc0e51b8834501'
   );
@@ -384,13 +384,13 @@ tape('GunService - insert a connection', async t => {
     stubs.connections.createConnection.args[0],
     [
       {
-        messageId: '0xmockuser/82d5f06010f32aadfc8953c0491b726ae14c3e0d9690bd736ee0c31bdc9ddae1',
-        hash: '82d5f06010f32aadfc8953c0491b726ae14c3e0d9690bd736ee0c31bdc9ddae1',
-        type: 'CONNECTION',
-        subtype: 'FOLLOW',
-        creator: '0xmockuser',
         createdAt: 1648591319888,
+        creator: '0xmockuser',
+        hash: '82d5f06010f32aadfc8953c0491b726ae14c3e0d9690bd736ee0c31bdc9ddae1',
+        messageId: '0xmockuser/82d5f06010f32aadfc8953c0491b726ae14c3e0d9690bd736ee0c31bdc9ddae1',
         name: '0xotheruser',
+        subtype: 'FOLLOW',
+        type: 'CONNECTION',
       },
     ],
     'should create connections'
@@ -411,8 +411,8 @@ tape('GunService - insert a profile', async t => {
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
-      type: 'arbitrum',
       name: '0xmockuser',
+      type: 'arbitrum',
     })
   );
 
@@ -426,22 +426,22 @@ tape('GunService - insert a profile', async t => {
 
   fetchStub.returns(
     Promise.resolve({
-      status: 200,
       json: async () => ({
         entities: { urls: [{ expanded_url: ['0xmockuser'] }] },
         user: { screen_name: 'twitter_user_handle' },
       }),
+      status: 200,
     })
   );
 
   await gun.handleGunMessage(
     {
-      type: 'PROFILE',
-      subtype: 'TWT_VERIFICATION',
       createdAt: 1648591319888,
       payload: {
         '#': '_id',
       },
+      subtype: 'TWT_VERIFICATION',
+      type: 'PROFILE',
     },
     '0xmockuser/1726aab56ed23eca07e153b252361bec9c23d496905f480864dc0e51b8834501'
   );
@@ -462,13 +462,13 @@ tape('GunService - insert a profile', async t => {
     stubs.profiles.createProfile.args[0],
     [
       {
-        messageId: '0xmockuser/c5308a456cc7ac29d050bcb5f25230b0bcf537a76969aa69d25b4889e50eb751',
-        hash: 'c5308a456cc7ac29d050bcb5f25230b0bcf537a76969aa69d25b4889e50eb751',
-        type: 'PROFILE',
-        subtype: 'TWT_VERIFICATION',
-        creator: '0xmockuser',
         createdAt: 1648591319888,
+        creator: '0xmockuser',
+        hash: 'c5308a456cc7ac29d050bcb5f25230b0bcf537a76969aa69d25b4889e50eb751',
         key: 'twitter_user_handle',
+        messageId: '0xmockuser/c5308a456cc7ac29d050bcb5f25230b0bcf537a76969aa69d25b4889e50eb751',
+        subtype: 'TWT_VERIFICATION',
+        type: 'PROFILE',
         value: 'wowow',
       },
     ],
@@ -489,18 +489,18 @@ tape('GunService - delete post', async t => {
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
-      type: 'arbitrum',
       name: '0xmyuser',
+      type: 'arbitrum',
     })
   );
 
   stubs.posts.findOne.returns(
     Promise.resolve({
-      subtype: '',
       creator: '0xmyuser',
       payload: {
         content: '@0xmentionuser #hashtag',
       },
+      subtype: '',
     })
   );
 
@@ -546,15 +546,15 @@ tape('GunService - delete moderation', async t => {
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
-      type: 'arbitrum',
       name: '0xmockuser',
+      type: 'arbitrum',
     })
   );
 
   stubs.moderations.findOne.returns(
     Promise.resolve({
-      subtype: 'LIKE',
       reference: '0xotheruser/posthash',
+      subtype: 'LIKE',
     })
   );
 
@@ -586,16 +586,16 @@ tape('GunService - delete connections', async t => {
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
-      type: 'arbitrum',
       name: '0xmockuser',
+      type: 'arbitrum',
     })
   );
 
   stubs.connections.findOne.returns(
     Promise.resolve({
-      subtype: 'FOLLOW',
       creator: '0xmyuser',
       name: '0xotheruser',
+      subtype: 'FOLLOW',
     })
   );
 
@@ -629,8 +629,8 @@ tape('GunService - delete profile', async t => {
 
   stubs.users.findOneByPubkey.returns(
     Promise.resolve({
-      type: 'arbitrum',
       name: '0xmockuser',
+      type: 'arbitrum',
     })
   );
 

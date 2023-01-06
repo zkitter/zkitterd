@@ -1,8 +1,8 @@
-import tape from 'tape';
-
-import { MerkleController } from './Merkle';
-import { newRequest, newResponse } from '../../../util/testUtils';
 import sinon from 'sinon';
+
+import tape from 'tape';
+import { newRequest, newResponse } from '../../../util/testUtils';
+import { MerkleController } from './Merkle';
 
 let controller: MerkleController;
 let req: ReturnType<typeof newRequest>;
@@ -27,7 +27,7 @@ tape('MerkleController', t => {
     t.deepEqual(stub.args[0].slice(2), [idCommitment, group, proofType], 'should find proof');
     t.deepEqual(
       res.send.args[0][0],
-      { payload: { data: 'proof' }, error: undefined },
+      { error: undefined, payload: { data: 'proof' } },
       'should return proof'
     );
   });
@@ -43,7 +43,7 @@ tape('MerkleController', t => {
     t.deepEqual(stub.args[0].slice(2), [group], 'should find all members (leaves)');
     t.deepEqual(
       res.send.args[0][0],
-      { payload: leaves, error: undefined },
+      { error: undefined, payload: leaves },
       'should return all members (leaves)'
     );
   });

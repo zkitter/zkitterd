@@ -1,11 +1,8 @@
 import { Request, Response, Router } from 'express';
-import jwt from 'jsonwebtoken';
-
-import { Controller } from './interface';
-import { makeResponse } from '../utils';
-import { JWT_SECRET } from '../constants';
-import { createHeader } from '@util/twitter';
 import config from '@util/config';
+import { createHeader } from '@util/twitter';
+import { makeResponse } from '../utils';
+import { Controller } from './interface';
 
 export class InterepController extends Controller {
   constructor() {
@@ -48,8 +45,8 @@ export class InterepController extends Controller {
     res.send(
       makeResponse({
         ...json,
-        provider: group.provider,
         name: group.name,
+        provider: group.provider,
       })
     );
   };
@@ -68,12 +65,12 @@ export class InterepController extends Controller {
 
       const authDb = await this.call('db', 'getAuth');
       // @ts-expect-error
-      const { token, refreshToken } = await authDb.findToken(req.user.username, req.user.provider);
+      const { refreshToken, token } = await authDb.findToken(req.user.username, req.user.provider);
 
       headers = createHeader(
         {
-          url: `https://api.twitter.com/1.1/account/verify_credentials.json`,
           method: 'GET',
+          url: `https://api.twitter.com/1.1/account/verify_credentials.json`,
         },
         token,
         refreshToken
@@ -94,8 +91,8 @@ export class InterepController extends Controller {
     const resp = await fetch(
       `${config.interrepAPI}/api/v1/groups/${provider}/${name}/${identityCommitment}`,
       {
-        method: 'POST',
         headers,
+        method: 'POST',
       }
     );
 
@@ -128,8 +125,8 @@ export class InterepController extends Controller {
         res.send(
           makeResponse({
             ...json,
-            provider: group.provider,
             name: group.name,
+            provider: group.provider,
           })
         );
         return;

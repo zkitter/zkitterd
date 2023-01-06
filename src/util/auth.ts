@@ -1,7 +1,7 @@
-import { Strategy as GhStrategy } from 'passport-github2';
-import { Strategy as RedditStrategy } from '@r1oga/passport-reddit';
-import { Strategy as TwitterStrategy } from 'passport-twitter';
 import { calculateReputation, OAuthProvider, ReputationLevel } from '@interep/reputation';
+import { Strategy as RedditStrategy } from '@r1oga/passport-reddit';
+import { Strategy as GhStrategy } from 'passport-github2';
+import { Strategy as TwitterStrategy } from 'passport-twitter';
 
 import config from './config';
 import { getReceivedStars } from './github';
@@ -21,31 +21,31 @@ const {
 
 export const STRATEGIES = {
   [OAuthProvider.GITHUB]: {
-    Strategy: GhStrategy,
     options: {
+      callbackURL: ghCallbackUrl,
       clientID: ghClientId,
       clientSecret: ghClientSecret,
-      callbackURL: ghCallbackUrl,
     },
     scope: ['read:user', 'read:org'],
+    Strategy: GhStrategy,
   },
   [OAuthProvider.REDDIT]: {
-    Strategy: RedditStrategy,
     options: {
+      callbackURL: rdCallbackUrl,
       clientID: rdClientId,
       clientSecret: rdClientSecret,
-      callbackURL: rdCallbackUrl,
     },
     scope: ['identity'],
+    Strategy: RedditStrategy,
   },
   [OAuthProvider.TWITTER]: {
-    Strategy: TwitterStrategy,
     options: {
+      callbackURL: twCallbackUrl,
       consumerKey: twConsumerKey,
       consumerSecret: twConsumerSecret,
-      callbackURL: twCallbackUrl,
     },
     scope: ['tweet.read', 'users.read', 'offline.access', 'follows.read'],
+    Strategy: TwitterStrategy,
   },
 };
 
@@ -90,21 +90,21 @@ export const getProfileParams = async (
   switch (provider) {
     case OAuthProvider.GITHUB: {
       const {
-        id: userId,
-
-        username,
         _json: {
           followers,
           plan: { name: planName },
         },
+
+        id: userId,
+        username,
       } = profile as GhProfile;
 
       const proPlan = planName === 'pro';
       const receivedStars = await getReceivedStars(username);
       const reputation = calculateReputation(OAuthProvider.GITHUB, {
         followers,
-        receivedStars,
         proPlan,
+        receivedStars,
       });
 
       return { reputation, userId, username };
@@ -112,14 +112,14 @@ export const getProfileParams = async (
 
     case OAuthProvider.REDDIT: {
       const {
-        id: userId,
-        name: username,
         _json: {
           coins,
           has_subscribed_to_premium: premiumSubscription,
           linked_identities,
           total_karma: karma,
         },
+        id: userId,
+        name: username,
       } = profile as RdProfile;
 
       const reputation = calculateReputation(OAuthProvider.REDDIT, {

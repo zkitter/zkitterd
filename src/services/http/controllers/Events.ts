@@ -1,9 +1,9 @@
-import { Request, Response, Router } from 'express';
 import crypto from 'crypto';
+import { Request, Response, Router } from 'express';
 
-import { Controller } from './interface';
-import { makeResponse } from '../utils';
 import { addConnection, addTopic, keepAlive, removeConnection } from '@util/sse';
+import { makeResponse } from '../utils';
+import { Controller } from './interface';
 
 export class EventsController extends Controller {
   prefix = '/v1';
@@ -26,9 +26,9 @@ export class EventsController extends Controller {
 
   getMany = async (req: Request, res: Response) => {
     const headers = {
-      'Content-Type': 'text/event-stream',
-      Connection: 'keep-alive',
       'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+      'Content-Type': 'text/event-stream',
     };
 
     res.writeHead(200, headers);

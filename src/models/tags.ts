@@ -1,11 +1,11 @@
-import { QueryTypes, Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { QueryTypes, Sequelize, STRING } from 'sequelize';
 
-import { inflateResultToPostJSON } from './posts';
+import config from '@util/config';
 
 import { PostJSON } from '@util/message';
 import { globalModClause, replyModerationClause } from '@util/sql';
-import config from '@util/config';
+import { inflateResultToPostJSON } from './posts';
 
 const mutex = new Mutex();
 
@@ -13,10 +13,10 @@ const tags = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'tags',
     {
-      tag_name: {
+      message_id: {
         type: STRING,
       },
-      message_id: {
+      tag_name: {
         type: STRING,
       },
     },
@@ -28,8 +28,8 @@ const tags = (sequelize: Sequelize) => {
   const addTagPost = async (tagName: string, messageId: string) => {
     return mutex.runExclusive(async () => {
       return await model.create({
-        tag_name: tagName,
         message_id: messageId,
+        tag_name: tagName,
       });
     });
   };
@@ -39,8 +39,8 @@ const tags = (sequelize: Sequelize) => {
       try {
         return await model.destroy({
           where: {
-            tag_name: tagName,
             message_id: messageId,
+            tag_name: tagName,
           },
         });
       } catch (e) {
@@ -54,8 +54,7 @@ const tags = (sequelize: Sequelize) => {
     context?: string,
     offset = 0,
     limit = 20,
-    order: 'DESC' | 'ASC' = 'DESC',
-    showAll = false
+    order: 'DESC' | 'ASC' = 'DESC'
   ) => {
     const result = await sequelize.query(
       `
@@ -96,9 +95,9 @@ const tags = (sequelize: Sequelize) => {
   };
 
   return {
-    model,
-    getPostsByTag,
     addTagPost,
+    getPostsByTag,
+    model,
     removeTagPost,
   };
 };

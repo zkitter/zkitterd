@@ -20,16 +20,16 @@ export class GenericService {
       if (prop) return prop;
 
       logger.error(`${name}.${prop} does not exist`, {
-        origin: this.name,
         id: id,
+        origin: this.name,
       });
 
       throw new Error(`${name}.${prop} does not exist`);
     }
 
     logger.error('main service not found', {
-      origin: this.name,
       id: id,
+      origin: this.name,
     });
 
     throw new Error('Main service not found');
@@ -46,24 +46,24 @@ export class GenericService {
           return method.apply(service, args);
         } catch (e) {
           logger.error(e.message, {
+            id: id,
             method: `${name}.${methodName}`,
             origin: this.name,
-            id: id,
           });
           return Promise.reject(e);
         }
       } else {
         logger.error(`${name}.${methodName} is not a function`, {
-          origin: this.name,
           id: id,
+          origin: this.name,
         });
         return Promise.reject(new Error(`${name}.${methodName} is not a function`));
       }
     }
 
     logger.error('main service not found', {
-      origin: this.name,
       id: id,
+      origin: this.name,
     });
 
     return Promise.reject(new Error('Main service not found'));

@@ -28,13 +28,13 @@ export enum SSEType {
 
 export const addConnection = (clientId: string, res: Response) => {
   CLIENT_CACHE[clientId] = {
-    res,
     lastUsed: Date.now(),
+    res,
   };
 
   const raw = `data: ${JSON.stringify({
-    type: SSEType.INIT,
     clientId,
+    type: SSEType.INIT,
   })}\n\n`;
 
   res.write(raw);

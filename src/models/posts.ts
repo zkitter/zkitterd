@@ -1,6 +1,7 @@
-import { BIGINT, Op, QueryTypes, Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { BIGINT, Op, QueryTypes, Sequelize, STRING } from 'sequelize';
 
+import config from '@util/config';
 import { MessageType, PostJSON, PostMessageSubType } from '@util/message';
 import {
   globalModClause,
@@ -8,7 +9,6 @@ import {
   notBlockedClause,
   replyModerationClause,
 } from '@util/sql';
-import config from '@util/config';
 
 const mutex = new Mutex();
 
@@ -32,53 +32,53 @@ const posts = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'posts',
     {
-      hash: {
-        type: STRING,
-        allowNull: false,
-        primaryKey: true,
+      attachment: {
+        type: STRING(4095),
       },
-      messageId: {
-        type: STRING,
+      content: {
         allowNull: false,
+        type: STRING(65535),
+      },
+      createdAt: {
+        allowNull: false,
+        type: BIGINT,
       },
       creator: {
-        type: STRING,
         allowNull: false,
+        type: STRING,
+      },
+      hash: {
+        allowNull: false,
+        primaryKey: true,
+        type: STRING,
+      },
+      messageId: {
+        allowNull: false,
+        type: STRING,
       },
       proof: {
         type: STRING(65535),
       },
+      reference: {
+        type: STRING,
+      },
       signals: {
         type: STRING(65535),
-      },
-      type: {
-        type: STRING,
-        allowNull: false,
       },
       subtype: {
         type: STRING,
       },
-      createdAt: {
-        type: BIGINT,
+      title: {
         allowNull: false,
+        type: STRING(4095),
       },
       topic: {
-        type: STRING,
         allowNull: false,
-      },
-      title: {
-        type: STRING(4095),
-        allowNull: false,
-      },
-      content: {
-        type: STRING(65535),
-        allowNull: false,
-      },
-      reference: {
         type: STRING,
       },
-      attachment: {
-        type: STRING(4095),
+      type: {
+        allowNull: false,
+        type: STRING,
       },
     },
     {
@@ -314,10 +314,10 @@ const posts = (sequelize: Sequelize) => {
         `,
       {
         replacements: {
-          reference,
           context: context || '',
           limit,
           offset,
+          reference,
         },
         type: QueryTypes.SELECT,
       }
@@ -355,8 +355,8 @@ const posts = (sequelize: Sequelize) => {
         `,
       {
         replacements: {
-          creator,
           context: context || '',
+          creator,
           limit,
           offset,
         },
@@ -380,10 +380,10 @@ const posts = (sequelize: Sequelize) => {
     order: 'DESC' | 'ASC' = 'DESC'
   ) => {
     const result = await model.findAll({
-      where: { reference: messageId, subtype: 'REPOST' },
-      offset,
       limit,
+      offset,
       order: [['createdAt', order]],
+      where: { reference: messageId, subtype: 'REPOST' },
     });
 
     return result.map((r: any) => r.toJSON().creator);
@@ -391,6 +391,8 @@ const posts = (sequelize: Sequelize) => {
 
   const findLastTweetInConversation = async (id: string) => {
     const result = await model.findOne({
+      limit: 1,
+      order: [['createdAt', 'DESC']],
       where: {
         [Op.or]: [
           {
@@ -399,8 +401,6 @@ const posts = (sequelize: Sequelize) => {
           },
         ],
       },
-      order: [['createdAt', 'DESC']],
-      limit: 1,
     });
 
     return result?.toJSON();
@@ -416,8 +416,8 @@ const posts = (sequelize: Sequelize) => {
           where: {
             [Op.or]: [
               {
-                topic: topic,
                 subtype: [PostMessageSubType.MirrorPost, PostMessageSubType.MirrorReply],
+                topic: topic,
               },
               {
                 messageId: record.messageId,
@@ -472,17 +472,17 @@ const posts = (sequelize: Sequelize) => {
 
       if (!result) {
         const emptyModel: PostModel = {
-          messageId: messageId,
-          hash: hash || creator,
-          type: MessageType.Post,
-          subtype: PostMessageSubType.Default,
-          creator: hash ? creator : '',
-          createdAt: -1,
-          topic: '',
-          title: '',
-          content: '',
-          reference: '',
           attachment: '',
+          content: '',
+          createdAt: -1,
+          creator: hash ? creator : '',
+          hash: hash || creator,
+          messageId: messageId,
+          reference: '',
+          subtype: PostMessageSubType.Default,
+          title: '',
+          topic: '',
+          type: MessageType.Post,
         };
         return model.create(emptyModel);
       }
@@ -513,58 +513,56 @@ const posts = (sequelize: Sequelize) => {
          ORDER BY "createdAt" ${order} LIMIT :limit
          OFFSET :offset`,
         {
-          type: QueryTypes.SELECT,
           replacements: {
             limit,
             offset,
             query: query.replace(/\||,/g, ' ').replace(/\s\s+/g, ' ').replace(/ /g, ' | '),
           },
+          type: QueryTypes.SELECT,
         }
       )
       .then(result => result.map(inflateResultToPostJSON));
 
   return {
-    model,
-    remove,
-    findOne,
-    findRoot,
-    findAllPosts,
-    findAllRepliesFromCreator,
+    createPost,
+    createTwitterPosts,
+    ensurePost,
     findAllLikedPostsByCreator,
+    findAllPosts,
+    findAllReplies,
+    findAllRepliesFromCreator,
     findAllRetweets,
     findLastTweetInConversation,
-    findAllReplies,
+    findOne,
+    findRoot,
     getHomeFeed,
-    createTwitterPosts,
-    createPost,
-    ensurePost,
-    vectorizeContent,
+    model,
+    remove,
     search,
+    vectorizeContent,
   };
 };
-
-export default posts;
 
 export function inflateResultToPostJSON(r: any): PostJSON {
   const json = r as any;
   const meta = {
-    replyCount: +json?.replyCount || 0,
-    likeCount: +json?.likeCount || 0,
-    repostCount: +json?.repostCount || 0,
-    liked: json?.liked,
-    reposted: json?.reposted,
     blocked: json?.blocked,
-    interepProvider: json?.interepProvider,
     interepGroup: json?.interepGroup,
-    rootId: json?.rootId,
-    moderation: json?.moderation || null,
+    interepProvider: json?.interepProvider,
+    likeCount: +json?.likeCount || 0,
+    liked: json?.liked,
     modblockedctx: json?.modblockedctx || null,
-    modfollowedctx: json?.modfollowedctx || null,
-    modmentionedctx: json?.modmentionedctx || null,
-    modLikedPost: json?.modLikedPost || null,
     modBlockedPost: json?.modBlockedPost || null,
     modBlockedUser: json?.modBlockedUser || null,
+    moderation: json?.moderation || null,
+    modfollowedctx: json?.modfollowedctx || null,
     modFollowerUser: json?.modFollowerUser || null,
+    modLikedPost: json?.modLikedPost || null,
+    modmentionedctx: json?.modmentionedctx || null,
+    replyCount: +json?.replyCount || 0,
+    repostCount: +json?.repostCount || 0,
+    reposted: json?.reposted,
+    rootId: json?.rootId,
   };
 
   if (json.subtype === PostMessageSubType.Repost) {
@@ -579,21 +577,23 @@ export function inflateResultToPostJSON(r: any): PostJSON {
   }
 
   return {
-    type: json.type as MessageType,
-    subtype: json.subtype as PostMessageSubType,
-    messageId: json.creator ? `${json.creator}/${json.hash}` : json.hash,
-    hash: json.hash,
     createdAt: json.createdAt,
+    hash: json.hash,
+    messageId: json.creator ? `${json.creator}/${json.hash}` : json.hash,
+    meta: meta,
     payload: {
-      topic: json.topic,
-      title: json.title,
+      attachment: json.attachment,
       content: json.content,
       reference: json.reference,
-      attachment: json.attachment,
+      title: json.title,
+      topic: json.topic,
     },
-    meta: meta,
+    subtype: json.subtype as PostMessageSubType,
+    type: json.type as MessageType,
   };
 }
+
+export default posts;
 
 const selectJoinQuery = `
     SELECT p.hash,

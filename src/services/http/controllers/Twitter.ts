@@ -15,8 +15,8 @@ import {
   verifyCredential,
 } from '@util/twitter';
 import { JWT_SECRET } from '../constants';
-import { Controller } from './interface';
 import { makeResponse } from '../utils';
+import { Controller } from './interface';
 
 export class TwitterController extends Controller {
   constructor() {
@@ -71,10 +71,10 @@ export class TwitterController extends Controller {
 
     const twitterAuthDB = await this.call('db', 'getTwitterAuth');
     await twitterAuthDB.updateUserToken({
+      userId,
+      userName,
       userToken,
       userTokenSecret,
-      userName,
-      userId,
     } as {
       userToken: string;
       userTokenSecret: string;
@@ -138,29 +138,29 @@ export class TwitterController extends Controller {
 
     const json = await verifyCredential(auth.user_token, auth.user_token_secret);
 
-    const { followers_count, verified, profile_image_url, profile_image_url_https, screen_name } =
+    const { followers_count, profile_image_url, profile_image_url_https, screen_name, verified } =
       json;
 
     const botometerOverallScore = await getBotometerScore(screen_name);
 
     const reputation = calculateReputation(OAuthProvider.TWITTER, {
+      botometerOverallScore,
       followers: followers_count,
       verifiedProfile: verified,
-      botometerOverallScore,
     });
 
     res.send(
       makeResponse({
+        followers: followers_count,
+        profileImageUrl: profile_image_url,
+        profileImageUrlHttps: profile_image_url_https,
+        reputation,
+        screenName: screen_name,
         user_id: auth.user_id,
         user_token: auth.user_token,
         user_token_secret: auth.user_token_secret,
         username: auth.username,
-        followers: followers_count,
         verifiedProfile: verified,
-        profileImageUrl: profile_image_url,
-        profileImageUrlHttps: profile_image_url_https,
-        screenName: screen_name,
-        reputation,
       })
     );
   };
@@ -186,7 +186,7 @@ export class TwitterController extends Controller {
   update = async (req: Request, res: Response) => {
     // @ts-expect-error
     const { twitterToken } = req.session;
-    const { status, in_reply_to_status_id } = req.body;
+    const { in_reply_to_status_id, status } = req.body;
     const jwtData: any = await jwt.verify(twitterToken, JWT_SECRET);
     const twitterAuthDB = await this.call('db', 'getTwitterAuth');
     const auth = await twitterAuthDB.findUserByToken(jwtData?.userToken);

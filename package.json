@@ -13,10 +13,10 @@
   "scripts": {
     "dev-server": "nodemon ./build/server.js",
     "watch-server": "webpack --config webpack.server.config.js --watch",
-    "build-server": "webpack --config webpack.server.config.js",
+    "build": "webpack --config webpack.server.config.js",
     "dev": "NODE_ENV=development concurrently --kill-others-on-fail npm:watch-server npm:dev-server",
-    "build": "NODE_ENV=production npm run build-server",
     "start": "NODE_ENV=production npm run build && node ./build/server.js",
+    "start:dev": "NODE_ENV=development npm run build && npm run dev-server",
     "test": "FORCE=true NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' tape -r module-alias/register -r ts-node/register './src/**/*.test.ts' | tap-spec",
     "test:coverage": "nyc npm run test",
     "test:some": "_some() { find ./src -path *$1*.test.ts -exec tape -r ts-node/register {} \\; | tap-spec; }; FORCE=true NODE_ENV=test TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' _some",
@@ -27,8 +27,10 @@
     "lint:check": "eslint . --ext .js,.ts",
     "lint:ci": "eslint . --ext .js,.ts --quiet",
     "lint:fix": "eslint . --ext .js,.ts --fix",
-    "prepare": "is-ci || husky install",
-    "validate": "concurrently tsc 'npm run lint:check' 'npm run format:check' 'npm run test' 'npm run build'"
+    "validate": "concurrently tsc 'npm run lint:check' 'npm run format:check' 'npm run test' 'npm run build'",
+    "prepare": "is-ci || is-docker || husky install",
+    "docker:dev": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up --build zkitterd",
+    "docker:prod": "docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up --build zkitterd"
   },
   "author": "",
   "license": "ISC",

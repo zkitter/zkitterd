@@ -1,0 +1,10 @@
+version: '3.9'
+
+services:
+  zkitterd:
+    build:
+      context: .
+    ports:
+      - '3000:3000'
+    secrets:
+      - config

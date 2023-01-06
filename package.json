@@ -28,7 +28,7 @@
     "lint:ci": "eslint . --ext .js,.ts --quiet",
     "lint:fix": "eslint . --ext .js,.ts --fix",
     "prepare": "is-ci || husky install",
-    "validate": "concurrently tsc 'npm run lint:check' 'npm run format:check' 'npm run test'"
+    "validate": "concurrently tsc 'npm run lint:check' 'npm run format:check' 'npm run test' 'npm run build'"
   },
   "author": "",
   "license": "ISC",

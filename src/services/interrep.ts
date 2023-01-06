@@ -1,8 +1,8 @@
-import { GenericService } from '@util/svc';
-import config from '@util/config';
 import interepGroups from '@models/interepGroups';
-import { sequelize } from '@util/sequelize';
 import semaphore from '@models/semaphore';
+import config from '@util/config';
+import { sequelize } from '@util/sequelize';
+import { GenericService } from '@util/svc';
 
 export type InterepGroup = {
   provider: 'twitter' | 'github' | 'reddit';
@@ -54,7 +54,7 @@ export default class InterrepService extends GenericService {
       const groups = json.data;
       if (groups?.length) {
         for (const group of groups) {
-          const { root, provider, name } = group;
+          const { name, provider, root } = group;
           const existing = await this.interepGroups!.getGroup(provider, name);
           if (existing?.root_hash !== root) {
             await this.fetchMembersFromGroup(root, provider, name);

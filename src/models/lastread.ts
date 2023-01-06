@@ -1,5 +1,5 @@
-import { Sequelize, BIGINT, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { BIGINT, Sequelize, STRING } from 'sequelize';
 
 const mutex = new Mutex();
 
@@ -13,18 +13,18 @@ const lastread = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'lastread',
     {
-      reader: {
-        type: STRING,
-        allowNull: false,
-        validate: {
-          notEmpty: true,
-        },
-      },
       context: {
         type: STRING,
       },
       lastread: {
         type: BIGINT,
+        validate: {
+          notEmpty: true,
+        },
+      },
+      reader: {
+        allowNull: false,
+        type: STRING,
         validate: {
           notEmpty: true,
         },
@@ -39,8 +39,8 @@ const lastread = (sequelize: Sequelize) => {
     return mutex.runExclusive(async () => {
       const result = await model.findOne({
         where: {
-          reader: record.reader,
           context: record.context,
+          reader: record.reader,
         },
       });
 
@@ -52,8 +52,8 @@ const lastread = (sequelize: Sequelize) => {
   const getLastRead = async (reader: string, context: string) => {
     const result = await model.findOne({
       where: {
-        reader,
         context,
+        reader,
       },
     });
 
@@ -61,9 +61,9 @@ const lastread = (sequelize: Sequelize) => {
   };
 
   return {
+    getLastRead,
     model,
     update,
-    getLastRead,
   };
 };
 

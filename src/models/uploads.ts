@@ -21,13 +21,13 @@ const uploads = (sequelize: Sequelize) => {
       filename: {
         type: STRING,
       },
-      username: {
+      mimetype: {
         type: STRING,
       },
       size: {
         type: BIGINT,
       },
-      mimetype: {
+      username: {
         type: STRING,
       },
     },
@@ -75,10 +75,10 @@ const uploads = (sequelize: Sequelize) => {
   };
 
   return {
-    model,
     addUploadData,
-    removeUploadData,
     getTotalUploadByUser,
+    model,
+    removeUploadData,
   };
 };
 

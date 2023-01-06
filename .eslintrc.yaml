@@ -1,1 +1,15 @@
 extends: ['@zkitter']
+rules:
+  'import/no-named-as-default-member': off
+  '@typescript-eslint/ban-ts-comment': off
+  '@typescript-eslint/no-var-requires': off
+
+overrides:
+  - files: ['*.test.ts', 'test.ts', 'testUtils.ts']
+    rules:
+      '@typescript-eslint/no-explicit-any': off
+      '@typescript-eslint/no-non-null-assertion': off
+  - files: ['log.ts']
+    rules:
+      '@typescript-eslint/no-unused-vars': off
+      'no-console': off

@@ -5,22 +5,22 @@ import config from './config';
 const options =
   process.env.NODE_ENV === 'test'
     ? {
-        host: config.dbHost,
-        port: Number(config.dbPort),
         dialect: config.dbDialect as Dialect,
-        logging: false,
         dialectOptions: {
           ssl: {
-            require: true,
             rejectUnauthorized: false,
+            require: true,
           },
         },
+        host: config.dbHost,
+        logging: false,
+        port: Number(config.dbPort),
       }
     : {
-        host: config.dbHost,
-        port: Number(config.dbPort),
         dialect: config.dbDialect as Dialect,
+        host: config.dbHost,
         logging: false,
+        port: Number(config.dbPort),
       };
 
 let cached: Sequelize;
@@ -31,8 +31,8 @@ function getSequelize(): Sequelize {
   if (!config.dbDialect || config.dbDialect === 'sqlite') {
     cached = new Sequelize({
       dialect: 'sqlite',
-      storage: config.dbStorage,
       logging: false,
+      storage: config.dbStorage,
     });
   } else {
     cached = new Sequelize(

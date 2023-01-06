@@ -1,14 +1,12 @@
 import Web3 from 'web3';
-// @ts-ignore
-// eslint-disable-next-line import/no-unresolved
 import { Contract } from 'web3-eth-contract';
 
-import { sequelize } from '@util/sequelize';
-import semaphore from '@models/semaphore';
-import { GenericService } from '@util/svc';
 import app from '@models/app';
-import config from '@util/config';
+import semaphore from '@models/semaphore';
 import { semaphoreABI } from '@util/abi';
+import config from '@util/config';
+import { sequelize } from '@util/sequelize';
+import { GenericService } from '@util/svc';
 
 export default class Group42 extends GenericService {
   semaphore?: ReturnType<typeof semaphore>;

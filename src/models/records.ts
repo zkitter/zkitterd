@@ -12,20 +12,20 @@ const records = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'records',
     {
-      soul: {
-        type: STRING(4095),
-      },
       field: {
         type: STRING(4095),
-      },
-      value: {
-        type: STRING(65535),
       },
       relation: {
         type: STRING(65535),
       },
+      soul: {
+        type: STRING(4095),
+      },
       state: {
         type: BIGINT,
+      },
+      value: {
+        type: STRING(65535),
       },
     },
     {
@@ -34,8 +34,8 @@ const records = (sequelize: Sequelize) => {
           fields: ['soul'],
         },
         {
-          unique: true,
           fields: ['soul', 'field'],
+          unique: true,
         },
       ],
     }
@@ -44,8 +44,8 @@ const records = (sequelize: Sequelize) => {
   const findOne = async (soul: string, field: string): Promise<RecordModel | null> => {
     const result = await model.findOne({
       where: {
-        soul,
         field,
+        soul,
       },
     });
 
@@ -64,8 +64,8 @@ const records = (sequelize: Sequelize) => {
 
   const readAll = async (offset = 0, limit = 20): Promise<RecordModel[]> => {
     const result = await model.findAll({
-      offset,
       limit,
+      offset,
     });
 
     return result.map(r => r.toJSON() as RecordModel);
@@ -74,8 +74,8 @@ const records = (sequelize: Sequelize) => {
   const updateOrCreateRecord = async (record: RecordModel) => {
     const result = await model.findOne({
       where: {
-        soul: record.soul,
         field: record.field,
+        soul: record.soul,
       },
     });
 
@@ -93,9 +93,9 @@ const records = (sequelize: Sequelize) => {
   };
 
   return {
-    model,
-    findOne,
     findAll,
+    findOne,
+    model,
     readAll,
     updateOrCreateRecord,
   };

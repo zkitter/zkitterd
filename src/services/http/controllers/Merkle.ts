@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 
-import { Controller } from './interface';
 import { makeResponse } from '../utils';
+import { Controller } from './interface';
 
 export class MerkleController extends Controller {
   prefix = '/v1';

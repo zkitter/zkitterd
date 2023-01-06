@@ -1,12 +1,10 @@
-// @ts-ignore
-// eslint-disable-next-line import/no-unresolved
-import { Contract } from 'web3-eth-contract';
-import Web3 from 'web3';
 import LRU from 'lru-cache';
+import Web3 from 'web3';
+import { Contract } from 'web3-eth-contract';
 
-import { GenericService } from '@util/svc';
-import config from '@util/config';
 import { ensResolverABI } from '@util/abi';
+import config from '@util/config';
+import { GenericService } from '@util/svc';
 import Timeout = NodeJS.Timeout;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -29,8 +27,8 @@ export default class ENSService extends GenericService {
     this.web3 = new Web3(httpProvider);
     this.resolver = new this.web3.eth.Contract(ensResolverABI as any, config.ensResolver);
     this.ens = new ENS({
-      provider: httpProvider,
       ensAddress: getEnsAddress('1'),
+      provider: httpProvider,
     });
   }
 

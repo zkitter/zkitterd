@@ -1,5 +1,5 @@
-import { BIGINT, ENUM, QueryTypes, Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { BIGINT, ENUM, QueryTypes, Sequelize, STRING } from 'sequelize';
 
 export type UserModel = {
   username: string;
@@ -36,29 +36,29 @@ const users = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'users',
     {
-      name: {
-        type: STRING,
-        allowNull: false,
-        validate: {
-          notEmpty: true,
-        },
-        primaryKey: true,
-        unique: true,
-      },
-      pubkey: {
-        type: STRING,
-        allowNull: false,
-      },
       joinedAt: {
         type: BIGINT,
       },
-      tx: {
-        type: STRING,
+      name: {
         allowNull: false,
+        primaryKey: true,
+        type: STRING,
+        unique: true,
+        validate: {
+          notEmpty: true,
+        },
+      },
+      pubkey: {
+        allowNull: false,
+        type: STRING,
+      },
+      tx: {
+        allowNull: false,
+        type: STRING,
       },
       type: {
-        type: ENUM('arbitrum', 'ens', ''),
         allowNull: false,
+        type: ENUM('arbitrum', 'ens', ''),
       },
     },
     {
@@ -78,11 +78,11 @@ const users = (sequelize: Sequelize) => {
             WHERE u.name = :name
         `,
       {
-        type: QueryTypes.SELECT,
         replacements: {
           context: context || '',
           name: name,
         },
+        type: QueryTypes.SELECT,
       }
     );
 
@@ -113,12 +113,12 @@ const users = (sequelize: Sequelize) => {
             LIMIT :limit OFFSET :offset
         `,
       {
-        type: QueryTypes.SELECT,
         replacements: {
           context: context || '',
           limit,
           offset,
         },
+        type: QueryTypes.SELECT,
       }
     );
 
@@ -142,13 +142,13 @@ const users = (sequelize: Sequelize) => {
             LIMIT :limit OFFSET :offset
         `,
       {
-        type: QueryTypes.SELECT,
         replacements: {
           context: context || '',
-          query: `%${query.toLowerCase()}%`,
           limit,
           offset,
+          query: `%${query.toLowerCase()}%`,
         },
+        type: QueryTypes.SELECT,
       }
     );
 
@@ -191,21 +191,21 @@ const users = (sequelize: Sequelize) => {
 
       if (!result) {
         return model.create({
+          joined: 0,
           name,
+          pubkey: '',
           tx: '',
           type: '',
-          pubkey: '',
-          joined: 0,
         });
       }
     });
   };
 
   return {
-    model,
     ensureUser,
     findOneByName,
     findOneByPubkey,
+    model,
     readAll,
     search,
     updateOrCreateUser,
@@ -271,35 +271,35 @@ function inflateValuesToUserJSON(values: any[]): UserModel[] {
     }
 
     return {
-      username: value.name,
       address: value.name,
-      joinedTx: value.tx,
-      type: value.type,
-      pubkey: value.pubkey,
-      joinedAt: Number(value.joinedAt),
-      name: value.nickname || '',
       bio: value.bio || '',
-      profileImage: value.profileImage || '',
       coverImage: value.coverImage || '',
-      group: !!value.group,
-      twitterVerification: twitterVerification,
-      website: value.website || '',
       ecdh: value.ecdh || '',
+      group: !!value.group,
       idcommitment: value.idcommitment || '',
+      joinedAt: Number(value.joinedAt),
+      joinedTx: value.tx,
       meta: {
-        inviteSent: value.invited || null,
         acceptanceReceived: value.accepted || null,
-        inviteReceived: value.invrecv || null,
         acceptanceSent: value.acceptsent || null,
+        blocked: value.blocked,
         blockedCount: value.blockedCount ? Number(value.blockedCount) : 0,
         blockingCount: value.blockingCount ? Number(value.blockingCount) : 0,
+        followed: value.followed,
         followerCount: value.followerCount ? Number(value.followerCount) : 0,
         followingCount: value.followingCount ? Number(value.followingCount) : 0,
-        postingCount: value.postingCount ? Number(value.postingCount) : 0,
+        inviteReceived: value.invrecv || null,
+        inviteSent: value.invited || null,
         mentionedCount: value.mentionedCount ? Number(value.mentionedCount) : 0,
-        followed: value.followed,
-        blocked: value.blocked,
+        postingCount: value.postingCount ? Number(value.postingCount) : 0,
       },
+      name: value.nickname || '',
+      profileImage: value.profileImage || '',
+      pubkey: value.pubkey,
+      twitterVerification: twitterVerification,
+      type: value.type,
+      username: value.name,
+      website: value.website || '',
     };
   });
 }

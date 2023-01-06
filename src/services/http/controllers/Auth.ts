@@ -1,12 +1,11 @@
+import { OAuthProvider } from '@interep/reputation';
 import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
 import passport from 'passport';
-import { OAuthProvider } from '@interep/reputation';
 
-import { Controller } from './interface';
-import { makeResponse } from '../utils';
 import { getProfileParams, GhProfile, RdProfile, STRATEGIES, TwProfile } from '@util/auth';
 import logger from '@util/logger';
-import { createHeader } from '@util/twitter';
+import { makeResponse } from '../utils';
+import { Controller } from './interface';
 
 export class AuthController extends Controller {
   prefix = '/auth';
@@ -36,16 +35,16 @@ export class AuthController extends Controller {
             const db = await this.call('db', 'getAuth');
             await db.upsertOne({
               provider,
+              refreshToken: refreshToken,
+              token: accessToken,
               userId,
               username,
-              token: accessToken,
-              refreshToken: refreshToken,
             });
 
             return done(null, {
               provider,
-              username,
               reputation,
+              username,
             });
           } catch (e) {
             logger.error(e.message, { stack: e.stack });

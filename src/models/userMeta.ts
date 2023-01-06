@@ -1,5 +1,5 @@
-import { BIGINT, Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { BIGINT, Sequelize, STRING } from 'sequelize';
 
 type UserMetaModel = {
   name: string;
@@ -14,10 +14,10 @@ type UserMetaModel = {
 const mutex = new Mutex();
 
 const emptyMeta = {
-  followerCount: 0,
-  followingCount: 0,
   blockedCount: 0,
   blockingCount: 0,
+  followerCount: 0,
+  followingCount: 0,
   mentionedCount: 0,
   postingCount: 0,
 };
@@ -26,10 +26,11 @@ const userMeta = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'usermeta',
     {
-      name: {
-        type: STRING,
-        allowNull: false,
-        primaryKey: true,
+      blockedCount: {
+        type: BIGINT,
+      },
+      blockingCount: {
+        type: BIGINT,
       },
       followerCount: {
         type: BIGINT,
@@ -37,14 +38,13 @@ const userMeta = (sequelize: Sequelize) => {
       followingCount: {
         type: BIGINT,
       },
-      blockedCount: {
-        type: BIGINT,
-      },
-      blockingCount: {
-        type: BIGINT,
-      },
       mentionedCount: {
         type: BIGINT,
+      },
+      name: {
+        allowNull: false,
+        primaryKey: true,
+        type: STRING,
       },
       postingCount: {
         type: BIGINT,
@@ -74,21 +74,21 @@ const userMeta = (sequelize: Sequelize) => {
   };
 
   return {
-    model,
-    update,
-    findOne,
-    addFollower: makeKeyIncrementer('followerCount', 1),
-    addFollowing: makeKeyIncrementer('followingCount', 1),
     addBlocked: makeKeyIncrementer('blockedCount', 1),
     addBlocking: makeKeyIncrementer('blockingCount', 1),
-    addPostingCount: makeKeyIncrementer('postingCount', 1),
+    addFollower: makeKeyIncrementer('followerCount', 1),
+    addFollowing: makeKeyIncrementer('followingCount', 1),
     addMentionedCount: makeKeyIncrementer('mentionedCount', 1),
-    removeFollower: makeKeyIncrementer('followerCount', -1),
-    removeFollowing: makeKeyIncrementer('followingCount', -1),
+    addPostingCount: makeKeyIncrementer('postingCount', 1),
+    findOne,
+    model,
     removeBlocked: makeKeyIncrementer('blockedCount', -1),
     removeBlocking: makeKeyIncrementer('blockingCount', -1),
-    removePostingCount: makeKeyIncrementer('postingCount', -1),
+    removeFollower: makeKeyIncrementer('followerCount', -1),
+    removeFollowing: makeKeyIncrementer('followingCount', -1),
     removeMentionedCount: makeKeyIncrementer('mentionedCount', -1),
+    removePostingCount: makeKeyIncrementer('postingCount', -1),
+    update,
   };
 
   function makeKeyIncrementer(key: string, delta: number) {

@@ -9,10 +9,10 @@ const merkleRoot = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'merkle_root',
     {
-      root_hash: {
+      group_id: {
         type: STRING,
       },
-      group_id: {
+      root_hash: {
         type: STRING,
       },
     },
@@ -40,16 +40,16 @@ const merkleRoot = (sequelize: Sequelize) => {
 
     if (!exist) {
       return model.create({
-        root_hash,
         group_id,
+        root_hash,
       });
     }
   };
 
   return {
-    model,
     addRoot,
     getGroupByRoot,
+    model,
   };
 };
 

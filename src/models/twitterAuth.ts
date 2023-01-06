@@ -1,5 +1,5 @@
-import { Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { Sequelize, STRING } from 'sequelize';
 
 const mutex = new Mutex();
 
@@ -14,6 +14,12 @@ const twitterAuth = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'twitter_auth',
     {
+      account: {
+        type: STRING,
+      },
+      user_id: {
+        type: STRING,
+      },
       user_token: {
         type: STRING,
       },
@@ -23,30 +29,24 @@ const twitterAuth = (sequelize: Sequelize) => {
       username: {
         type: STRING,
       },
-      user_id: {
-        type: STRING,
-      },
-      account: {
-        type: STRING,
-      },
     },
     {
       indexes: [
         {
-          unique: true,
           fields: ['user_token'],
+          unique: true,
         },
         {
-          unique: true,
           fields: ['username'],
+          unique: true,
         },
         {
-          unique: true,
           fields: ['user_id'],
+          unique: true,
         },
         {
-          unique: true,
           fields: ['account'],
+          unique: true,
         },
       ],
     }
@@ -123,28 +123,28 @@ const twitterAuth = (sequelize: Sequelize) => {
 
       if (result) {
         return result.update({
+          user_id: data.userId,
           user_token: data.userToken,
           user_token_secret: data.userTokenSecret,
           username: data.userName,
-          user_id: data.userId,
         });
       }
 
       return model.create({
+        user_id: data.userId,
         user_token: data.userToken,
         user_token_secret: data.userTokenSecret,
         username: data.userName,
-        user_id: data.userId,
       });
     });
   };
 
   return {
-    model,
     addAccount,
-    findUserByToken,
     findUserByAccount,
+    findUserByToken,
     findUserByUsername,
+    model,
     updateUserToken,
   };
 };

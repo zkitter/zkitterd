@@ -16,31 +16,31 @@ const connections = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'connections',
     {
-      messageId: {
-        type: STRING,
+      createdAt: {
         allowNull: false,
-      },
-      hash: {
-        type: STRING,
-        allowNull: false,
-        primaryKey: true,
+        type: BIGINT,
       },
       creator: {
-        type: STRING,
         allowNull: false,
+        type: STRING,
       },
-      type: {
-        type: STRING,
+      hash: {
         allowNull: false,
+        primaryKey: true,
+        type: STRING,
+      },
+      messageId: {
+        allowNull: false,
+        type: STRING,
+      },
+      name: {
+        type: STRING,
       },
       subtype: {
         type: STRING,
       },
-      createdAt: {
-        type: BIGINT,
+      type: {
         allowNull: false,
-      },
-      name: {
         type: STRING,
       },
     },
@@ -84,12 +84,12 @@ const connections = (sequelize: Sequelize) => {
     order: 'DESC' | 'ASC' = 'DESC'
   ): Promise<ConnectionModel[]> => {
     const result = await model.findAll({
+      limit,
+      offset,
+      order: [['createdAt', order]],
       where: {
         name,
       },
-      offset,
-      limit,
-      order: [['createdAt', order]],
     });
 
     return result.map((r: any) => r.toJSON() as ConnectionModel);
@@ -103,10 +103,10 @@ const connections = (sequelize: Sequelize) => {
   ): Promise<ConnectionModel[]> => {
     const result = await model.findAll({
       attributes: ['creator'],
-      where: { name },
-      offset,
       limit,
+      offset,
       order: [['createdAt', order]],
+      where: { name },
     });
 
     return result.map((r: any) => r.toJSON().creator);
@@ -120,10 +120,10 @@ const connections = (sequelize: Sequelize) => {
   ): Promise<ConnectionModel[]> => {
     const result = await model.findAll({
       attributes: ['name'],
-      where: { creator },
-      offset,
       limit,
+      offset,
       order: [['createdAt', order]],
+      where: { creator },
     });
 
     return result.map((r: any) => r.toJSON().name);
@@ -150,14 +150,14 @@ const connections = (sequelize: Sequelize) => {
   };
 
   return {
-    model,
-    findOne,
-    remove,
+    createConnection,
     findAllByTargetName,
     findAllFollowersByName,
     findAllFollowingsByCreator,
-    createConnection,
     findMemberInvite,
+    findOne,
+    model,
+    remove,
   };
 };
 

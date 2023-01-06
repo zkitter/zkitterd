@@ -21,8 +21,8 @@ export const logAfter = async (err: Error, req: Request, res: Response, next: Ne
     });
 
     res.status(500).send({
-      payload: err.message,
       error: true,
+      payload: err.message,
     });
   }
 };

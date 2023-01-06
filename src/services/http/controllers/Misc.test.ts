@@ -1,8 +1,8 @@
 import 'isomorphic-fetch';
 import tape from 'tape';
 
-import { MiscController } from './Misc';
 import { newRequest, newResponse, stubCall } from '@util/testUtils';
+import { MiscController } from './Misc';
 
 let controller: MiscController;
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -32,7 +32,7 @@ tape.skip('MiscController', t => {
     // http.addRoutes();
     //
     // const getPreviewParams = getStub.args[23];
-    // // @ts-ignore
+    // // @ts-expect-error
     // const getPreviewHandler: any = getPreviewParams[1];
     // const getPreviewRequest = newRequest(null, null, { link: 'https://auti.sm' });
     // await getPreviewHandler(getPreviewRequest, res);
@@ -43,16 +43,16 @@ tape.skip('MiscController', t => {
     t.deepEqual(
       res.send.args[0][0],
       {
+        error: undefined,
         payload: {
+          contentType: 'text/html',
+          description: '',
+          favicon: '',
+          image: undefined,
           link: 'https://www.auti.sm/',
           mediaType: 'website',
-          contentType: 'text/html',
           title: 'Auti.sm',
-          description: '',
-          image: undefined,
-          favicon: '',
         },
-        error: undefined,
       },
       'should return correct link preview'
     );

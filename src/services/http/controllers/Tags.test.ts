@@ -1,8 +1,8 @@
 import tape from 'tape';
 
-import { TagsController } from './Tags';
-import { newRequest, newResponse, stubCall } from '@util/testUtils';
 import { post } from '@services/http/_fixtures';
+import { newRequest, newResponse, stubCall } from '@util/testUtils';
+import { TagsController } from './Tags';
 
 let controller: TagsController;
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -30,7 +30,7 @@ tape('TagsController', t => {
     t.deepEqual(stubs.meta.findTags.args[0], [0, 10], 'should find all tags');
     t.deepEqual(
       res.send.args[0],
-      [{ payload: [{ tagName: '#test' }], error: undefined }],
+      [{ error: undefined, payload: [{ tagName: '#test' }] }],
       'should return all tags'
     );
   });
@@ -48,7 +48,7 @@ tape('TagsController', t => {
     );
     t.deepEqual(
       res.send.args[0],
-      [{ payload: [post], error: undefined }],
+      [{ error: undefined, payload: [post] }],
       'should return all posts'
     );
   });

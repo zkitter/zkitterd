@@ -57,7 +57,7 @@ const shares = (sequelize: Sequelize) => {
             },
         });
 
-        // @ts-ignore
+        // @ts-expect-error
         return res.map(data => data.toJSON());
     };
 

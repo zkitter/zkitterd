@@ -1,5 +1,5 @@
-import { Sequelize, STRING } from 'sequelize';
 import { Mutex } from 'async-mutex';
+import { Sequelize, STRING } from 'sequelize';
 
 const mutex = new Mutex();
 
@@ -10,10 +10,10 @@ const semaphoreCreators = (sequelize: Sequelize) => {
       group: {
         type: STRING,
       },
-      provider: {
+      message_id: {
         type: STRING,
       },
-      message_id: {
+      provider: {
         type: STRING,
       },
     },
@@ -29,16 +29,16 @@ const semaphoreCreators = (sequelize: Sequelize) => {
   const addSemaphoreCreator = async (messageId: string, provider: string, group: string) => {
     return mutex.runExclusive(async () => {
       return await model.create({
-        provider: provider,
         group: group,
         message_id: messageId,
+        provider: provider,
       });
     });
   };
 
   return {
-    model,
     addSemaphoreCreator,
+    model,
   };
 };
 

@@ -9,18 +9,18 @@ const ens = (sequelize: Sequelize) => {
   const model = sequelize.define(
     'ens',
     {
-      ens: {
-        type: STRING,
+      address: {
         allowNull: false,
+        type: STRING,
         validate: {
           notEmpty: true,
         },
-        primaryKey: true,
-        unique: true,
       },
-      address: {
-        type: STRING,
+      ens: {
         allowNull: false,
+        primaryKey: true,
+        type: STRING,
+        unique: true,
         validate: {
           notEmpty: true,
         },
@@ -52,21 +52,21 @@ const ens = (sequelize: Sequelize) => {
 
     if (result) {
       return result.update({
-        ens,
         address,
+        ens,
       });
     }
 
     return model.create({
-      ens,
       address,
+      ens,
     });
   };
 
   return {
     model,
-    readByENS,
     readByAddress,
+    readByENS,
     update,
   };
 };

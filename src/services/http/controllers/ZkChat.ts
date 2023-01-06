@@ -1,13 +1,13 @@
 import { Request, Response, Router } from 'express';
 import { QueryTypes } from 'sequelize';
 
-import { verifySignatureP256 } from '@util/crypto';
-import { publishTopic, SSEType } from '@util/sse';
-import { sequelize } from '@util/sequelize';
 import merkleRoot from '@models/merkle_root';
+import { verifySignatureP256 } from '@util/crypto';
+import { sequelize } from '@util/sequelize';
+import { publishTopic, SSEType } from '@util/sse';
 
-import { Controller } from './interface';
 import { makeResponse } from '../utils';
+import { Controller } from './interface';
 
 export class ZkChatController extends Controller {
   merkleRoot?: ReturnType<typeof merkleRoot>;
@@ -40,7 +40,7 @@ export class ZkChatController extends Controller {
   };
 
   postMessage = async (req: Request, res: Response) => {
-    const { messageId, type, timestamp, sender, receiver, ciphertext, rln, semaphore } = req.body;
+    const { ciphertext, messageId, receiver, rln, semaphore, sender, timestamp, type } = req.body;
     const signature = req.header('X-SIGNED-ADDRESS');
     const userDB = await this.call('db', 'getUsers');
 
@@ -62,13 +62,13 @@ export class ZkChatController extends Controller {
       rln.group_id = group;
 
       const share = {
-        nullifier: rln.publicSignals.internalNullifier,
         epoch: rln.publicSignals.epoch,
-        y_share: rln.publicSignals.yShare,
+        nullifier: rln.publicSignals.internalNullifier,
         x_share: rln.x_share,
+        y_share: rln.publicSignals.yShare,
       };
 
-      const { isSpam, isDuplicate } = await this.call('zkchat', 'checkShare', share);
+      const { isDuplicate, isSpam } = await this.call('zkchat', 'checkShare', share);
 
       if (isDuplicate) {
         throw new Error('duplicate message');
@@ -104,30 +104,30 @@ export class ZkChatController extends Controller {
     }
 
     const data = await this.call('zkchat', 'addChatMessage', {
-      messageId,
-      type,
-      timestamp: new Date(timestamp),
-      sender,
-      receiver,
       ciphertext,
+      messageId,
+      receiver,
       rln,
+      sender,
+      timestamp: new Date(timestamp),
+      type,
     });
 
     // await ?
     publishTopic(`ecdh:${data.sender_pubkey}`, {
-      type: SSEType.NEW_CHAT_MESSAGE,
       message: data,
+      type: SSEType.NEW_CHAT_MESSAGE,
     });
     // await ?
     publishTopic(`ecdh:${data.receiver_pubkey}`, {
-      type: SSEType.NEW_CHAT_MESSAGE,
       message: data,
+      type: SSEType.NEW_CHAT_MESSAGE,
     });
     res.send(makeResponse(data));
   };
 
   getDirectMessage = async (req: Request, res: Response) => {
-    const { sender, receiver } = req.params;
+    const { receiver, sender } = req.params;
     const limit = req.query.limit && Number(req.query.limit);
     const offset = req.query.offset && Number(req.query.offset);
     const data = await this.call('zkchat', 'getDirectMessages', sender, receiver, offset, limit);
@@ -150,19 +150,19 @@ export class ZkChatController extends Controller {
           WHERE zkc.sender_pubkey IN (SELECT distinct sender_pubkey FROM zkchat_chats WHERE receiver_pubkey = :pubkey);
       `,
       {
-        type: QueryTypes.SELECT,
         replacements: {
           pubkey,
         },
+        type: QueryTypes.SELECT,
       }
     );
 
     const data = values.map((val: any) => ({
-      type: 'DIRECT',
+      group: val.group_id,
       receiver: val.address,
       receiverECDH: val.pubkey,
       senderECDH: pubkey,
-      group: val.group_id,
+      type: 'DIRECT',
     }));
 
     res.send(makeResponse(data));
@@ -176,7 +176,7 @@ export class ZkChatController extends Controller {
   };
 
   getUnreadCountDM = async (req: Request, res: Response) => {
-    const { sender, receiver } = req.params;
+    const { receiver, sender } = req.params;
     const lastReadDB = await this.call('db', 'getLastRead');
     const result = await lastReadDB.getLastRead(receiver, sender);
     const lastRead = result?.lastread || 0;

@@ -39,7 +39,7 @@ export const deriveMessageId = async (chatMessage: ChatMessage): Promise<string>
   data += chatMessage.receiver;
 
   if (chatMessage.type === 'DIRECT') {
-    // @ts-ignore
+    // @ts-expect-error
     data += chatMessage.pubkey || '';
     data += chatMessage.ciphertext;
   }

@@ -11,12 +11,12 @@ type Repositories = {
 
 const request = async (data: any): Promise<Repositories> =>
   fetch('https://api.github.com/graphql', {
-    method: 'POST',
     body: JSON.stringify(data),
     headers: {
       Authorization: `Bearer ${config.ghPat}`,
       'Content-Type': 'application/json',
     },
+    method: 'POST',
   }).then(res => res.json().then(res => res.data.user.repositories));
 
 const query = `
@@ -39,7 +39,7 @@ const query = `
       `;
 
 export const getRepos = async (username: string, after: string | null = null) =>
-  request({ query, variables: { username, after } });
+  request({ query, variables: { after, username } });
 
 /**
  * Aggregate the number of stars received by one user over all its repos. Required to calculate interep reputation.

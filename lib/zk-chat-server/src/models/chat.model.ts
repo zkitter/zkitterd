@@ -141,7 +141,7 @@ const chats = (sequelize: Sequelize) => {
       }
     );
 
-    // @ts-ignore
+    // @ts-expect-error
     return Number(values[0]?.count || 0);
   };
 
@@ -175,7 +175,7 @@ const chats = (sequelize: Sequelize) => {
       }
     );
 
-    // @ts-ignore
+    // @ts-expect-error
     return values;
   };
 
@@ -222,7 +222,7 @@ const chats = (sequelize: Sequelize) => {
       order: [['timestamp', 'DESC']],
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     return res.map(data => data.toJSON());
   };
 

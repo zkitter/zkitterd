@@ -1,6 +1,6 @@
 /* eslint-disable import/no-unresolved */
-import { Dialect, QueryTypes, Sequelize } from 'sequelize';
 import { RLNFullProof, SemaphoreFullProof } from '@zk-kit/protocols';
+import { Dialect, QueryTypes, Sequelize } from 'sequelize';
 
 import { GenericService } from '@util/svc';
 // @ts-expect-error
@@ -22,10 +22,10 @@ export default class ZKChatService extends GenericService {
       config.DB_USERNAME as string,
       config.DB_PASSWORD,
       {
-        host: config.DB_HOST,
-        port: Number(config.DB_PORT),
         dialect: config.DB_DIALECT as Dialect,
+        host: config.DB_HOST,
         logging: false,
+        port: Number(config.DB_PORT),
       }
     );
   }
@@ -122,13 +122,13 @@ export default class ZKChatService extends GenericService {
             LIMIT :limit OFFSET :offset
         `,
       {
-        type: QueryTypes.SELECT,
         replacements: {
-          query: `%${query.toLowerCase()}%`,
-          sender,
           limit,
           offset,
+          query: `%${query.toLowerCase()}%`,
+          sender,
         },
+        type: QueryTypes.SELECT,
       }
     );
   };

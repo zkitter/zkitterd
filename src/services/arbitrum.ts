@@ -1,6 +1,4 @@
 import Web3 from 'web3';
-// @ts-ignore
-// eslint-disable-next-line import/no-unresolved
 import { Contract } from 'web3-eth-contract';
 
 import { arbRegistrarABI } from '@util/abi';
@@ -79,28 +77,28 @@ export default class ArbitrumService extends GenericService {
 
         try {
           await users.updateOrCreateUser({
+            joinedAt: Number(block.timestamp) * 1000,
             name: account,
             pubkey,
-            joinedAt: Number(block.timestamp) * 1000,
             tx: tx.hash,
             type: 'arbitrum',
           });
         } catch (e) {
           logger.error(e.message, {
+            fromBlock: lastBlock,
             parent: e.parent,
             stack: e.stack,
-            fromBlock: lastBlock,
           });
         }
 
         await this.call('gun', 'watch', pubkey);
 
         logger.info(`added pubkey for ${account}`, {
-          transactionHash: tx.hash,
           blockNumber: tx.blockNumber,
+          fromBlock: lastBlock,
           name: account,
           pubkey: pubkey,
-          fromBlock: lastBlock,
+          transactionHash: tx.hash,
         });
       }
       await app.updateLastArbitrumBlock(toBlock);
@@ -108,9 +106,9 @@ export default class ArbitrumService extends GenericService {
       if (block.number > toBlock) return true;
     } catch (e) {
       logger.error(e.message, {
+        fromBlock: lastBlock,
         parent: e.parent,
         stack: e.stack,
-        fromBlock: lastBlock,
       });
     }
   }

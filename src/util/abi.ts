@@ -766,6 +766,7 @@ export const arbRegistrarABI = [
     type: 'event',
   },
   {
+    constant: true,
     inputs: [
       {
         internalType: 'address',
@@ -783,7 +784,6 @@ export const arbRegistrarABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [
@@ -809,6 +809,7 @@ export const arbRegistrarABI = [
     type: 'function',
   },
   {
+    constant: true,
     inputs: [
       {
         internalType: 'bytes32',
@@ -831,9 +832,9 @@ export const arbRegistrarABI = [
     ],
     stateMutability: 'pure',
     type: 'function',
-    constant: true,
   },
   {
+    constant: true,
     inputs: [
       {
         internalType: 'bytes',
@@ -861,9 +862,9 @@ export const arbRegistrarABI = [
     ],
     stateMutability: 'pure',
     type: 'function',
-    constant: true,
   },
   {
+    constant: true,
     inputs: [
       {
         internalType: 'bytes32',
@@ -881,7 +882,6 @@ export const arbRegistrarABI = [
     ],
     stateMutability: 'pure',
     type: 'function',
-    constant: true,
   },
 ];
 

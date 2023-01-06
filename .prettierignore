@@ -14,3 +14,7 @@ coverage
 static
 lib
 .nycrc
+
+Dockerfile
+.eslintignore
+.prettierignore

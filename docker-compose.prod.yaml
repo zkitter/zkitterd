@@ -1,0 +1,9 @@
+version: '3.9'
+
+services:
+  zkitterd:
+    environment:
+      NODE_ENV: production
+secrets:
+  config:
+    file: config.prod.json

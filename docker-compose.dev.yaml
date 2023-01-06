@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+  zkitterd:
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_NAME: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: zkitter
+      NODE_ENV: development
+    networks:
+      - zkitter
+
+  postgres:
+    image: postgres
+    hostname: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: zkitter
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks:
+      - zkitter
+
+networks:
+  zkitter:
+    name: zkitter-network
+secrets:
+  config:
+    file: config.dev.json
+
+volumes:
+  postgres:

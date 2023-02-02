@@ -21,9 +21,17 @@ if (process.env.NODE_ENV !== 'production') {
   logger.add(
     new winston.transports.Console({
       format: winston.format.simple(),
-      level: 'error',
+      level: 'info',
     })
   );
 }
+
+const oldErr = logger.error;
+
+//@ts-ignore
+logger.error = err => {
+  console.log(err);
+  oldErr(err?.message || '');
+};
 
 export default logger;

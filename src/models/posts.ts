@@ -130,6 +130,11 @@ const posts = (sequelize: Sequelize) => {
     return null;
   };
 
+  const getAll = async (): Promise<PostModel[]> => {
+    const posts = await model.findAll<any>();
+    return posts.map(data => data.toJSON());
+  };
+
   const findOne = async (hash: string, context?: string): Promise<PostJSON | null> => {
     const result = await sequelize.query(
       `
@@ -540,6 +545,7 @@ const posts = (sequelize: Sequelize) => {
     remove,
     search,
     vectorizeContent,
+    getAll,
   };
 };
 

@@ -82,7 +82,7 @@ export default class MerkleService extends GenericService {
     this.semaphore = semaphore(sequelize);
   }
 
-  getAllLeaves = async (group: string): Promise<any[]> => {
+  getAllLeaves = async (group: string): Promise<{ id_commitment: string }[]> => {
     const [protocol, groupName, groupType = ''] = group.split('_');
     const protocolBucket = SQL[protocol] || {};
     const groupBucket = protocolBucket[groupName] || {};
@@ -105,7 +105,7 @@ export default class MerkleService extends GenericService {
     if (!query) throw new Error(`${group} does not exist`);
 
     const leaves = await sequelize.query(query, options);
-    return leaves;
+    return leaves as { id_commitment: string }[];
   };
 
   makeTree = async (

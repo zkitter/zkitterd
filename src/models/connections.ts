@@ -55,6 +55,11 @@ const connections = (sequelize: Sequelize) => {
     }
   );
 
+  const getAll = async (): Promise<ConnectionModel[]> => {
+    const list = await model.findAll<any>();
+    return list.map(data => data.toJSON());
+  };
+
   const findOne = async (hash: string): Promise<ConnectionModel | null> => {
     const result: any = await model.findOne({
       where: {
@@ -158,6 +163,7 @@ const connections = (sequelize: Sequelize) => {
     findOne,
     model,
     remove,
+    getAll,
   };
 };
 

@@ -66,6 +66,11 @@ const profiles = (sequelize: Sequelize) => {
     }
   );
 
+  const getAll = async (): Promise<ProfileModel[]> => {
+    const list = await model.findAll<any>();
+    return list.map(data => data.toJSON());
+  };
+
   const remove = async (hash: string) => {
     return model.destroy({
       where: {
@@ -97,6 +102,7 @@ const profiles = (sequelize: Sequelize) => {
     findOne,
     model,
     remove,
+    getAll,
   };
 };
 

@@ -97,7 +97,6 @@ export default class GunService extends GenericService {
 
     if (!data.type) return;
 
-    const groups = await this.call('db', 'getSemaphoreCreators');
     const type = Message.getType(data.type);
 
     if (data.payload) {
@@ -107,7 +106,7 @@ export default class GunService extends GenericService {
 
     switch (type) {
       case MessageType.Post:
-        const post = new Post({
+        return new Post({
           createdAt: new Date(Number(data.createdAt)),
           creator: creator,
           payload: {
@@ -120,11 +119,6 @@ export default class GunService extends GenericService {
           subtype: Post.getSubtype(data.subtype),
           type: type,
         });
-
-        return {
-          ...post.toJSON(),
-          group: data.proof && (await groups.getGroupByMessageId(messageId)),
-        };
       case MessageType.Moderation:
         return new Moderation({
           createdAt: new Date(Number(data.createdAt)),

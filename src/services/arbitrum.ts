@@ -7,6 +7,7 @@ import logger from '@util/logger';
 import { GenericService } from '@util/svc';
 import Timeout = NodeJS.Timeout;
 
+// TODO: Deprecate
 export default class ArbitrumService extends GenericService {
   web3: Web3;
   registrar: Contract;

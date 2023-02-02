@@ -115,7 +115,7 @@ export default class MerkleService extends GenericService {
     if (!query) throw new Error(`${group} does not exist`);
 
     const leaves = await sequelize.query(query, options);
-    return leaves;
+    return leaves as { id_commitment: string }[];
   };
 
   makeTree = async (

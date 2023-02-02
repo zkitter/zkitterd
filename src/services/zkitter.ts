@@ -4,13 +4,15 @@ import config from '@util/config';
 import { PostgresAdapter } from '@services/db/adapter';
 import DBService from '@services/db';
 import logger from '@util/logger';
+import MerkleService from '@services/merkle';
 
 export default class ZkitterService extends GenericService {
   node?: Zkitter;
 
   async start() {
     const dbSvc = this.main?.services['db'] as DBService;
-    const db = new PostgresAdapter(dbSvc);
+    const merkleSvc = this.main?.services['merkle'] as MerkleService;
+    const db = new PostgresAdapter(dbSvc, merkleSvc);
     this.node = await Zkitter.initialize({
       db,
       arbitrumProvider: config.arbitrumProvider || config.arbitrumHttpProvider || '',
@@ -30,5 +32,8 @@ export default class ZkitterService extends GenericService {
     });
 
     await this.node.watchArbitrum();
+    await this.node.subscribe();
+
+    // await this.node.getGroupMembers('semaphore_taz_members');
   }
 }

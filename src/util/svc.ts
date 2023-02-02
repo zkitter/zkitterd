@@ -99,12 +99,12 @@ export class MainService extends GenericService {
 
   async start() {
     for (const name in this.services) {
-      logger.info(`starting ${name}`, {
+      logger.debug(`starting ${name}`, {
         service: name,
       });
       try {
         await this.services[name].start();
-        logger.info(`started ${name}`, {
+        logger.debug(`started ${name}`, {
           service: name,
         });
       } catch (e) {

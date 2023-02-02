@@ -14,6 +14,8 @@ export type UserModel = {
   website: string;
   twitterVerification: string;
   group: boolean;
+  idcommitment: string;
+  ecdh: string;
   meta: {
     inviteSent: string | null;
     acceptanceReceived: string | null;

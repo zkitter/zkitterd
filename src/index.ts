@@ -23,6 +23,7 @@ import { ReputationService } from './services/reputation';
 import ZKChatService from './services/zkchat';
 import logger from './util/logger';
 import { MainService } from './util/svc';
+import ZkitterService from '@services/zkitter';
 
 (async function initApp() {
   try {
@@ -34,6 +35,7 @@ import { MainService } from './util/svc';
     main.add('ens', new ENSService());
     main.add('arbitrum', new ArbitrumService());
     main.add('gun', new GunService());
+    main.add('zkitter', new ZkitterService());
     main.add('ipfs', new IPFSService());
     main.add('http', new HttpService());
 

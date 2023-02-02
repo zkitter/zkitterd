@@ -3,6 +3,7 @@ node_modules/
 build/
 build-test/
 coverage/
+db/
 *.db
 *.log
 *gun_data

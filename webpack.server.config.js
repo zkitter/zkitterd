@@ -10,6 +10,7 @@ const envPlugin = new webpack.EnvironmentPlugin({
   WEB3_HTTP_PROVIDER: '',
   ENS_RESOLVER: '',
   ARB_HTTP_PROVIDER: '',
+  ARB_PROVIDER: '',
   ARB_REGISTRAR: '',
   ARB_PRIVATE_KEY: '',
   ARB_ADDRESS: '',

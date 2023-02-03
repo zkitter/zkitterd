@@ -4,6 +4,10 @@ import { parseMessageId, PostMessageSubType } from '@util/message';
 import { getReplies } from '@util/twitter';
 import { makeResponse } from '../utils';
 import { Controller } from './interface';
+import DBService from '@services/db';
+import GunService from '@services/gun';
+
+let CACHED_HISTORY: any[] | null = null;
 
 export class PostsController extends Controller {
   prefix = '/v1';
@@ -21,8 +25,59 @@ export class PostsController extends Controller {
       .get('/post/:hash', this.getOne)
       .get('/post/:hash/likes', this.getLikes)
       .get('/post/:hash/retweets', this.getRetweets)
-      .get('/replies', this.getReplies);
+      .get('/replies', this.getReplies)
+      .get('/history', this.getHistory);
   }
+
+  getHistory = async (req: Request, res: Response) => {
+    if (CACHED_HISTORY) {
+      res.send(makeResponse(CACHED_HISTORY));
+      return;
+    }
+
+    const db = (await this.main?.services.db) as DBService;
+    const gunSvc = this.main?.services.gun as GunService;
+    const { gun } = gunSvc;
+    const users = await db.users?.readAll();
+    const messages: any[] = [];
+
+    await new Promise(resolve => {
+      let timeout: any = null;
+      gun!
+        .get('message')
+        .map()
+        .once(async (data, messageId) => {
+          const msg = await gunSvc!.parseGunMessage(data, messageId);
+          messages.push(msg);
+          if (timeout) clearTimeout(timeout);
+          timeout = setTimeout(resolve, 500);
+        });
+    });
+
+    for (const user of users!) {
+      if (await db.users?.findOneByPubkey(user.pubkey)) {
+        await new Promise(resolve => {
+          let timeout: any = setTimeout(resolve, 500);
+          gun!
+            .user(user.pubkey)
+            .get('message')
+            .map()
+            .once(async (data, messageId) => {
+              try {
+                const msg = await gunSvc!.parseGunMessage(data, messageId, user.pubkey);
+                messages.push(msg);
+              } catch (err) {}
+
+              if (timeout) clearTimeout(timeout);
+              timeout = setTimeout(resolve, 500);
+            });
+        });
+      }
+    }
+
+    CACHED_HISTORY = messages;
+    res.send(makeResponse(messages));
+  };
 
   homefeed = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);

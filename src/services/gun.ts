@@ -72,6 +72,87 @@ export default class GunService extends GenericService {
       });
   };
 
+  parseGunMessage = async (data: any, messageId: string, pubkey?: string) => {
+    const { creator } = parseMessageId(messageId);
+
+    let user: UserModel | null = null;
+
+    if (creator) {
+      const users = await this.call('db', 'getUsers');
+
+      user = await users.findOneByPubkey(pubkey);
+
+      if (!user) return;
+
+      if (!['arbitrum'].includes(user.type)) return;
+
+      if (creator !== user.name) return;
+    }
+
+    let payload;
+
+    if (data === null) {
+      return;
+    }
+
+    if (!data.type) return;
+
+    const type = Message.getType(data.type);
+
+    if (data.payload) {
+      // @ts-expect-error
+      payload = await this.gun.get(data.payload['#']);
+    }
+
+    switch (type) {
+      case MessageType.Post:
+        return new Post({
+          createdAt: new Date(Number(data.createdAt)),
+          creator: creator,
+          payload: {
+            attachment: payload.attachment,
+            content: payload.content,
+            reference: payload.reference,
+            title: payload.title,
+            topic: payload.topic,
+          },
+          subtype: Post.getSubtype(data.subtype),
+          type: type,
+        });
+      case MessageType.Moderation:
+        return new Moderation({
+          createdAt: new Date(Number(data.createdAt)),
+          creator: creator,
+          payload: {
+            reference: payload.reference,
+          },
+          subtype: Moderation.getSubtype(data.subtype),
+          type: type,
+        });
+      case MessageType.Connection:
+        return new Connection({
+          createdAt: new Date(Number(data.createdAt)),
+          creator: creator,
+          payload: {
+            name: payload.name,
+          },
+          subtype: Connection.getSubtype(data.subtype),
+          type: type,
+        });
+      case MessageType.Profile:
+        return new Profile({
+          createdAt: new Date(Number(data.createdAt)),
+          creator: creator,
+          payload: {
+            key: payload.key,
+            value: payload.value,
+          },
+          subtype: Profile.getSubtype(data.subtype),
+          type: type,
+        });
+    }
+  };
+
   handleGunMessage = async (data: any, messageId: string, pubkey?: string) => {
     return insertMutex.runExclusive(async () => {
       const { creator } = parseMessageId(messageId);

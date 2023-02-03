@@ -557,6 +557,7 @@ export function inflateResultToPostJSON(r: any): PostJSON {
     interepProvider: json?.interepProvider,
     likeCount: +json?.likeCount || 0,
     liked: json?.liked,
+    global: json?.global || null,
     modblockedctx: json?.modblockedctx || null,
     modBlockedPost: json?.modBlockedPost || null,
     modBlockedUser: json?.modBlockedUser || null,

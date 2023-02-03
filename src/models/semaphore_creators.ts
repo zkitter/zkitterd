@@ -61,3 +61,13 @@ const semaphoreCreators = (sequelize: Sequelize) => {
 };
 
 export default semaphoreCreators;
+
+export function covertToGroupId(provider: string, group: string): string {
+  if (provider === 'taz') return 'semaphore_taz_members';
+  if (provider === 'all') return 'zksocial_all';
+  if (Web3.utils.isAddress(provider)) return 'custom_' + provider;
+  if (['twitter', 'reddit', 'github'].includes(provider)) {
+    return `interrep_${provider}_${group}`;
+  }
+  return '';
+}

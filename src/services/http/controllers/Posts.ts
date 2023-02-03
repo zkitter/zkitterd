@@ -14,8 +14,6 @@ import { Controller } from './interface';
 import DBService from '@services/db';
 import { Op } from 'sequelize';
 
-let CACHED_HISTORY: any[] | null = null;
-
 export class PostsController extends Controller {
   prefix = '/v1';
 
@@ -37,11 +35,6 @@ export class PostsController extends Controller {
   }
 
   getHistory = async (req: Request, res: Response) => {
-    if (CACHED_HISTORY) {
-      res.send(makeResponse(CACHED_HISTORY));
-      return;
-    }
-
     const db = (await this.main?.services.db) as DBService;
     const posts = await db.posts?.model.findAll({
       where: {
@@ -57,7 +50,7 @@ export class PostsController extends Controller {
     const connections = await db.connections?.model.findAll();
     const profiles = await db.profiles?.model.findAll();
 
-    CACHED_HISTORY = [
+    const messages = [
       ...posts!
         .map(m => m.toJSON())
         .map(data => {
@@ -125,7 +118,7 @@ export class PostsController extends Controller {
         }),
     ].filter(data => !!data);
 
-    res.send(makeResponse(CACHED_HISTORY));
+    res.send(makeResponse(messages));
   };
 
   homefeed = async (req: Request, res: Response) => {

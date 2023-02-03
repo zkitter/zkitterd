@@ -1,11 +1,18 @@
 import { Request, Response } from 'express';
 
-import { parseMessageId, PostMessageSubType } from '@util/message';
+import {
+  Connection,
+  Moderation,
+  parseMessageId,
+  Post,
+  PostMessageSubType,
+  Profile,
+} from '@util/message';
 import { getReplies } from '@util/twitter';
 import { makeResponse } from '../utils';
 import { Controller } from './interface';
 import DBService from '@services/db';
-import GunService from '@services/gun';
+import { Op } from 'sequelize';
 
 let CACHED_HISTORY: any[] | null = null;
 
@@ -36,47 +43,89 @@ export class PostsController extends Controller {
     }
 
     const db = (await this.main?.services.db) as DBService;
-    const gunSvc = this.main?.services.gun as GunService;
-    const { gun } = gunSvc;
-    const users = await db.users?.readAll();
-    const messages: any[] = [];
-
-    await new Promise(resolve => {
-      let timeout: any = null;
-      gun!
-        .get('message')
-        .map()
-        .once(async (data, messageId) => {
-          const msg = await gunSvc!.parseGunMessage(data, messageId);
-          messages.push(msg);
-          if (timeout) clearTimeout(timeout);
-          timeout = setTimeout(resolve, 500);
-        });
+    const posts = await db.posts?.model.findAll({
+      where: {
+        type: {
+          [Op.not]: '@TWEET@',
+        },
+        createdAt: {
+          [Op.not]: '-1',
+        },
+      },
     });
+    const moderations = await db.moderations?.model.findAll();
+    const connections = await db.connections?.model.findAll();
+    const profiles = await db.profiles?.model.findAll();
 
-    for (const user of users!) {
-      if (await db.users?.findOneByPubkey(user.pubkey)) {
-        await new Promise(resolve => {
-          let timeout: any = setTimeout(resolve, 10000);
-          gun!
-            .user(user.pubkey)
-            .get('message')
-            .map()
-            .once(async (data, messageId) => {
-              try {
-                const msg = await gunSvc!.parseGunMessage(data, messageId, user.pubkey);
-                messages.push(msg);
-              } catch (err) {}
+    CACHED_HISTORY = [
+      ...posts!
+        .map(m => m.toJSON())
+        .map(data => {
+          const p = new Post({
+            type: data.type,
+            subtype: data.subtype,
+            creator: data.creator,
+            createdAt: new Date(Number(data.createdAt)),
+            payload: {
+              attachment: data.attachment,
+              content: data.content,
+              reference: data.reference,
+              title: data.title,
+              topic: data.topic,
+            },
+          });
+          if (p.toJSON().messageId !== data.messageId) throw new Error('yo');
+          return p;
+        }),
+      ...moderations!
+        .map(m => m.toJSON())
+        .map(data => {
+          const m = new Moderation({
+            type: data.type,
+            subtype: data.subtype,
+            creator: data.creator,
+            createdAt: new Date(Number(data.createdAt)),
+            payload: {
+              reference: data.reference,
+            },
+          });
+          if (m.toJSON().messageId !== data.messageId) throw new Error('yo');
+          return m;
+        }),
+      ...connections!
+        .map(m => m.toJSON())
+        .map(data => {
+          const conn = new Connection({
+            type: data.type,
+            subtype: data.subtype,
+            creator: data.creator,
+            createdAt: new Date(Number(data.createdAt)),
+            payload: {
+              name: data.name,
+            },
+          });
+          if (conn.toJSON().messageId !== data.messageId) throw new Error('yo');
+          return conn;
+        }),
+      ...profiles!
+        .map(m => m.toJSON())
+        .map(data => {
+          const prof = new Profile({
+            type: data.type,
+            subtype: data.subtype,
+            creator: data.creator,
+            createdAt: new Date(Number(data.createdAt)),
+            payload: {
+              key: data.key,
+              value: data.value,
+            },
+          });
+          if (prof.toJSON().messageId !== data.messageId) throw new Error('yo');
+          return prof;
+        }),
+    ].filter(data => !!data);
 
-              if (timeout) clearTimeout(timeout);
-              timeout = setTimeout(resolve, 10000);
-            });
-        });
-      }
-    }
-
-    CACHED_HISTORY = messages;
-    res.send(makeResponse(messages));
+    res.send(makeResponse(CACHED_HISTORY));
   };
 
   homefeed = async (req: Request, res: Response) => {

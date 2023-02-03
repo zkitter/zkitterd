@@ -106,7 +106,7 @@ export default class GunService extends GenericService {
 
     switch (type) {
       case MessageType.Post:
-        return new Post({
+        const post = new Post({
           createdAt: new Date(Number(data.createdAt)),
           creator: creator,
           payload: {
@@ -119,6 +119,11 @@ export default class GunService extends GenericService {
           subtype: Post.getSubtype(data.subtype),
           type: type,
         });
+        return {
+          ...post,
+          proof: data.proof,
+          publicSignals: data.publicSignals,
+        };
       case MessageType.Moderation:
         return new Moderation({
           createdAt: new Date(Number(data.createdAt)),

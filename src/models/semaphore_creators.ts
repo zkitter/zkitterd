@@ -1,5 +1,6 @@
 import { Mutex } from 'async-mutex';
 import { Sequelize, STRING } from 'sequelize';
+import Web3 from 'web3';
 
 const mutex = new Mutex();
 
@@ -36,8 +37,24 @@ const semaphoreCreators = (sequelize: Sequelize) => {
     });
   };
 
+  const getGroupByMessageId = async (messageId: string) => {
+    const data = await model.findOne({
+      where: {
+        message_id: messageId,
+      },
+    });
+
+    if (data) {
+      const json = data?.toJSON();
+      if (json.provider === 'taz') return 'semaphore_taz_members';
+      if (Web3.utils.isAddress(json.provider)) return 'custom_' + json.provider;
+      return `interrep_${json.provider}_${json.group}`;
+    }
+  };
+
   return {
     addSemaphoreCreator,
+    getGroupByMessageId,
     model,
   };
 };

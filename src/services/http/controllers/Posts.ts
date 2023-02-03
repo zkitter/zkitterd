@@ -57,7 +57,7 @@ export class PostsController extends Controller {
     for (const user of users!) {
       if (await db.users?.findOneByPubkey(user.pubkey)) {
         await new Promise(resolve => {
-          let timeout: any = setTimeout(resolve, 500);
+          let timeout: any = setTimeout(resolve, 10000);
           gun!
             .user(user.pubkey)
             .get('message')
@@ -69,7 +69,7 @@ export class PostsController extends Controller {
               } catch (err) {}
 
               if (timeout) clearTimeout(timeout);
-              timeout = setTimeout(resolve, 500);
+              timeout = setTimeout(resolve, 10000);
             });
         });
       }

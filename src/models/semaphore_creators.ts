@@ -47,6 +47,7 @@ const semaphoreCreators = (sequelize: Sequelize) => {
     if (data) {
       const json = data?.toJSON();
       if (json.provider === 'taz') return 'semaphore_taz_members';
+      if (json.provider === 'all') return 'zksocial_all';
       if (Web3.utils.isAddress(json.provider)) return 'custom_' + json.provider;
       return `interrep_${json.provider}_${json.group}`;
     }

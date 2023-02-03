@@ -122,7 +122,7 @@ export default class GunService extends GenericService {
         });
 
         return {
-          ...post,
+          ...post.toJSON(),
           group: data.proof && (await groups.getGroupByMessageId(messageId)),
         };
       case MessageType.Moderation:

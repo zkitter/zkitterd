@@ -91,7 +91,6 @@ export class UsersController extends Controller {
 
     const context = req.header('x-contextual-name') || undefined;
     const user = await usersDB.findOneByName(address, context);
-    console.log(user);
     const ens = await this.call('ens', 'fetchNameByAddress', address);
     res.send(
       makeResponse({

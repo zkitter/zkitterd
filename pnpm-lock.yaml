@@ -76,7 +76,7 @@ specifiers:
   webpack-node-externals: ^3.0.0
   winston: ^3.3.3
   zk-chat-server: ^1.0.4
-  zkitter-js: ^1.0.7
+  zkitter-js: ^1.0.9
 
 dependencies:
   '@ensdomains/ensjs': 2.1.0
@@ -121,7 +121,7 @@ dependencies:
   web3.storage: 4.4.0_typescript@4.9.5
   winston: 3.8.2
   zk-chat-server: 1.0.4
-  zkitter-js: 1.0.7
+  zkitter-js: 1.0.9
 
 devDependencies:
   '@istanbuljs/nyc-config-typescript': 1.0.2_nyc@15.1.0
@@ -5808,7 +5808,7 @@ packages:
       eslint-config-ipfs: 3.1.5_4vsywjlpuriuw3tl5oq6zy5a64
       eslint-plugin-etc: 2.0.2_4vsywjlpuriuw3tl5oq6zy5a64
       eslint-plugin-import: 2.27.5_eslint@8.33.0
-      eslint-plugin-jsdoc: 39.7.5_eslint@8.33.0
+      eslint-plugin-jsdoc: 39.8.0_eslint@8.33.0
       eslint-plugin-node: 11.1.0_eslint@8.33.0
       eslint-plugin-promise: 6.1.1_eslint@8.33.0
       execa: 6.1.0
@@ -5821,7 +5821,7 @@ packages:
       lilconfig: 2.0.6
       listr: 0.14.3
       mdast-util-from-markdown: 1.3.0
-      mdast-util-gfm: 2.0.1
+      mdast-util-gfm: 2.0.2
       mdast-util-gfm-footnote: 1.0.2
       mdast-util-gfm-strikethrough: 1.0.3
       mdast-util-gfm-table: 1.0.7
@@ -8710,7 +8710,7 @@ packages:
       eslint-config-standard-with-typescript: 27.0.1_uyx4rtgzutmgqe34dclfxgf5yu
       eslint-plugin-etc: 2.0.2_4vsywjlpuriuw3tl5oq6zy5a64
       eslint-plugin-import: 2.27.5_ufewo3pl5nnmz6lltvjrdi2hii
-      eslint-plugin-jsdoc: 39.7.5_eslint@8.33.0
+      eslint-plugin-jsdoc: 39.8.0_eslint@8.33.0
       eslint-plugin-no-only-tests: 3.1.0
       eslint-plugin-node: 11.1.0_eslint@8.33.0
       eslint-plugin-promise: 6.1.1_eslint@8.33.0
@@ -9050,8 +9050,8 @@ packages:
       - supports-color
     dev: false
 
-  /eslint-plugin-jsdoc/39.7.5_eslint@8.33.0:
-    resolution: {integrity: sha512-6L90P0AnZcE4ra7nocolp9vTjgVr2wEZ7jPnEA/X30XAoQPk+wvnaq61n164Tf7Fg4QPpJtRSCPpApOsfWDdNA==}
+  /eslint-plugin-jsdoc/39.8.0_eslint@8.33.0:
+    resolution: {integrity: sha512-ZwGmk0jJoJD/NILeDRBKrpq/PCgddUdATjeU5JGTqTzKsOWfeaHOnaAwZjuOh7T8EB4hSoZ/9pR4+Qns2ldQVg==}
     engines: {node: ^14 || ^16 || ^17 || ^18 || ^19}
     peerDependencies:
       eslint: ^7.0.0 || ^8.0.0
@@ -12347,7 +12347,7 @@ packages:
       '@libp2p/connection': 4.0.2
       '@libp2p/crypto': 1.0.11
       '@libp2p/interface-address-manager': 1.0.3
-      '@libp2p/interface-connection': 3.0.8
+      '@libp2p/interface-connection': 3.0.1
       '@libp2p/interface-connection-encrypter': 2.0.2
       '@libp2p/interface-content-routing': 1.0.7
       '@libp2p/interface-dht': 1.0.5
@@ -13105,8 +13105,8 @@ packages:
       mdast-util-to-markdown: 1.5.0
     dev: false
 
-  /mdast-util-gfm/2.0.1:
-    resolution: {integrity: sha512-42yHBbfWIFisaAfV1eixlabbsa6q7vHeSPY+cg+BBjX51M8xhgMacqH9g6TftB/9+YkcI0ooV4ncfrJslzm/RQ==}
+  /mdast-util-gfm/2.0.2:
+    resolution: {integrity: sha512-qvZ608nBppZ4icQlhQQIAdc6S3Ffj9RGmzwUKUWuEICFnd1LVkN3EktF7ZHAgfcEdvZB5owU9tQgt99e2TlLjg==}
     dependencies:
       mdast-util-from-markdown: 1.3.0
       mdast-util-gfm-autolink-literal: 1.0.3
@@ -19669,8 +19669,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /zkitter-js/1.0.7:
-    resolution: {integrity: sha512-LuZKlzsXi2OYA85hhE0SjbR68RdLRHfhrHNUUf0nE7yNA7tYQJaBxQjj+MBEhWUW0UDz3PrCDhINoYGdDceQ8A==}
+  /zkitter-js/1.0.9:
+    resolution: {integrity: sha512-BXvpWflxDuN6Jk/kIMx+65Z+jYFhQXre7eckxfAUCiYdjjJBsWrZcqntW1Exp4zUXX0U/VZkYuJCkj/70rSNtA==}
     engines: {node: '>=16 <17'}
     hasBin: true
     dependencies:

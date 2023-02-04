@@ -201,6 +201,7 @@ export default class GunService extends GenericService {
     const ctx = this;
     const gunPath = process.env.NODE_ENV === 'development' ? './dev_gun_data' : './gun_data';
 
+    return;
     const gun = Gun({
       file: gunPath,
       peers: config.gunPeers,

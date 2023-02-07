@@ -57,7 +57,7 @@ npm i
 npm t
 ```
 
-**Developement Build**
+**Development Build**
 
 ```
 npm run build-server

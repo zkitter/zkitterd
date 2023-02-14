@@ -133,7 +133,9 @@ export class PostsController extends Controller {
   getHistory = async (req: Request, res: Response) => {
     const user = req.query.user;
     const global = req.query.global;
-    const historyJson = require('../../../../build/history_v0.json');
+    const historyJson = require(process.env.NODE_ENV === 'production'
+      ? './history_v0.json'
+      : '../../../../build/history_v0.json');
 
     if (user) {
       res.send(makeResponse(historyJson[user as string] || []));

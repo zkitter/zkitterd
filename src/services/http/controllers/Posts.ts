@@ -14,6 +14,9 @@ import { Controller } from './interface';
 import DBService from '@services/db';
 import { Op } from 'sequelize';
 import fs from 'fs';
+import path from 'path';
+
+const GUN_HISTORY_PATH = path.join(process.cwd(), 'build', 'history_v0.json');
 
 export class PostsController extends Controller {
   prefix = '/v1';
@@ -21,6 +24,7 @@ export class PostsController extends Controller {
   constructor() {
     super();
     this.addRoutes();
+    loadGunHistoryToCache();
   }
 
   public addRoutes() {
@@ -126,16 +130,13 @@ export class PostsController extends Controller {
       }, {});
 
     if (messages) {
-      await fs.promises.writeFile('./build/history_v0.json', JSON.stringify(messages));
+      await fs.promises.writeFile(GUN_HISTORY_PATH, JSON.stringify(messages));
     }
   };
 
   getHistory = async (req: Request, res: Response) => {
     const user = req.query.user;
     const global = req.query.global;
-    const historyJson = require(process.env.NODE_ENV === 'production'
-      ? './history_v0.json'
-      : '../../../../build/history_v0.json');
 
     if (user) {
       res.send(makeResponse(historyJson[user as string] || []));
@@ -235,4 +236,15 @@ export class PostsController extends Controller {
     );
     res.send(makeResponse(posts));
   };
+}
+
+// Helpers
+let historyJson: any = {};
+async function loadGunHistoryToCache() {
+  try {
+    const raw = await fs.promises.readFile(GUN_HISTORY_PATH, 'utf-8');
+    historyJson = JSON.parse(raw);
+  } catch (e) {
+    historyJson = {};
+  }
 }

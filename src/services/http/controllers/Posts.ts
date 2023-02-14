@@ -13,6 +13,7 @@ import { makeResponse } from '../utils';
 import { Controller } from './interface';
 import DBService from '@services/db';
 import { Op } from 'sequelize';
+import fs from 'fs';
 
 export class PostsController extends Controller {
   prefix = '/v1';
@@ -34,7 +35,7 @@ export class PostsController extends Controller {
       .get('/history', this.getHistory);
   }
 
-  getHistory = async (req: Request, res: Response) => {
+  snapshot = async () => {
     const db = (await this.main?.services.db) as DBService;
     const posts = await db.posts?.model.findAll({
       where: {
@@ -116,9 +117,34 @@ export class PostsController extends Controller {
           if (prof.toJSON().messageId !== data.messageId) throw new Error('yo');
           return prof;
         }),
-    ].filter(data => !!data);
+    ]
+      .filter(data => !!data)
+      .reduce((map: any, msg) => {
+        map[msg.creator] = map[msg.creator] || [];
+        map[msg.creator].push(msg);
+        return map;
+      }, {});
 
-    res.send(makeResponse(messages));
+    if (messages) {
+      await fs.promises.writeFile('./build/history_v0.json', JSON.stringify(messages));
+    }
+  };
+
+  getHistory = async (req: Request, res: Response) => {
+    const user = req.query.user;
+    const global = req.query.global;
+    const historyJson = require('../../../../build/history_v0.json');
+
+    if (user) {
+      res.send(makeResponse(historyJson[user as string] || []));
+    } else if (global) {
+      res.send(makeResponse(historyJson[''] || []));
+    } else {
+      const messages = Object.values(historyJson).reduce((acc: any, list) => {
+        return acc.concat(list);
+      }, []);
+      res.send(makeResponse(messages));
+    }
   };
 
   homefeed = async (req: Request, res: Response) => {

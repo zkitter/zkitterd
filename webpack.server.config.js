@@ -32,6 +32,7 @@ const envPlugin = new webpack.EnvironmentPlugin({
   TW_BEARER_TOKEN: '',
   TW_ACCESS_KEY: '',
   TW_ACCESS_SECRET: '',
+  SNAPSHOT: '',
 });
 
 const rules = [

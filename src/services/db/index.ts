@@ -266,6 +266,10 @@ export default class DBService extends GenericService {
       await this.app?.updateLastArbitrumBlock(config?.lastArbitrumBlock || 2193241);
       await this.app?.updateLastGroup42BlockScanned(7660170);
     }
+
+    if (!!process.env.SNAPSHOT) {
+      await this.call('postsController', 'snapshot');
+    }
   }
 
   async stop() {

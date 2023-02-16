@@ -17,10 +17,14 @@ export default class ZkitterService extends GenericService {
     const ensSvc = this.main?.services['ens'] as ENSService;
     const zkchatSvc = this.main?.services['zkchat'] as ZKChatService;
     const db = new PostgresAdapter(dbSvc, merkleSvc, ensSvc, zkchatSvc);
-    this.node = await Zkitter.initialize({
+    const opts: any = {
       db,
       arbitrumProvider: config.arbitrumProvider || config.arbitrumHttpProvider || '',
-    });
+    };
+
+    if (process.env.NODE_ENV !== 'production') opts.topicPrefix = 'zkitter-dev';
+
+    this.node = await Zkitter.initialize(opts);
 
     this.node.on('Users.ArbitrumSynced', data => {
       const { latest, fromBlock, toBlock } = data;
@@ -35,8 +39,15 @@ export default class ZkitterService extends GenericService {
       logger.debug(`New user added - @${data.address}`);
     });
 
-    await this.node.watchArbitrum();
+    this.node.on('Zkitter.NewMessageCreated', data => {
+      console.log(data);
+    });
+
+    this.node.on('Group.GroupSynced', console.log.bind(console));
+
+    await this.node.start();
     await this.node.subscribe();
+
     // await this.node.queryHistory();
     // await this.node.getPostMeta('17d6a0d28cfe886aeca68d8d42163694a59fae9f3ab25276c6b26e4ac6d56e81');
     // await this.node.getGroupMembers('semaphore_taz_members');

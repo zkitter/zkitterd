@@ -584,7 +584,7 @@ export function inflateResultToPostJSON(r: any): PostJSON {
   }
 
   return {
-    createdAt: json.createdAt,
+    createdAt: Number(json.createdAt),
     hash: json.hash,
     messageId: json.creator ? `${json.creator}/${json.hash}` : json.hash,
     meta: meta,

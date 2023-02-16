@@ -82,7 +82,7 @@ export default class MerkleService extends GenericService {
     this.semaphore = semaphore(sequelize);
   }
 
-  getAllLeaves = async (group: string, offset = 0, limit = 500): Promise<any[]> => {
+  getAllLeaves = async (group: string, offset = 0, limit = 1000): Promise<any[]> => {
     const [protocol, groupName, groupType = ''] = group.split('_');
     const protocolBucket = SQL[protocol] || {};
     const groupBucket = protocolBucket[groupName] || {};

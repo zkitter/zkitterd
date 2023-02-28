@@ -34,7 +34,6 @@ import ZkitterService from '@services/zkitter';
     main.add('zkchat', new ZKChatService());
     main.add('ens', new ENSService());
     main.add('arbitrum', new ArbitrumService());
-    main.add('gun', new GunService());
     main.add('zkitter', new ZkitterService());
     main.add('ipfs', new IPFSService());
     main.add('http', new HttpService());

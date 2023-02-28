@@ -47,9 +47,5 @@ export default class ZkitterService extends GenericService {
 
     await this.node.start();
     await this.node.subscribe();
-
-    // await this.node.queryHistory();
-    // await this.node.getPostMeta('17d6a0d28cfe886aeca68d8d42163694a59fae9f3ab25276c6b26e4ac6d56e81');
-    // await this.node.getGroupMembers('semaphore_taz_members');
   }
 }

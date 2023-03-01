@@ -40,7 +40,7 @@ export default class ZkitterService extends GenericService {
     });
 
     this.node.on('Zkitter.NewMessageCreated', data => {
-      console.log(data);
+      // console.log(data);
     });
 
     this.node.on('Group.GroupSynced', console.log.bind(console));

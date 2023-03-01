@@ -52,6 +52,6 @@ import ZkitterService from '@services/zkitter';
     await main.start();
   } catch (e) {
     logger.error(e.message, { stack: e.stack });
-    throw e;
+    // throw e;
   }
 })();

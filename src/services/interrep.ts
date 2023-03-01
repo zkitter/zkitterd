@@ -145,7 +145,8 @@ export default class InterrepService extends GenericService {
   async start() {
     this.interepGroups = interepGroups(sequelize);
     this.semaphore = semaphore(sequelize);
-    await this.sync();
+    // TODO: turn off kovan sync until new interep is deployed
+    // await this.sync();
   }
 
   async stop() {

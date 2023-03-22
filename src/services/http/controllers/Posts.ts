@@ -7,7 +7,7 @@ import {
   Post,
   PostMessageSubType,
   Profile,
-} from '@util/message';
+} from 'zkitter-js';
 import { getReplies } from '@util/twitter';
 import { makeResponse } from '../utils';
 import { Controller } from './interface';
@@ -165,7 +165,7 @@ export class PostsController extends Controller {
     const creator = req.query.creator;
     const context = req.header('x-contextual-name') || undefined;
     const postDB = await this.call('db', 'getPosts');
-    const posts = await postDB.findAllPosts(creator, context, offset, limit, undefined, !!creator);
+    const posts = await postDB.findAllPosts(creator, context, offset, limit, undefined, true);
     res.send(makeResponse(posts));
   };
 

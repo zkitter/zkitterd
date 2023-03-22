@@ -2,7 +2,7 @@ import { Mutex } from 'async-mutex';
 import { BIGINT, Op, QueryTypes, Sequelize, STRING } from 'sequelize';
 
 import config from '@util/config';
-import { MessageType, PostJSON, PostMessageSubType } from '@util/message';
+import { MessageType, PostJSON, PostMessageSubType } from 'zkitter-js';
 import {
   globalModClause,
   globalVisibilityClause,
@@ -594,6 +594,8 @@ export function inflateResultToPostJSON(r: any): PostJSON {
       reference: json.reference,
       title: json.title,
       topic: json.topic,
+      ecdh: json.ecdh || '',
+      ecdhSeed: json.ecdhSeed || '',
     },
     subtype: json.subtype as PostMessageSubType,
     type: json.type as MessageType,

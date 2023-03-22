@@ -1,6 +1,6 @@
 import { BIGINT, QueryTypes, Sequelize, STRING } from 'sequelize';
 
-import { ModerationJSON, PostJSON } from '@util/message';
+import { ModerationJSON, PostJSON } from 'zkitter-js';
 
 type ModerationModel = {
   messageId: string;

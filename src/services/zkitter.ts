@@ -46,6 +46,6 @@ export default class ZkitterService extends GenericService {
     this.node.on('Group.GroupSynced', console.log.bind(console));
 
     await this.node.start();
-    await this.node.subscribe();
+    await this.node.downloadHistoryFromAPI();
   }
 }

@@ -20,7 +20,7 @@ import {
   PostMessageSubType,
   Profile,
   ProfileMessageSubType,
-} from '@util/message';
+} from 'zkitter-js';
 import { HASHTAG_REGEX, MENTION_REGEX } from '@util/regex';
 import { sequelize } from '@util/sequelize';
 import { GenericService } from '@util/svc';

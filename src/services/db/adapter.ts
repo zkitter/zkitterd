@@ -9,7 +9,7 @@ import {
   User,
   UserMeta,
   Proof,
-  GroupMember, PostJSON, ModerationJSON, ConnectionJSON,
+  GroupMember, PostJSON, ModerationJSON, ConnectionJSON, Filter,
 } from 'zkitter-js';
 import DBService from '@services/db';
 import MerkleService from '@services/merkle';
@@ -20,7 +20,7 @@ import {
   parseMessageId,
   PostMessageSubType,
   ProfileMessageSubType
-} from '@util/message';
+} from 'zkitter-js';
 import { HASHTAG_REGEX, MENTION_REGEX } from '@util/regex';
 import ENSService from "@services/ens";
 import {showStatus} from "@util/twitter";
@@ -143,7 +143,6 @@ export class PostgresAdapter implements GenericDBAdapterInterface {
     return group?.group_id || null;
   }
 
-  // @ts-ignore
   async insertPost(post: Post, proof: Proof): Promise<Post> {
     const json = await post.toJSON();
 
@@ -160,10 +159,11 @@ export class PostgresAdapter implements GenericDBAdapterInterface {
     const result = await postDB!.findOne(hash);
 
     if (result) {
-      logger.debug('post already exist', {
+      logger.info('post already exist', {
         messageId,
-        origin: 'gun',
+        hash,
       });
+
       throw new Error('post already exist');
     }
 
@@ -245,7 +245,6 @@ export class PostgresAdapter implements GenericDBAdapterInterface {
 
       logger.info(`insert post`, {
         messageId,
-        origin: 'gun',
       });
 
       return post;
@@ -254,10 +253,10 @@ export class PostgresAdapter implements GenericDBAdapterInterface {
       logger.error(`error inserting post`, {
         error: e.message,
         messageId,
-        origin: 'gun',
         parent: e.parent,
         stack: e.stack,
       });
+      return post;
     }
   }
 
@@ -447,7 +446,7 @@ export class PostgresAdapter implements GenericDBAdapterInterface {
   };
 
   async getHistoryDownloaded(): Promise<boolean> {
-    return true;
+    return false;
     return process.env.NODE_ENV === 'production';
   };
 
@@ -592,10 +591,7 @@ export class PostgresAdapter implements GenericDBAdapterInterface {
   }
 
   async getHomefeed(
-    filter: {
-      addresses: { [address: string]: true };
-      groups: { [groupId: string]: true };
-    },
+    filter: Filter,
     limit = -1,
     offset?: number|string
   ): Promise<Post[]> {

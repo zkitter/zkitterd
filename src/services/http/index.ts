@@ -15,14 +15,12 @@ import { staticRouter } from './controllers';
 import { logAfter, logBefore } from './middlewares/log';
 
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
-
 export default class HttpService extends GenericService {
   app: Express;
   httpServer: any;
 
   controllers = [
     'auth',
-    'events',
     'interep',
     'merkle',
     'misc',

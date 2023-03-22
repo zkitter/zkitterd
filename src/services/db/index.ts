@@ -28,13 +28,10 @@ import { GenericService } from '@util/svc';
 
 export default class DBService extends GenericService {
   sequelize: Sequelize;
-  sqlite: Sequelize;
-
   app?: ReturnType<typeof app>;
   ens?: ReturnType<typeof ens>;
   linkPreview?: ReturnType<typeof linkPreview>;
   users?: ReturnType<typeof users>;
-  records?: ReturnType<typeof records>;
   posts?: ReturnType<typeof posts>;
   profiles?: ReturnType<typeof profiles>;
   moderations?: ReturnType<typeof moderations>;
@@ -55,20 +52,13 @@ export default class DBService extends GenericService {
   constructor() {
     super();
 
-    this.sqlite = new Sequelize({
-      dialect: 'sqlite',
-      logging: false,
-      storage: process.env.NODE_ENV === 'test' ? './gun.test.db' : './gun.db',
-    });
+    // this.sqlite = new Sequelize({
+    //   dialect: 'sqlite',
+    //   logging: false,
+    //   storage: process.env.NODE_ENV === 'test' ? './gun.test.db' : './gun.db',
+    // });
 
     this.sequelize = sequelize;
-  }
-
-  async getRecords(): Promise<ReturnType<typeof records>> {
-    if (!this.records) {
-      return Promise.reject(new Error('records is not initialized'));
-    }
-    return this.records;
   }
 
   async getUsers(): Promise<ReturnType<typeof users>> {
@@ -210,8 +200,7 @@ export default class DBService extends GenericService {
   }
 
   async start() {
-    this.app = app(this.sqlite);
-    this.records = records(this.sqlite);
+    this.app = app(this.sequelize);
     this.linkPreview = linkPreview(this.sequelize);
     this.meta = meta(this.sequelize);
     this.userMeta = userMeta(this.sequelize);
@@ -234,7 +223,6 @@ export default class DBService extends GenericService {
 
     await this.app?.model.sync({ force: !!process.env.FORCE });
     await this.linkPreview?.model.sync({ force: !!process.env.FORCE });
-    await this.records?.model.sync({ force: !!process.env.FORCE });
 
     await this.semaphore?.model.sync({ force: !!process.env.FORCE });
 

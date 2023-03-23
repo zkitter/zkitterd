@@ -93,6 +93,22 @@ const profiles = (sequelize: Sequelize) => {
     return json;
   };
 
+  const findUserByECDH = async (ecdh: string): Promise<string | null> => {
+    const result: any = await model.findOne({
+      where: {
+        subtype: 'CUSTOM',
+        key: 'ecdh_pubkey',
+        value: ecdh,
+      },
+    });
+
+    if (!result) return null;
+
+    const json = result.toJSON() as ProfileModel;
+
+    return json.creator;
+  };
+
   const createProfile = async (record: ProfileModel) => {
     return model.create(record);
   };
@@ -100,6 +116,7 @@ const profiles = (sequelize: Sequelize) => {
   return {
     createProfile,
     findOne,
+    findUserByECDH,
     model,
     remove,
     getAll,

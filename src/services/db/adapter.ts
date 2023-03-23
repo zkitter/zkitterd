@@ -125,6 +125,8 @@ export class PostgresAdapter implements GenericDBAdapterInterface {
     const hex = '0x' + toBigInt(member.newRoot).toString(16);
     const group = await this.db.merkleRoot?.getGroupByRoot(hex);
     if (!group) await this.db.merkleRoot?.addRoot(hex, groupId);
+    const m = await this.db.semaphore?.findOne(toBigInt(member.idCommitment).toString(16), groupId);
+    if (!m) await this.db.semaphore?.addID(BigInt(member.idCommitment).toString(16), groupId, hex);
     return null;
   }
 
@@ -446,7 +448,7 @@ export class PostgresAdapter implements GenericDBAdapterInterface {
   };
 
   async getHistoryDownloaded(): Promise<boolean> {
-    return false;
+    return true;
     return process.env.NODE_ENV === 'production';
   };
 

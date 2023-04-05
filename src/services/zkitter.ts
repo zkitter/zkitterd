@@ -20,6 +20,7 @@ export default class ZkitterService extends GenericService {
     const opts: any = {
       db,
       arbitrumProvider: config.arbitrumProvider || config.arbitrumHttpProvider || '',
+      filterOptions: { all: true },
     };
 
     if (process.env.NODE_ENV !== 'production') opts.topicPrefix = 'zkitter-dev';

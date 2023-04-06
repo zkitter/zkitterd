@@ -216,7 +216,7 @@ const users = (sequelize: Sequelize) => {
 
 export default users;
 
-const userSelectQuery = `
+export const userSelectQuery = `
   SELECT  
     u.name,
     u.pubkey,

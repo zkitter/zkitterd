@@ -594,8 +594,6 @@ export function inflateResultToPostJSON(r: any): PostJSON {
       reference: json.reference,
       title: json.title,
       topic: json.topic,
-      ecdh: json.ecdh || '',
-      ecdhSeed: json.ecdhSeed || '',
     },
     subtype: json.subtype as PostMessageSubType,
     type: json.type as MessageType,

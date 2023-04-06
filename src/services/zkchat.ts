@@ -9,6 +9,7 @@ import { ZKChat } from '~/zk-chat-server/src';
 import { ChatMessage } from '~/zk-chat-server/src/services/chat.service';
 // @ts-expect-error
 import config from '~/zk-chat-server/src/utils/config';
+import { userSelectQuery } from '@models/users';
 
 export default class ZKChatService extends GenericService {
   zkchat: ZKChat;
@@ -96,37 +97,20 @@ export default class ZKChatService extends GenericService {
   searchChats = async (query: string, sender?: string, offset = 0, limit = 20) => {
     return await this.sequelize.query(
       `
-          SELECT ecdh.value         as receiver_ecdh,
-                 idcommitment.value as receiver_idcommitment,
-                 zku.wallet_address as receiver_address
-          FROM zkchat_users zku
-                 LEFT JOIN profiles ecdh ON ecdh."messageId" = (SELECT "messageId" FROM profiles WHERE creator = zku.wallet_address AND subtype = 'CUSTOM' AND key='ecdh_pubkey' ORDER BY "createdAt" DESC LIMIT 1)
-            LEFT JOIN profiles idcommitment ON idcommitment."messageId" = (SELECT "messageId" FROM profiles WHERE creator = zku.wallet_address AND subtype = 'CUSTOM' AND key='id_commitment' ORDER BY "createdAt" DESC LIMIT 1)
-            LEFT JOIN profiles name ON name."messageId" = (SELECT "messageId" FROM profiles WHERE creator = zku.wallet_address AND subtype = 'NAME' ORDER BY "createdAt" DESC LIMIT 1)
-          WHERE (
-            LOWER (zku.wallet_address) LIKE :query
-             OR LOWER (name.value) LIKE :query
-             OR LOWER (name.creator) LIKE :query
-             OR LOWER (name.creator) IN (SELECT LOWER (address) from ens WHERE LOWER (ens) LIKE :query)
-             OR LOWER (name.creator) IN (SELECT LOWER (creator) from profiles WHERE subtype = 'NAME' AND LOWER (value) LIKE :query ORDER BY "createdAt" DESC LIMIT 1)
-            ) ${
-              !sender
-                ? ''
-                : `
-            AND (
-                zku.wallet_address IN (SELECT distinct zk.receiver_address FROM zkchat_chats zk WHERE zk.sender_address = :sender)
-                OR zku.wallet_address IN (SELECT distinct zk.sender_address FROM zkchat_chats zk WHERE zk.receiver_address = :sender)
-            )`
-            }
-
+            ${userSelectQuery}
+            WHERE ecdh.value != '' AND (
+                LOWER(u."name") LIKE :query 
+                OR LOWER(u."name") IN (SELECT LOWER(address) from ens WHERE LOWER(ens) LIKE :query)
+                OR LOWER(u."name") IN (SELECT LOWER(creator) from profiles WHERE subtype = 'NAME' AND LOWER(value) LIKE :query)
+            )
             LIMIT :limit OFFSET :offset
         `,
       {
         replacements: {
+          context: sender || '',
           limit,
           offset,
           query: `%${query.toLowerCase()}%`,
-          sender,
         },
         type: QueryTypes.SELECT,
       }

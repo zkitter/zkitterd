@@ -1,33 +1,39 @@
 import {
-  EmptyUserMeta,
-  GenericDBAdapterInterface,
-  PostMeta,
-  Post,
-  Profile,
-  Moderation,
+  Chat,
+  ChatMessageSubType,
   Connection,
-  User,
-  UserMeta,
+  ConnectionJSON,
+  ConnectionMessageSubType,
+  EmptyUserMeta,
+  Filter,
+  GenericDBAdapterInterface,
+  GroupMember,
+  MessageType,
+  Moderation,
+  ModerationJSON,
+  ModerationMessageSubType,
+  parseMessageId,
+  Post,
+  PostJSON,
+  PostMessageSubType,
+  PostMeta,
+  Profile,
+  ProfileMessageSubType,
   Proof,
-  GroupMember, PostJSON, ModerationJSON, ConnectionJSON, Filter,
+  User,
+  UserMeta
 } from 'zkitter-js';
 import DBService from '@services/db';
 import MerkleService from '@services/merkle';
 import logger from '@util/logger';
-import {
-  ConnectionMessageSubType,
-  ModerationMessageSubType,
-  parseMessageId,
-  PostMessageSubType,
-  ProfileMessageSubType
-} from 'zkitter-js';
-import { HASHTAG_REGEX, MENTION_REGEX } from '@util/regex';
+import {HASHTAG_REGEX, MENTION_REGEX} from '@util/regex';
 import ENSService from "@services/ens";
 import {showStatus} from "@util/twitter";
 import ZKChatService from "@services/zkchat";
 import {covertToGroupId} from "@models/semaphore_creators";
 import {toBigInt} from "@util/encoding";
 import {AnyMessage} from "zkitter-js/dist/src/utils/message";
+import {ChatMeta} from "zkitter-js/dist/src/models/chats";
 
 export class PostgresAdapter implements GenericDBAdapterInterface {
   db: DBService;
@@ -388,9 +394,9 @@ export class PostgresAdapter implements GenericDBAdapterInterface {
       throw new Error('profile already exist');
     }
 
-    if (subtype === ProfileMessageSubType.Custom && payload.key === 'ecdh_pubkey') {
-      await this.zkchat.registerUser(creator, payload.value);
-    }
+    // if (subtype === ProfileMessageSubType.Custom && payload.key === 'ecdh_pubkey') {
+    //   await this.zkchat.registerUser(creator, payload.value);
+    // }
 
     if (subtype === ProfileMessageSubType.TwitterVerification) {
       const { key, value } = payload;
@@ -448,8 +454,7 @@ export class PostgresAdapter implements GenericDBAdapterInterface {
   };
 
   async getHistoryDownloaded(): Promise<boolean> {
-    return true;
-    return process.env.NODE_ENV === 'production';
+    return !process.env.FORCE || !process.env.SYNC_HISTORY;
   };
 
   async setHistoryDownloaded(downloaded: boolean): Promise<void> {};
@@ -598,6 +603,42 @@ export class PostgresAdapter implements GenericDBAdapterInterface {
     offset?: number|string
   ): Promise<Post[]> {
     return [];
+  }
+
+  getChatByECDH(ecdh: string): Promise<ChatMeta[]> {
+    return Promise.resolve([]);
+  }
+
+  getChatECDHByUser(addressOrIdCommitment: string): Promise<string[]> {
+    return Promise.resolve([]);
+  }
+
+  getChatMessages(chatId: string, limit: number | undefined, offset: number | string | undefined): Promise<Chat[]> {
+    return Promise.resolve([]);
+  }
+
+  getChatMeta(ecdh: string, chatId: string): Promise<ChatMeta | null> {
+    return Promise.resolve(null);
+  }
+
+  getGroupPosts(groupId: string, limit: number | undefined, offset: number | string | undefined): Promise<Post[]> {
+    return Promise.resolve([]);
+  }
+
+  getUserByECDH(ecdh: string): Promise<string | null> {
+    return Promise.resolve(null);
+  }
+
+  insertChat(chat: Chat, proof: Proof): Promise<Chat> {
+    return Promise.resolve(new Chat({
+      type: MessageType.Chat,
+      subtype: ChatMessageSubType.Default,
+      payload: { encryptedContent: '', senderECDH: '', receiverECDH: '' },
+    }));
+  }
+
+  saveChatECDH(addressOrIdCommitment: string, ecdh: string): Promise<string> {
+    return Promise.resolve("");
   }
 }
 

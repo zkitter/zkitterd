@@ -1,0 +1,12 @@
+{
+  "ignore": [
+    "node_modules/**/node_modules",
+    "build",
+    "lib",
+    ".git",
+    ".github",
+    "circuitFiles",
+    "*.test.ts",
+    "*.log"
+  ]
+}

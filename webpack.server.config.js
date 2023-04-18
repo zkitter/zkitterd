@@ -82,5 +82,8 @@ module.exports = [
       filename: `server.js`,
     },
     plugins: [envPlugin],
+    watchOptions: {
+      ignored: /node_modules/,
+    },
   },
 ];

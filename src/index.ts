@@ -13,14 +13,13 @@ import {
   TwitterController,
   UsersController,
   ZkChatController,
-} from './services/http/controllers';
-import InterrepService from './services/interrep';
+} from '@services/http/controllers';
 import IPFSService from './services/ipfs';
 import MerkleService from './services/merkle';
-import { ReputationService } from './services/reputation';
+import { ReputationService } from '@services/reputation';
 import ZKChatService from './services/zkchat';
 import logger from './util/logger';
-import { MainService } from './util/svc';
+import { MainService } from '@util/svc';
 import ZkitterService from '@services/zkitter';
 
 (async function initApp() {
@@ -28,7 +27,6 @@ import ZkitterService from '@services/zkitter';
     const main = new MainService();
     main.add('db', new DBService());
     main.add('merkle', new MerkleService());
-    main.add('interrep', new InterrepService());
     main.add('zkchat', new ZKChatService());
     main.add('ens', new ENSService());
     main.add('arbitrum', new ArbitrumService());

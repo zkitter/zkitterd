@@ -1,5 +1,5 @@
 import { Mutex } from 'async-mutex';
-import { BIGINT, Sequelize } from 'sequelize';
+import { BIGINT, Sequelize, BOOLEAN } from 'sequelize';
 
 const mutex = new Mutex();
 
@@ -8,6 +8,7 @@ type AppModel = {
   lastInterrepBlockScanned: number;
   lastArbitrumBlockScanned: number;
   lastGroup42BlockScanned: number;
+  historyDownloaded: boolean;
 };
 
 const app = (sequelize: Sequelize) => {
@@ -25,6 +26,9 @@ const app = (sequelize: Sequelize) => {
       },
       lastInterrepBlockScanned: {
         type: BIGINT,
+      },
+      historyDownloaded: {
+        type: BOOLEAN,
       },
     },
     {}
@@ -101,6 +105,22 @@ const app = (sequelize: Sequelize) => {
     });
   };
 
+  const updateHistoryDownloaded = async (historyDownloaded: boolean) => {
+    return mutex.runExclusive(async () => {
+      const result = await model.findOne();
+
+      if (result) {
+        return result.update({
+          historyDownloaded: historyDownloaded,
+        });
+      }
+
+      return model.create({
+        historyDownloaded: historyDownloaded,
+      });
+    });
+  };
+
   return {
     model,
     read,
@@ -108,6 +128,7 @@ const app = (sequelize: Sequelize) => {
     updateLastENSBlock,
     updateLastGroup42BlockScanned,
     updateLastInterrepBlock,
+    updateHistoryDownloaded,
   };
 };
 

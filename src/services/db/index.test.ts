@@ -3,15 +3,10 @@ import path from 'path';
 import tape from 'tape';
 import { getMockDB } from '@util/test';
 
-const gunpath = path.join(process.cwd(), 'gun.test.db');
-
-if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
-
 tape('DBService', async t => {
   const db = await getMockDB();
 
   t.equal(db.app, await db.getApp());
-  t.equal(db.records, await db.getRecords());
   t.equal(db.users, await db.getUsers());
   t.equal(db.posts, await db.getPosts());
   t.equal(db.connections, await db.getConnections());
@@ -24,7 +19,6 @@ tape('DBService', async t => {
   t.equal(db.ens, await db.getENS());
   t.equal(db.linkPreview, await db.getLinkPreview());
   t.equal(db.semaphore, await db.getSemaphore());
-  t.equal(db.interepGroups, await db.getInterepGroups());
   t.equal(db.semaphoreCreators, await db.getSemaphoreCreators());
   t.equal(db.threads, await db.getThreads());
 
@@ -68,11 +62,6 @@ tape('DBService', async t => {
 
   const ens2 = await db.ens!.readByENS('yagamilight.eth');
   t.deepEqual(ens2.address, '0xd44a82dD160217d46D754a03C8f841edF06EBE3c', 'should return address');
-
-  const ig1 = await db.interepGroups!.findOneByHash(
-    '12610260130062152224897807626844050096295734347810798823127924471851444645999'
-  );
-  t.deepEqual(ig1!.name, 'not_sufficient', 'should return interep group by hash');
 
   const link1 = await db.linkPreview!.read(
     'https://c.tenor.com/G1DmbkkM46cAAAAC/eimi-fukada-eimi-dance.gif'
@@ -863,38 +852,12 @@ tape('DBService', async t => {
     'should return created post'
   );
 
-  await db.records!.updateOrCreateRecord({
-    field: '!field',
-    relation: '@utilrelation',
-    soul: '#soul',
-    state: 1,
-    value: '@value',
-  });
-
-  await db.records!.updateOrCreateRecord({
-    field: '!field2',
-    relation: '@utilrelation2',
-    soul: '#soul2',
-    state: 2,
-    value: '@value2',
-  });
-
   // @ts-expect-error
   const { createdAt, updatedAt, ...record1 } = await db.records!.findOne('#soul', '!field');
   t.deepEqual(
     record1,
     { field: '!field', id: 1, relation: '@utilrelation', soul: '#soul', state: 1, value: '@value' },
     'should return one record'
-  );
-
-  const record2 = await db.records!.findAll('#soul');
-  t.deepEqual(record2[0].value, '@value', 'should return all records of a sould');
-
-  const record3 = await db.records!.readAll();
-  t.deepEqual(
-    record3.map(d => d.value),
-    ['@value', '@value2'],
-    'should return all records'
   );
 
   const sema2 = await db.semaphore!.findAllByCommitment(
@@ -1400,6 +1363,5 @@ tape('DBService', async t => {
   t.equal(searchResults.length, 45, 'should search post by text content');
 
   await db.stop();
-  if (fs.existsSync(gunpath)) fs.unlinkSync(gunpath);
   t.end();
 });

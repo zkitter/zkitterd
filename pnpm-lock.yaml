@@ -76,7 +76,7 @@ specifiers:
   webpack-node-externals: ^3.0.0
   winston: ^3.3.3
   zk-chat-server: ^1.0.4
-  zkitter-js: 1.2.9
+  zkitter-js: ^1.4.0
 
 dependencies:
   '@ensdomains/ensjs': 2.1.0
@@ -121,7 +121,7 @@ dependencies:
   web3.storage: 4.4.0_typescript@4.9.5
   winston: 3.8.2
   zk-chat-server: 1.0.4
-  zkitter-js: 1.2.9_pda42hcaj7d62cr262fr632kue
+  zkitter-js: 1.4.0_pda42hcaj7d62cr262fr632kue
 
 devDependencies:
   '@istanbuljs/nyc-config-typescript': 1.0.2_nyc@15.1.0
@@ -14093,8 +14093,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /zkitter-js/1.2.9_pda42hcaj7d62cr262fr632kue:
-    resolution: {integrity: sha512-yIVdmVCenxKatUhxNDIbRnM6zhsGN1HXKmHI+NBTXekKNZgt7daokq0YWqKtLcwKDaXReIxAHpX0vZR1KB/NOA==}
+  /zkitter-js/1.4.0_pda42hcaj7d62cr262fr632kue:
+    resolution: {integrity: sha512-N3MqoUEhfS8UvBPlCHVDor/DogMT+y6dXgHSpS8UPeHNLz4NWcktuD2Tcneuh44ld6589Cj2bq/6vSqTKTgR9A==}
     engines: {node: 16.x - 18.x}
     hasBin: true
     dependencies:

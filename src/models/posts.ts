@@ -2,7 +2,7 @@ import { Mutex } from 'async-mutex';
 import { BIGINT, Op, QueryTypes, Sequelize, STRING } from 'sequelize';
 
 import config from '@util/config';
-import { MessageType, PostJSON, PostMessageSubType } from '@util/message';
+import { MessageType, PostJSON, PostMessageSubType } from 'zkitter-js';
 import {
   globalModClause,
   globalVisibilityClause,
@@ -128,6 +128,11 @@ const posts = (sequelize: Sequelize) => {
     }
 
     return null;
+  };
+
+  const getAll = async (): Promise<PostModel[]> => {
+    const posts = await model.findAll<any>();
+    return posts.map(data => data.toJSON());
   };
 
   const findOne = async (hash: string, context?: string): Promise<PostJSON | null> => {
@@ -540,6 +545,7 @@ const posts = (sequelize: Sequelize) => {
     remove,
     search,
     vectorizeContent,
+    getAll,
   };
 };
 
@@ -551,6 +557,7 @@ export function inflateResultToPostJSON(r: any): PostJSON {
     interepProvider: json?.interepProvider,
     likeCount: +json?.likeCount || 0,
     liked: json?.liked,
+    global: json?.global || null,
     modblockedctx: json?.modblockedctx || null,
     modBlockedPost: json?.modBlockedPost || null,
     modBlockedUser: json?.modBlockedUser || null,
@@ -577,7 +584,7 @@ export function inflateResultToPostJSON(r: any): PostJSON {
   }
 
   return {
-    createdAt: json.createdAt,
+    createdAt: Number(json.createdAt),
     hash: json.hash,
     messageId: json.creator ? `${json.creator}/${json.hash}` : json.hash,
     meta: meta,

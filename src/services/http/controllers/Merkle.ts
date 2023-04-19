@@ -25,8 +25,10 @@ export class MerkleController extends Controller {
   };
 
   getMembers = async (req: Request, res: Response) => {
+    const limit = req.query.limit && Number(req.query.limit);
+    const offset = req.query.offset && Number(req.query.offset);
     const { group } = req.params;
-    const leaves = await this.call('merkle', 'getAllLeaves', group);
+    const leaves = await this.call('merkle', 'getAllLeaves', group, offset, limit);
     res.send(makeResponse(leaves));
   };
 }

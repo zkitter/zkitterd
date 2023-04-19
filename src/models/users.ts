@@ -14,6 +14,8 @@ export type UserModel = {
   website: string;
   twitterVerification: string;
   group: boolean;
+  idcommitment: string;
+  ecdh: string;
   meta: {
     inviteSent: string | null;
     acceptanceReceived: string | null;
@@ -214,7 +216,7 @@ const users = (sequelize: Sequelize) => {
 
 export default users;
 
-const userSelectQuery = `
+export const userSelectQuery = `
   SELECT  
     u.name,
     u.pubkey,

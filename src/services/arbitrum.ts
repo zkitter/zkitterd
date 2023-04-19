@@ -7,6 +7,7 @@ import logger from '@util/logger';
 import { GenericService } from '@util/svc';
 import Timeout = NodeJS.Timeout;
 
+// TODO: Deprecate
 export default class ArbitrumService extends GenericService {
   web3: Web3;
   registrar: Contract;
@@ -14,7 +15,7 @@ export default class ArbitrumService extends GenericService {
 
   constructor() {
     super();
-    const httpProvider = new Web3.providers.HttpProvider(config.arbitrumHttpProvider);
+    const httpProvider = new Web3.providers.HttpProvider(config.arbitrumHttpProvider as string);
     this.web3 = new Web3(httpProvider);
     this.web3.eth.accounts.wallet.add(config.arbitrumPrivateKey);
     this.registrar = new this.web3.eth.Contract(arbRegistrarABI as any, config.arbitrumRegistrar);
@@ -125,6 +126,6 @@ export default class ArbitrumService extends GenericService {
   };
 
   async start() {
-    this.scan();
+    // this.scan();
   }
 }

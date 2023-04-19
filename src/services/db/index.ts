@@ -4,7 +4,6 @@ import app from '@models/app';
 import auth from '@models/auth';
 import connections from '@models/connections';
 import ens from '@models/ens';
-import interepGroups from '@models/interepGroups';
 import lastread from '@models/lastread';
 import linkPreview from '@models/linkPreview';
 import merkleRoot from '@models/merkle_root';
@@ -12,7 +11,6 @@ import meta from '@models/meta';
 import moderations from '@models/moderations';
 import posts from '@models/posts';
 import profiles from '@models/profiles';
-import records from '@models/records';
 import semaphore from '@models/semaphore';
 import semaphoreCreators from '@models/semaphore_creators';
 import tags from '@models/tags';
@@ -25,16 +23,14 @@ import config from '@util/config';
 import logger from '@util/logger';
 import { sequelize } from '@util/sequelize';
 import { GenericService } from '@util/svc';
+import messages from "@models/messages";
 
 export default class DBService extends GenericService {
   sequelize: Sequelize;
-  sqlite: Sequelize;
-
   app?: ReturnType<typeof app>;
   ens?: ReturnType<typeof ens>;
   linkPreview?: ReturnType<typeof linkPreview>;
   users?: ReturnType<typeof users>;
-  records?: ReturnType<typeof records>;
   posts?: ReturnType<typeof posts>;
   profiles?: ReturnType<typeof profiles>;
   moderations?: ReturnType<typeof moderations>;
@@ -45,30 +41,16 @@ export default class DBService extends GenericService {
   userMeta?: ReturnType<typeof userMeta>;
   auth?: ReturnType<typeof auth>;
   twitterAuth?: ReturnType<typeof twitterAuth>;
-  interepGroups?: ReturnType<typeof interepGroups>;
   semaphoreCreators?: ReturnType<typeof semaphoreCreators>;
   threads?: ReturnType<typeof threads>;
   uploads?: ReturnType<typeof uploads>;
   merkleRoot?: ReturnType<typeof merkleRoot>;
   lastread?: ReturnType<typeof lastread>;
+  message?: ReturnType<typeof messages>;
 
   constructor() {
     super();
-
-    this.sqlite = new Sequelize({
-      dialect: 'sqlite',
-      logging: false,
-      storage: process.env.NODE_ENV === 'test' ? './gun.test.db' : './gun.db',
-    });
-
     this.sequelize = sequelize;
-  }
-
-  async getRecords(): Promise<ReturnType<typeof records>> {
-    if (!this.records) {
-      return Promise.reject(new Error('records is not initialized'));
-    }
-    return this.records;
   }
 
   async getUsers(): Promise<ReturnType<typeof users>> {
@@ -174,13 +156,6 @@ export default class DBService extends GenericService {
     return this.semaphore;
   }
 
-  async getInterepGroups(): Promise<ReturnType<typeof interepGroups>> {
-    if (!this.interepGroups) {
-      return Promise.reject(new Error('interepGroups is not initialized'));
-    }
-    return this.interepGroups;
-  }
-
   async getSemaphoreCreators(): Promise<ReturnType<typeof semaphoreCreators>> {
     if (!this.semaphoreCreators) {
       return Promise.reject(new Error('semaphoreCreators is not initialized'));
@@ -210,8 +185,7 @@ export default class DBService extends GenericService {
   }
 
   async start() {
-    this.app = app(this.sqlite);
-    this.records = records(this.sqlite);
+    this.app = app(this.sequelize);
     this.linkPreview = linkPreview(this.sequelize);
     this.meta = meta(this.sequelize);
     this.userMeta = userMeta(this.sequelize);
@@ -225,16 +199,15 @@ export default class DBService extends GenericService {
     this.ens = ens(this.sequelize);
     this.twitterAuth = twitterAuth(this.sequelize);
     this.auth = auth(this.sequelize);
-    this.interepGroups = interepGroups(this.sequelize);
     this.semaphoreCreators = semaphoreCreators(this.sequelize);
     this.threads = threads(this.sequelize);
     this.uploads = uploads(this.sequelize);
     this.merkleRoot = merkleRoot(this.sequelize);
     this.lastread = lastread(this.sequelize);
+    this.message = messages(this.sequelize);
 
     await this.app?.model.sync({ force: !!process.env.FORCE });
     await this.linkPreview?.model.sync({ force: !!process.env.FORCE });
-    await this.records?.model.sync({ force: !!process.env.FORCE });
 
     await this.semaphore?.model.sync({ force: !!process.env.FORCE });
 
@@ -251,12 +224,12 @@ export default class DBService extends GenericService {
     await this.ens?.model.sync({ force: !!process.env.FORCE });
     await this.twitterAuth?.model.sync({ force: !!process.env.FORCE });
     await this.auth?.model.sync({ force: !!process.env.FORCE });
-    await this.interepGroups?.model.sync({ force: !!process.env.FORCE });
     await this.semaphoreCreators?.model.sync({ force: !!process.env.FORCE });
     await this.threads?.model.sync({ force: !!process.env.FORCE });
     await this.uploads?.model.sync({ force: !!process.env.FORCE });
     await this.merkleRoot?.model.sync({ force: !!process.env.FORCE });
     await this.lastread?.model.sync({ force: !!process.env.FORCE });
+    await this.message?.model.sync({ force: !!process.env.FORCE });
 
     const appData = await this.app?.read();
 
@@ -265,6 +238,10 @@ export default class DBService extends GenericService {
       await this.app?.updateLastInterrepBlock(28311377);
       await this.app?.updateLastArbitrumBlock(config?.lastArbitrumBlock || 2193241);
       await this.app?.updateLastGroup42BlockScanned(7660170);
+    }
+
+    if (!!process.env.SNAPSHOT) {
+      await this.call('postsController', 'snapshot');
     }
   }
 

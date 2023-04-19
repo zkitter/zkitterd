@@ -1,6 +1,6 @@
 import { BIGINT, Sequelize, STRING } from 'sequelize';
 
-import { ConnectionMessageSubType } from '@util/message';
+import { ConnectionMessageSubType } from 'zkitter-js';
 
 type ConnectionModel = {
   messageId: string;
@@ -54,6 +54,11 @@ const connections = (sequelize: Sequelize) => {
       ],
     }
   );
+
+  const getAll = async (): Promise<ConnectionModel[]> => {
+    const list = await model.findAll<any>();
+    return list.map(data => data.toJSON());
+  };
 
   const findOne = async (hash: string): Promise<ConnectionModel | null> => {
     const result: any = await model.findOne({
@@ -158,6 +163,7 @@ const connections = (sequelize: Sequelize) => {
     findOne,
     model,
     remove,
+    getAll,
   };
 };
 

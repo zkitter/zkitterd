@@ -1,9 +1,22 @@
 import { Request, Response } from 'express';
 
-import { parseMessageId, PostMessageSubType } from '@util/message';
+import {
+  Connection,
+  Moderation,
+  parseMessageId,
+  Post,
+  PostMessageSubType,
+  Profile,
+} from 'zkitter-js';
 import { getReplies } from '@util/twitter';
 import { makeResponse } from '../utils';
 import { Controller } from './interface';
+import DBService from '@services/db';
+import { Op } from 'sequelize';
+import fs from 'fs';
+import path from 'path';
+
+const GUN_HISTORY_PATH = path.join(process.cwd(), 'build', 'history_v0.json');
 
 export class PostsController extends Controller {
   prefix = '/v1';
@@ -11,6 +24,7 @@ export class PostsController extends Controller {
   constructor() {
     super();
     this.addRoutes();
+    loadGunHistoryToCache();
   }
 
   public addRoutes() {
@@ -21,8 +35,120 @@ export class PostsController extends Controller {
       .get('/post/:hash', this.getOne)
       .get('/post/:hash/likes', this.getLikes)
       .get('/post/:hash/retweets', this.getRetweets)
-      .get('/replies', this.getReplies);
+      .get('/replies', this.getReplies)
+      .get('/history', this.getHistory);
   }
+
+  snapshot = async () => {
+    const db = (await this.main?.services.db) as DBService;
+    const posts = await db.posts?.model.findAll({
+      where: {
+        type: {
+          [Op.not]: '@TWEET@',
+        },
+        createdAt: {
+          [Op.not]: '-1',
+        },
+      },
+    });
+    const moderations = await db.moderations?.model.findAll();
+    const connections = await db.connections?.model.findAll();
+    const profiles = await db.profiles?.model.findAll();
+
+    const messages = [
+      ...posts!
+        .map(m => m.toJSON())
+        .map(data => {
+          const p = new Post({
+            type: data.type,
+            subtype: data.subtype,
+            creator: data.creator,
+            createdAt: new Date(Number(data.createdAt)),
+            payload: {
+              attachment: data.attachment,
+              content: data.content,
+              reference: data.reference,
+              title: data.title,
+              topic: data.topic,
+            },
+          });
+          if (p.toJSON().messageId !== data.messageId) throw new Error('yo');
+          return p;
+        }),
+      ...moderations!
+        .map(m => m.toJSON())
+        .map(data => {
+          const m = new Moderation({
+            type: data.type,
+            subtype: data.subtype,
+            creator: data.creator,
+            createdAt: new Date(Number(data.createdAt)),
+            payload: {
+              reference: data.reference,
+            },
+          });
+          if (m.toJSON().messageId !== data.messageId) throw new Error('yo');
+          return m;
+        }),
+      ...connections!
+        .map(m => m.toJSON())
+        .map(data => {
+          const conn = new Connection({
+            type: data.type,
+            subtype: data.subtype,
+            creator: data.creator,
+            createdAt: new Date(Number(data.createdAt)),
+            payload: {
+              name: data.name,
+            },
+          });
+          if (conn.toJSON().messageId !== data.messageId) throw new Error('yo');
+          return conn;
+        }),
+      ...profiles!
+        .map(m => m.toJSON())
+        .map(data => {
+          const prof = new Profile({
+            type: data.type,
+            subtype: data.subtype,
+            creator: data.creator,
+            createdAt: new Date(Number(data.createdAt)),
+            payload: {
+              key: data.key,
+              value: data.value,
+            },
+          });
+          if (prof.toJSON().messageId !== data.messageId) throw new Error('yo');
+          return prof;
+        }),
+    ]
+      .filter(data => !!data)
+      .reduce((map: any, msg) => {
+        map[msg.creator] = map[msg.creator] || [];
+        map[msg.creator].push(msg);
+        return map;
+      }, {});
+
+    if (messages) {
+      await fs.promises.writeFile(GUN_HISTORY_PATH, JSON.stringify(messages));
+    }
+  };
+
+  getHistory = async (req: Request, res: Response) => {
+    const user = req.query.user;
+    const global = req.query.global;
+
+    if (user) {
+      res.send(makeResponse(historyJson[user as string] || []));
+    } else if (global) {
+      res.send(makeResponse(historyJson[''] || []));
+    } else {
+      const messages = Object.values(historyJson).reduce((acc: any, list) => {
+        return acc.concat(list);
+      }, []);
+      res.send(makeResponse(messages));
+    }
+  };
 
   homefeed = async (req: Request, res: Response) => {
     const limit = req.query.limit && Number(req.query.limit);
@@ -39,7 +165,7 @@ export class PostsController extends Controller {
     const creator = req.query.creator;
     const context = req.header('x-contextual-name') || undefined;
     const postDB = await this.call('db', 'getPosts');
-    const posts = await postDB.findAllPosts(creator, context, offset, limit, undefined, !!creator);
+    const posts = await postDB.findAllPosts(creator, context, offset, limit, undefined, true);
     res.send(makeResponse(posts));
   };
 
@@ -110,4 +236,15 @@ export class PostsController extends Controller {
     );
     res.send(makeResponse(posts));
   };
+}
+
+// Helpers
+let historyJson: any = {};
+async function loadGunHistoryToCache() {
+  try {
+    const raw = await fs.promises.readFile(GUN_HISTORY_PATH, 'utf-8');
+    historyJson = JSON.parse(raw);
+  } catch (e) {
+    historyJson = {};
+  }
 }

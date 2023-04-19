@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { GenericService } from '../../../util/svc';
+import { GenericService } from '@util/svc';
 
 export abstract class Controller extends GenericService {
   protected _router = Router();

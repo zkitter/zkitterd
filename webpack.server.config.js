@@ -7,9 +7,12 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const envPlugin = new webpack.EnvironmentPlugin({
   NODE_ENV: '',
+  FORCE: '',
+  SYNC_HISTORY: '',
   WEB3_HTTP_PROVIDER: '',
   ENS_RESOLVER: '',
   ARB_HTTP_PROVIDER: '',
+  ARB_PROVIDER: '',
   ARB_REGISTRAR: '',
   ARB_PRIVATE_KEY: '',
   ARB_ADDRESS: '',
@@ -32,6 +35,7 @@ const envPlugin = new webpack.EnvironmentPlugin({
   TW_BEARER_TOKEN: '',
   TW_ACCESS_KEY: '',
   TW_ACCESS_SECRET: '',
+  SNAPSHOT: '',
 });
 
 const rules = [

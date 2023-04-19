@@ -3,7 +3,7 @@ import { QueryTypes, Sequelize, STRING } from 'sequelize';
 
 import config from '@util/config';
 
-import { PostJSON } from '@util/message';
+import { PostJSON } from 'zkitter-js';
 import { globalModClause, replyModerationClause } from '@util/sql';
 import { inflateResultToPostJSON } from './posts';
 

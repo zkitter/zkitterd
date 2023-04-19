@@ -1,6 +1,6 @@
 import { BIGINT, QueryTypes, Sequelize, STRING } from 'sequelize';
 
-import { ModerationJSON } from '@util/message';
+import { ModerationJSON, PostJSON } from 'zkitter-js';
 
 type ModerationModel = {
   messageId: string;
@@ -53,6 +53,11 @@ const moderations = (sequelize: Sequelize) => {
       ],
     }
   );
+
+  const getAll = async (): Promise<ModerationModel[]> => {
+    const list = await model.findAll<any>();
+    return list.map(data => data.toJSON());
+  };
 
   const findOne = async (hash: string): Promise<ModerationModel | null> => {
     const result: any = await model.findOne({
@@ -155,6 +160,7 @@ const moderations = (sequelize: Sequelize) => {
     findThreadModeration,
     model,
     remove,
+    getAll,
   };
 };
 

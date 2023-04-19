@@ -17,6 +17,7 @@ export class UsersController extends Controller {
   addRoutes = () => {
     this._router.route('/users').get(this.getMany).post(this.addOne);
     this._router.get('/users/:address', this.getOne);
+    this._router.get('/ecdh/:ecdh', this.findUserByECDH);
     this._router.get('/:user/followers', this.getFollowers);
     this._router.get('/:user/followings', this.getFollowings);
     this._router.get('/:creator/replies', this.getReplies);
@@ -100,6 +101,15 @@ export class UsersController extends Controller {
         username: address,
       })
     );
+  };
+
+  findUserByECDH = async (req: Request, res: Response) => {
+    const profilesDB = await this.call('db', 'getProfiles');
+
+    const ecdh = req.params.ecdh;
+
+    const userAddress = await profilesDB.findUserByECDH(ecdh);
+    res.send(makeResponse(userAddress));
   };
 
   getFollowers = async (req: Request, res: Response) => {

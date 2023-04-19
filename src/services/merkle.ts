@@ -58,15 +58,15 @@ const SQL: {
     all: {
       '': {
         sql: `
-                    SELECT u.name as address, pf.value as id_commitment FROM users u
-                    LEFT JOIN profiles pf ON pf."messageId" = (
-                        SELECT "messageId" FROM profiles 
-                        WHERE creator = u.name AND subtype = 'CUSTOM' 
-                        AND key = 'id_commitment' 
-                        ORDER BY "createdAt" DESC LIMIT 1
-                    )
-                    WHERE pf.value IS NOT NULL
-                `,
+          SELECT u.name as address, pf.value as id_commitment FROM users u
+          LEFT JOIN profiles pf ON pf."messageId" = (
+              SELECT "messageId" FROM profiles 
+              WHERE creator = u.name AND subtype = 'CUSTOM' 
+              AND key = 'id_commitment' 
+              ORDER BY "createdAt" DESC LIMIT 1
+          )
+          WHERE pf.value IS NOT NULL
+      `,
       },
     },
   },
@@ -82,7 +82,7 @@ export default class MerkleService extends GenericService {
     this.semaphore = semaphore(sequelize);
   }
 
-  getAllLeaves = async (group: string): Promise<any[]> => {
+  getAllLeaves = async (group: string, offset = 0, limit = 1000): Promise<any[]> => {
     const [protocol, groupName, groupType = ''] = group.split('_');
     const protocolBucket = SQL[protocol] || {};
     const groupBucket = protocolBucket[groupName] || {};
@@ -91,21 +91,31 @@ export default class MerkleService extends GenericService {
     const options: QueryOptions = { type: QueryTypes.SELECT };
 
     if (protocol === 'custom') {
-      query = customGroupSQL;
+      query = `
+        ${customGroupSQL}
+        LIMIT :limit OFFSET :offset
+      `;
       options.replacements = {
         group_address: groupName,
+        limit,
+        offset,
       };
     } else {
-      query = sql;
+      query = `
+        ${sql}
+        LIMIT :limit OFFSET :offset
+      `;
       options.replacements = replacement || {
         group_id: group,
+        limit,
+        offset,
       };
     }
 
     if (!query) throw new Error(`${group} does not exist`);
 
     const leaves = await sequelize.query(query, options);
-    return leaves;
+    return leaves as { id_commitment: string }[];
   };
 
   makeTree = async (

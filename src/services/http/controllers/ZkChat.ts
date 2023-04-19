@@ -119,7 +119,7 @@ export class ZkChatController extends Controller {
 
   searchChats = async (req: Request, res: Response) => {
     const { query } = req.params;
-    const { sender } = req.query;
+    const { sender } = req.query || {};
     const data = await this.call('zkchat', 'searchChats', query || '', sender);
     res.send(makeResponse(data));
   };

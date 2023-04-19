@@ -1,18 +1,12 @@
-import { RLNFullProof, SemaphoreFullProof } from '@zk-kit/protocols';
-import { Dialect, QueryTypes, Sequelize } from 'sequelize';
-
+import { QueryTypes } from 'sequelize';
 import { GenericService } from '@util/svc';
 import { userSelectQuery } from '@models/users';
+import DBService from '@services/db';
 
 export default class ZKChatService extends GenericService {
-  sequelize: Sequelize;
-
-  constructor() {
-    super();
-  }
-
   searchChats = async (query: string, sender?: string, offset = 0, limit = 20) => {
-    return await this.sequelize.query(
+    const db = this.main?.services['db'] as DBService;
+    return await db.sequelize.query(
       `
             ${userSelectQuery}
             WHERE ecdh.value != '' AND (
